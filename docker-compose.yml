@@ -1,0 +1,197 @@
+version: '3.8'
+
+networks:
+  arcbank2-net:
+    driver: bridge
+  switch-transaccional-network:
+    external: true
+
+services:
+
+  # ==========================================
+  # 0. API GATEWAY ARCBANK (Puerto 4080)
+  # ==========================================
+  api-gateway-arcbank:
+    build:
+      context: ./api-gateway
+      dockerfile: Dockerfile
+    container_name: api-gateway-arcbank2
+    ports:
+      - "4080:8080" # Entrada principal ARCBANK
+    depends_on:
+      - micro-clientes-arcbank
+      - micro-cuentas-arcbank
+      - ms-transaccion-arcbank
+    networks:
+      - arcbank2-net
+
+  # ==========================================
+  # 1. MICROSERVICIO CUENTAS ARCBANK (Puerto 4081)
+  # ==========================================
+  db-cuentas-arcbank:
+    image: postgres:17
+    container_name: db-cuentas-arcbank2
+    ports:
+      - "5532:5432"
+    environment:
+      POSTGRES_DB: db_cuentas
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: admin
+    volumes:
+      - postgres_data_cuentas_arcbank:/var/lib/postgresql/data
+    restart: always
+    networks:
+      - arcbank2-net
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  micro-cuentas-arcbank:
+    build:
+      context: ./micro-cuentas
+      dockerfile: Dockerfile
+    container_name: micro-cuentas-arcbank2
+    ports:
+      - "4081:8081" # Acceso directo (backup)
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db-cuentas-arcbank:5432/db_cuentas
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: admin
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      SPRING_JPA_SHOW_SQL: "false"
+    depends_on:
+      db-cuentas-arcbank:
+        condition: service_healthy
+    networks:
+      - arcbank2-net
+
+  # ==========================================
+  # 2. MICROSERVICIO CLIENTES ARCBANK (Puerto 4083)
+  # ==========================================
+  db-clientes-arcbank:
+    image: postgres:17
+    container_name: db-clientes-arcbank2
+    ports:
+      - "5533:5432"
+    environment:
+      POSTGRES_DB: microcliente
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: admin
+    volumes:
+      - postgres_data_clientes_arcbank:/var/lib/postgresql/data
+    restart: always
+    networks:
+      - arcbank2-net
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  micro-clientes-arcbank:
+    build:
+      context: ./micro-clientes
+      dockerfile: Dockerfile
+    container_name: micro-clientes-arcbank2
+    ports:
+      - "4083:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db-clientes-arcbank:5432/microcliente
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: admin
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      SPRING_JPA_SHOW_SQL: "true"
+      SPRING_JPA_PROPERTIES_HIBERNATE_FORMAT_SQL: "true"
+      SPRING_JPA_DATABASE_PLATFORM: org.hibernate.dialect.PostgreSQLDialect
+    depends_on:
+      db-clientes-arcbank:
+        condition: service_healthy
+    networks:
+      - arcbank2-net
+
+  # ==========================================
+  # 3. MICROSERVICIO TRANSACCIONES ARCBANK (Puerto 4082)
+  # ==========================================
+  db-transacciones-arcbank:
+    image: postgres:15-alpine
+    container_name: db-transacciones-arcbank2
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: db_transacciones
+    ports:
+      - "5534:5432"
+    volumes:
+      - postgres_data_transacciones_arcbank:/var/lib/postgresql/data
+      - ./ms-transaccion/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - arcbank2-net
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  ms-transaccion-arcbank:
+    build:
+      context: ./ms-transaccion
+      dockerfile: Dockerfile
+    container_name: ms-transaccion-arcbank2
+    depends_on:
+      db-transacciones-arcbank:
+        condition: service_healthy
+    environment:
+      DB_URL: jdbc:postgresql://db-transacciones-arcbank:5432/db_transacciones
+      DB_USER: postgres
+      DB_PASS: admin
+      SERVER_PORT: 8080
+      CUENTAS_URL: http://micro-cuentas-arcbank:8081
+      # Switch Interbancario DIGICONECU
+      APP_SWITCH_URL: ${SWITCH_URL:-http://payment-processing:8081}
+      BANCO_CODIGO: ARCBANK
+    ports:
+      - "4082:8080" # Acceso directo (backup)
+    networks:
+      - arcbank2-net
+      - switch-transaccional-network
+
+  # ==========================================
+  # 4. FRONTEND WEB ARCBANK (Puerto 4000)
+  # ==========================================
+  frontend-web-arcbank:
+    build:
+      context: ./frontendWeb
+      dockerfile: Dockerfile
+    container_name: frontend-web-arcbank2
+    ports:
+      - "4000:80"
+    environment:
+      REACT_APP_API_BASE_URL: http://api-gateway-arcbank:8080
+    depends_on:
+      - api-gateway-arcbank
+    networks:
+      - arcbank2-net
+
+  # ==========================================
+  # 5. FRONTEND CAJERO ARCBANK (Puerto 4001)
+  # ==========================================
+  frontend-cajero-arcbank:
+    build:
+      context: ./frontendCajero
+      dockerfile: Dockerfile
+    container_name: frontend-cajero-arcbank2
+    ports:
+      - "4001:80"
+    environment:
+      VITE_API_BASE_URL: http://api-gateway-arcbank:8080
+    depends_on:
+      - api-gateway-arcbank
+    networks:
+      - arcbank2-net
+
+volumes:
+  postgres_data_cuentas_arcbank:
+  postgres_data_clientes_arcbank:
+  postgres_data_transacciones_arcbank:

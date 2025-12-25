@@ -1,0 +1,227 @@
+version: '3.8'
+
+networks:
+  arcbank-prod-net:
+    driver: bridge
+
+services:
+
+  # ==========================================
+  # NGINX REVERSE PROXY (SSL Terminator)
+  # ==========================================
+  nginx-proxy:
+    image: nginx:alpine
+    container_name: nginx-proxy-arcbank
+    ports:
+      - "443:443" # HTTPS Web
+      - "8443:8443" # HTTPS Cajero
+      - "80:80" # Redirección HTTP → HTTPS
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/certs:/etc/nginx/certs:ro
+      - ./nginx/certbot:/var/www/certbot:ro
+    depends_on:
+      - frontend-web-arcbank
+      - frontend-cajero-arcbank
+      - api-gateway-arcbank
+    networks:
+      - arcbank-prod-net
+    restart: always
+
+  # ==========================================
+  # 0. API GATEWAY ARCBANK (Puerto 4080 - Solo interno)
+  # ==========================================
+  api-gateway-arcbank:
+    build:
+      context: ./api-gateway
+      dockerfile: Dockerfile
+    container_name: api-gateway-arcbank2
+    # Puerto solo expuesto internamente, Nginx hace el proxy
+    # ports:
+    #   - "4080:8080"
+    expose:
+      - "8080"
+    depends_on:
+      - micro-clientes-arcbank
+      - micro-cuentas-arcbank
+      - ms-transaccion-arcbank
+    networks:
+      - arcbank-prod-net
+    environment:
+      - PAYMENT_HOST=ms-transaccion-arcbank
+      - CLIENT_HOST=micro-clientes-arcbank
+      - ACCOUNT_HOST=micro-cuentas-arcbank
+
+  # ==========================================
+  # 1. MICROSERVICIO CUENTAS ARCBANK (Puerto 4081)
+  # ==========================================
+  db-cuentas-arcbank:
+    image: postgres:17
+    container_name: db-cuentas-arcbank2
+    ports:
+      - "5532:5432"
+    environment:
+      POSTGRES_DB: db_cuentas
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: admin
+    volumes:
+      - postgres_data_cuentas_arcbank:/var/lib/postgresql/data
+    restart: always
+    networks:
+      - arcbank-prod-net
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  micro-cuentas-arcbank:
+    build:
+      context: ./micro-cuentas
+      dockerfile: Dockerfile
+    container_name: micro-cuentas-arcbank2
+    ports:
+      - "4081:8081"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db-cuentas-arcbank:5432/db_cuentas
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: admin
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      SPRING_JPA_SHOW_SQL: "false"
+    depends_on:
+      db-cuentas-arcbank:
+        condition: service_healthy
+    networks:
+      - arcbank-prod-net
+
+  # ==========================================
+  # 2. MICROSERVICIO CLIENTES ARCBANK (Puerto 4083)
+  # ==========================================
+  db-clientes-arcbank:
+    image: postgres:17
+    container_name: db-clientes-arcbank2
+    ports:
+      - "5533:5432"
+    environment:
+      POSTGRES_DB: microcliente
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: admin
+    volumes:
+      - postgres_data_clientes_arcbank:/var/lib/postgresql/data
+    restart: always
+    networks:
+      - arcbank-prod-net
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  micro-clientes-arcbank:
+    build:
+      context: ./micro-clientes
+      dockerfile: Dockerfile
+    container_name: micro-clientes-arcbank2
+    ports:
+      - "4083:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db-clientes-arcbank:5432/microcliente
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: admin
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      SPRING_JPA_SHOW_SQL: "true"
+      SPRING_JPA_PROPERTIES_HIBERNATE_FORMAT_SQL: "true"
+      SPRING_JPA_DATABASE_PLATFORM: org.hibernate.dialect.PostgreSQLDialect
+    depends_on:
+      db-clientes-arcbank:
+        condition: service_healthy
+    networks:
+      - arcbank-prod-net
+
+  # ==========================================
+  # 3. MICROSERVICIO TRANSACCIONES ARCBANK (Puerto 4082)
+  # ==========================================
+  db-transacciones-arcbank:
+    image: postgres:15-alpine
+    container_name: db-transacciones-arcbank2
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: db_transacciones
+    ports:
+      - "5534:5432"
+    volumes:
+      - postgres_data_transacciones_arcbank:/var/lib/postgresql/data
+      - ./ms-transaccion/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - arcbank-prod-net
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  ms-transaccion-arcbank:
+    build:
+      context: ./ms-transaccion
+      dockerfile: Dockerfile
+    container_name: ms-transaccion-arcbank2
+    depends_on:
+      db-transacciones-arcbank:
+        condition: service_healthy
+    environment:
+      DB_URL: jdbc:postgresql://db-transacciones-arcbank:5432/db_transacciones
+      DB_USER: postgres
+      DB_PASS: admin
+      SERVER_PORT: 8080
+      CUENTAS_URL: http://micro-cuentas-arcbank:8081
+      # Switch Interbancario DIGICONECU (IP PUBLICA)
+      APP_SWITCH_URL: http://34.44.123.236:9080
+      BANCO_CODIGO: ARCBANK
+    ports:
+      - "4082:8080"
+    networks:
+      - arcbank-prod-net
+
+  # ==========================================
+  # 4. FRONTEND WEB ARCBANK (Accesible solo via Nginx)
+  # ==========================================
+  frontend-web-arcbank:
+    build:
+      context: ./frontendWeb
+      dockerfile: Dockerfile
+      args:
+        # API relativa - Nginx hace el proxy a /api
+        REACT_APP_API_BASE_URL: /api
+    container_name: frontend-web-arcbank2
+    # Puerto interno solo, acceso externo via Nginx HTTPS
+    expose:
+      - "80"
+    depends_on:
+      - api-gateway-arcbank
+    networks:
+      - arcbank-prod-net
+
+  # ==========================================
+  # 5. FRONTEND CAJERO ARCBANK (Accesible solo via Nginx)
+  # ==========================================
+  frontend-cajero-arcbank:
+    build:
+      context: ./frontendCajero
+      dockerfile: Dockerfile
+      args:
+        # API relativa - Nginx hace el proxy a /api
+        VITE_API_BASE_URL: /api
+    container_name: frontend-cajero-arcbank2
+    # Puerto interno solo, acceso externo via Nginx HTTPS
+    expose:
+      - "80"
+    depends_on:
+      - api-gateway-arcbank
+    networks:
+      - arcbank-prod-net
+
+volumes:
+  postgres_data_cuentas_arcbank:
+  postgres_data_clientes_arcbank:
+  postgres_data_transacciones_arcbank:
