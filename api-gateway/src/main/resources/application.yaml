@@ -81,6 +81,12 @@ spring:
           predicates:
             - Path=/api/bancos/**
 
+        # RUTA 9: SUCURSALES
+        - id: sucursales-service
+          uri: http://sucursales-arcbank:8080
+          predicates:
+            - Path=/api/v1/sucursales/**
+
         # RUTAS DE DOCUMENTACIÓN (Discovery for API Manager)
         - id: clientes-docs
           uri: http://micro-clientes-arcbank:8080
@@ -103,6 +109,13 @@ spring:
           filters:
             - RewritePath=/v3/api-docs/transacciones/(?<segment>.*), /v3/api-docs/$\{segment}
 
+        - id: sucursales-docs
+          uri: http://sucursales-arcbank:8080
+          predicates:
+            - Path=/v3/api-docs/sucursales/**
+          filters:
+            - RewritePath=/v3/api-docs/sucursales/(?<segment>.*), /v3/api-docs/$\{segment}
+
 # Swagger UI Centralizado
 springdoc:
   api-docs:
@@ -117,6 +130,8 @@ springdoc:
         url: /v3/api-docs/cuentas
       - name: 3. MS Transacción
         url: /v3/api-docs/transacciones
+      - name: 4. Micro Sucursales
+        url: /v3/api-docs/sucursales
 
 # Configuración para ver los logs de ruteo (útil para debug)
 logging:

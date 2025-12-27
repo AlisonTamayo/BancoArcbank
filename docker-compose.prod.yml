@@ -229,7 +229,38 @@ services:
     networks:
       - arcbank-prod-net
 
+  # ==========================================
+  # 6. MONGODB PARA SUCURSALES
+  # ==========================================
+  db-sucursales-arcbank:
+    image: mongo:latest
+    container_name: db-sucursales-arcbank2
+    ports:
+      - "27018:27017"
+    volumes:
+      - mongodb_data_sucursales_arcbank:/data/db
+    restart: always
+    networks:
+      - arcbank-prod-net
+
+  # ==========================================
+  # 7. MICROSERVICIO SUCURSALES (Puerto 8080 interno)
+  # ==========================================
+  sucursales-arcbank:
+    build:
+      context: ./sucursales
+      dockerfile: Dockerfile
+    container_name: sucursales-arcbank2
+    environment:
+      - SPRING_DATA_MONGODB_URI=mongodb://db-sucursales-arcbank:27017/db_sucursales
+      - SERVER_PORT=8080
+    depends_on:
+      - db-sucursales-arcbank
+    networks:
+      - arcbank-prod-net
+
 volumes:
   postgres_data_cuentas_arcbank:
   postgres_data_clientes_arcbank:
   postgres_data_transacciones_arcbank:
+  mongodb_data_sucursales_arcbank:
