@@ -29,18 +29,18 @@ services:
     restart: always
 
   # ==========================================
-  # 0. API GATEWAY ARCBANK (Puerto 4080 - Solo interno)
+  # 0. API GATEWAY ARCBANK (Puerto 4080 para Webhooks del Switch)
   # ==========================================
   api-gateway-arcbank:
     build:
       context: ./api-gateway
       dockerfile: Dockerfile
     container_name: api-gateway-arcbank2
-    # Puerto solo expuesto internamente, Nginx hace el proxy
-    # ports:
-    #   - "4080:8080"
-    expose:
-      - "8080"
+    # Puerto expuesto para:
+    # - Comunicación interna de frontends (via Nginx)
+    # - Webhooks del Switch DIGICONECU (transferencias entrantes)
+    ports:
+      - "4080:8080"
     depends_on:
       - micro-clientes-arcbank
       - micro-cuentas-arcbank
