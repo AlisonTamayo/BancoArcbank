@@ -178,8 +178,16 @@ services:
       # Switch Interbancario DIGICONECU (IP PUBLICA)
       APP_SWITCH_URL: http://35.208.155.21:9080
       BANCO_CODIGO: ARCBANK
+      # Configuración SSL para mTLS
+      SSL_ENABLED: "true"
+      SSL_KEYSTORE_PATH: "file:/app/certs/arcbank.p12"
+      SSL_KEYSTORE_PASSWORD: "changeit"
+      SSL_TRUSTSTORE_PATH: "file:/app/certs/truststore.p12"
+      SSL_TRUSTSTORE_PASSWORD: "changeit"
     ports:
       - "4082:8080"
+    volumes:
+      - ./ms-transaccion/certs:/app/certs:ro
     networks:
       - arcbank-prod-net
 

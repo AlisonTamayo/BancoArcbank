@@ -45,6 +45,17 @@ app:
   # Código del banco (para identificarse ante el switch)
   banco:
     codigo: ${BANCO_CODIGO:ARCBANK}
+  
+  # Configuración SSL/TLS para mTLS (Mutual Authentication)
+  ssl:
+    enabled: ${SSL_ENABLED:true}
+    keystore:
+      path: ${SSL_KEYSTORE_PATH:file:/app/certs/arcbank.p12}
+      password: ${SSL_KEYSTORE_PASSWORD:changeit}
+    truststore:
+      path: ${SSL_TRUSTSTORE_PATH:file:/app/certs/truststore.p12}
+      password: ${SSL_TRUSTSTORE_PASSWORD:changeit}
+
 
 # --- CONFIGURACIÓN SWAGGER / OPENAPI ---
 springdoc:
