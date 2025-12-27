@@ -13,17 +13,17 @@ spring:
             allowedOrigins:
               - "http://localhost:4000"
               - "http://localhost:4001"
-              - "http://34.41.171.65:3000"
-              - "http://34.41.171.65:3001"
-              - "http://107.178.215.37:4000"
-              - "http://107.178.215.37:4001"
+              - "http://35.209.79.193:4000"
+              - "http://35.209.79.193:4001"
+              - "http://35.209.225.8:3000"
+              - "http://35.209.225.8:3001"
               - "http://frontend-web-arcbank:80"
               - "http://frontend-cajero-arcbank:80"
               # HTTPS sslip.io domains
-              - "https://arcbank.107-178-215-37.sslip.io"
-              - "https://arcbank.107-178-215-37.sslip.io:8443"
-              - "https://bantec.34-41-171-65.sslip.io"
-              - "https://bantec.34-41-171-65.sslip.io:8443"
+              - "https://arcbank.35-209-79-193.sslip.io"
+              - "https://arcbank.35-209-79-193.sslip.io:8443"
+              - "https://bantec.35-209-225-8.sslip.io"
+              - "https://bantec.35-209-225-8.sslip.io:8443"
             allowedMethods:
               - GET
               - POST
@@ -80,6 +80,43 @@ spring:
           uri: http://ms-transaccion-arcbank:8080
           predicates:
             - Path=/api/bancos/**
+
+        # RUTAS DE DOCUMENTACIÓN (Discovery for API Manager)
+        - id: clientes-docs
+          uri: http://micro-clientes-arcbank:8080
+          predicates:
+            - Path=/v3/api-docs/clientes/**
+          filters:
+            - RewritePath=/v3/api-docs/clientes/(?<segment>.*), /v3/api-docs/$\{segment}
+
+        - id: cuentas-docs
+          uri: http://micro-cuentas-arcbank:8081
+          predicates:
+            - Path=/v3/api-docs/cuentas/**
+          filters:
+            - RewritePath=/v3/api-docs/cuentas/(?<segment>.*), /v3/api-docs/$\{segment}
+
+        - id: transacciones-docs
+          uri: http://ms-transaccion-arcbank:8080
+          predicates:
+            - Path=/v3/api-docs/transacciones/**
+          filters:
+            - RewritePath=/v3/api-docs/transacciones/(?<segment>.*), /v3/api-docs/$\{segment}
+
+# Swagger UI Centralizado
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui.html
+    urls:
+      - name: 1. Micro Clientes
+        url: /v3/api-docs/clientes
+      - name: 2. Micro Cuentas
+        url: /v3/api-docs/cuentas
+      - name: 3. MS Transacción
+        url: /v3/api-docs/transacciones
 
 # Configuración para ver los logs de ruteo (útil para debug)
 logging:
