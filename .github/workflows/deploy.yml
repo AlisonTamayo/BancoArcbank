@@ -16,26 +16,35 @@ jobs:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          command_timeout: 30m
+          command_timeout: 40m
           script: |
-            # Ensure swap exists for builds
-            if [ ! -f /swapfile ]; then
-              sudo fallocate -l 2G /swapfile
-              sudo chmod 600 /swapfile
-              sudo mkswap /swapfile
-              sudo swapon /swapfile
-            fi
+            # Entrar al directorio del proyecto (Corregido: BancoArcbank)
+            cd ~/BancoArcbank || { echo "❌ Carpeta ~/BancoArcbank no encontrada"; exit 1; }
             
-            cd ~/ARCBANK
+            # Asegurar que Git no dé problemas de permisos
+            git config --global --add safe.directory "*"
+            
+            # Actualizar código
+            echo "📥 Actualizando código desde GitHub..."
+            git reset --hard HEAD
             git pull origin main
             
-            # Build with no-cache to ensure fresh images
-            sudo docker compose -f docker-compose.prod.yml build --no-cache
+            # Limpiar el sistema para evitar errores de espacio
+            echo "🧹 Limpiando imágenes y contenedores antiguos..."
+            sudo docker system prune -f
             
-            # Force recreate ALL containers with new images
-            sudo docker compose -f docker-compose.prod.yml up -d --force-recreate --remove-orphans
+            # Construir y levantar con Docker Compose
+            # Se usa el archivo de producción
+            echo "🚀 Iniciando construcción y despliegue..."
+            sudo docker-compose -f docker-compose.prod.yml build --no-cache
+            sudo docker-compose -f docker-compose.prod.yml up -d --force-recreate --remove-orphans
             
-            # Restart nginx to ensure config is loaded
+            # Reiniciar Nginx (específicamente por los mapeos de certificados y config)
+            echo "🔄 Reiniciando Proxy Nginx..."
             sudo docker restart nginx-proxy-arcbank || true
             
-            echo "✅ ARCBANK Deploy completado: $(date)"
+            # Reportar estado final
+            echo "📊 Estado actual de los contenedores:"
+            sudo docker ps
+            
+            echo "✅ ARCBANK Deploy completado exitosamente: $(date)"

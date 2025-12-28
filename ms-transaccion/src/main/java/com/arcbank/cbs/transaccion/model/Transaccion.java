@@ -34,8 +34,6 @@ public class Transaccion {
     @Column(name = "\"IdTransaccionReversa\"")
     private Integer idTransaccionReversa;
 
-    // Valores permitidos por tu CHECK: DEPOSITO, RETIRO, TRANSFERENCIA_INTERNA,
-    // ETC.
     @Column(name = "\"TipoOperacion\"", nullable = false, length = 30)
     private String tipoOperacion;
 
@@ -75,7 +73,6 @@ public class Transaccion {
     @Column(name = "\"Estado\"", nullable = false, length = 20)
     private String estado;
 
-    // Establece valores por defecto antes de insertar
     @PrePersist
     public void prePersist() {
         if (this.estado == null)

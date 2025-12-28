@@ -23,7 +23,7 @@ public class ClienteServiceImpl implements ClienteService {
         cliente.setTipoIdentificacion(request.getTipoIdentificacion());
         cliente.setIdentificacion(request.getIdentificacion());
         cliente.setFechaRegistro(LocalDate.now());
-        cliente.setEstado("ACTIVO"); // Valor inicial correcto
+        cliente.setEstado("ACTIVO");
 
         Cliente guardado = clienteRepository.save(cliente);
         return toDTO(guardado);
@@ -59,12 +59,10 @@ public class ClienteServiceImpl implements ClienteService {
         Cliente cliente = clienteRepository.findByIdentificacion(identificacion)
                 .orElseThrow(() -> new RuntimeException("Cliente no encontrado"));
 
-        // Validar contraseña
         if (cliente.getClave() == null || !cliente.getClave().equals(clave)) {
             throw new RuntimeException("Contraseña incorrecta");
         }
 
-        // Validar estado activo
         if (!"ACTIVO".equals(cliente.getEstado())) {
             throw new RuntimeException("Cliente no activo");
         }
@@ -74,7 +72,7 @@ public class ClienteServiceImpl implements ClienteService {
 
     private ClienteResponseDTO toDTO(Cliente entity) {
         ClienteResponseDTO dto = new ClienteResponseDTO();
-        dto.setIdCliente(entity.getIdCliente()); // ahora Integer
+        dto.setIdCliente(entity.getIdCliente());
         dto.setTipoCliente(entity.getTipoCliente());
         dto.setTipoIdentificacion(entity.getTipoIdentificacion());
         dto.setIdentificacion(entity.getIdentificacion());

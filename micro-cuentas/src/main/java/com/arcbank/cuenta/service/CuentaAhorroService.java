@@ -29,7 +29,6 @@ public class CuentaAhorroService {
 
     @Transactional
     public CuentaAhorroDTO create(CuentaAhorroRequest request) {
-        // Validación de existencia del Tipo de Cuenta
         TipoCuentaAhorro tipo = tipoRepo.findById(request.getIdTipoCuenta())
                 .orElseThrow(
                         () -> new EntityNotFoundException("TipoCuenta no encontrada: " + request.getIdTipoCuenta()));
@@ -40,9 +39,8 @@ public class CuentaAhorroService {
         c.setIdSucursalApertura(request.getIdSucursalApertura());
         c.setTipoCuenta(tipo);
         c.setSaldoActual(request.getSaldoInicial());
-        c.setSaldoDisponible(request.getSaldoInicial()); // Inicialmente iguales
+        c.setSaldoDisponible(request.getSaldoInicial());
         c.setEstado("ACTIVA");
-        // FechaApertura se setea en @PrePersist de la Entidad o aquí:
         c.setFechaApertura(java.time.LocalDate.now());
 
         CuentaAhorro saved = cuentaRepo.save(c);
@@ -69,7 +67,6 @@ public class CuentaAhorroService {
     }
 
     public CuentaAhorroDTO findByNumeroCuenta(String numeroCuenta) {
-        // Limpiar posibles ceros al inicio del número de cuenta
         String numLimpio = numeroCuenta.replaceFirst("^0+", "");
         return cuentaRepo.findByNumeroCuenta(numLimpio)
                 .map(this::toDTO)
@@ -78,16 +75,11 @@ public class CuentaAhorroService {
                         .orElseThrow(() -> new EntityNotFoundException("Cuenta no encontrada: " + numeroCuenta)));
     }
 
-    /**
-     * MÉTODO CRÍTICO: Usado por ms-transaccion para actualizar saldos.
-     * Recibe el nuevo saldo total calculado por el microservicio de transacciones.
-     */
     @Transactional
     public void actualizarSaldo(Integer id, BigDecimal nuevoSaldo) {
         CuentaAhorro c = cuentaRepo.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Cuenta no encontrada ID: " + id));
 
-        // Actualizamos ambos saldos (Contable y Disponible)
         c.setSaldoActual(nuevoSaldo);
         c.setSaldoDisponible(nuevoSaldo);
         c.setFechaUltimaTransaccion(LocalDateTime.now());
@@ -95,9 +87,6 @@ public class CuentaAhorroService {
         cuentaRepo.save(c);
         log.info("Saldo actualizado para cuenta ID {}: Nuevo Saldo {}", id, nuevoSaldo);
     }
-
-    // Eliminé deposit/withdraw internos porque esa lógica ahora reside centralizada
-    // en ms-transaccion
 
     private CuentaAhorroDTO toDTO(CuentaAhorro c) {
         CuentaAhorroDTO dto = new CuentaAhorroDTO();

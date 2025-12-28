@@ -19,11 +19,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-/**
- * Proxy controller para obtener la lista de bancos conectados al switch
- * El frontend llama a este endpoint para mostrar los bancos disponibles
- * para transferencias interbancarias
- */
 @Slf4j
 @RestController
 @RequestMapping("/api/bancos")
@@ -37,17 +32,12 @@ public class BancosController {
     @Value("${app.switch.network-url:http://network-management:8082}")
     private String networkManagementUrl;
 
-    /**
-     * Lista los bancos conectados al switch DIGICONECU
-     * Filtra el banco propio (BANTEC) ya que no se puede transferir a sí mismo
-     */
     @GetMapping
     @Operation(summary = "Listar bancos disponibles para transferencias interbancarias")
     public ResponseEntity<?> listarBancos() {
         try {
             log.info("Consultando bancos del switch DIGICONECU en: {}", networkManagementUrl);
 
-            // Llamar directamente a network-management para obtener la lista de bancos
             String url = networkManagementUrl + "/api/v1/red/bancos";
             ResponseEntity<List<Map<String, Object>>> response = restTemplate.exchange(
                     url,
@@ -61,7 +51,6 @@ public class BancosController {
                 bancos = List.of();
             }
 
-            // Filtrar el banco propio (ARCBANK no puede transferir a sí mismo)
             List<Map<String, Object>> bancosExternos = bancos.stream()
                     .filter(b -> !"ARCBANK".equals(b.get("codigo")))
                     .toList();
@@ -75,7 +64,6 @@ public class BancosController {
         } catch (Exception e) {
             log.error("Error consultando bancos del switch: {}", e.getMessage());
 
-            // Retornar lista vacía si el switch no está disponible
             return ResponseEntity.ok(Map.of(
                     "bancos", List.of(),
                     "total", 0,
@@ -83,9 +71,6 @@ public class BancosController {
         }
     }
 
-    /**
-     * Health check de la conexión con el switch
-     */
     @GetMapping("/health")
     @Operation(summary = "Verificar conexión con el switch interbancario")
     public ResponseEntity<?> healthCheck() {

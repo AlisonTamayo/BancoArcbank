@@ -2,28 +2,56 @@ package com.arcbank.cbs.transaccion.dto;
 
 import lombok.*;
 import java.math.BigDecimal;
-import java.util.UUID;
 
-/**
- * DTO para enviar transferencias al Switch DIGICONECU
- */
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class SwitchTransferRequest {
-    
-    private UUID instructionId;
-    
-    private String bancoOrigen;      // "BANTEC"
-    
-    private String cuentaOrigen;     // Número de cuenta origen (no ID interno)
-    
-    private String cuentaDestino;    // Número de cuenta destino (otro banco)
-    
-    private BigDecimal monto;
-    
-    private String moneda;           // "USD"
-    
-    private String concepto;
+
+    private Header header;
+    private Body body;
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class Header {
+        private String messageId;
+        private String creationDateTime;
+        private String originatingBankId;
+    }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class Body {
+        private String instructionId;
+        private String endToEndId;
+        private Amount amount;
+        private Party debtor;
+        private Party creditor;
+        private String remittanceInformation;
+    }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class Amount {
+        private String currency;
+        private BigDecimal value;
+    }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class Party {
+        private String name;
+        private String accountId;
+        private String accountType;
+        private String targetBankId;
+    }
 }

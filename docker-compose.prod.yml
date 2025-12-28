@@ -1,7 +1,7 @@
 version: '3.8'
 
 networks:
-  arcbank-prod-net:
+  arcbank2-net:
     driver: bridge
 
 services:
@@ -25,7 +25,7 @@ services:
       - frontend-cajero-arcbank
       - api-gateway-arcbank
     networks:
-      - arcbank-prod-net
+      - arcbank2-net
     restart: always
 
   # ==========================================
@@ -46,7 +46,7 @@ services:
       - micro-cuentas-arcbank
       - ms-transaccion-arcbank
     networks:
-      - arcbank-prod-net
+      - arcbank2-net
     environment:
       - PAYMENT_HOST=ms-transaccion-arcbank
       - CLIENT_HOST=micro-clientes-arcbank
@@ -68,7 +68,7 @@ services:
       - postgres_data_cuentas_arcbank:/var/lib/postgresql/data
     restart: always
     networks:
-      - arcbank-prod-net
+      - arcbank2-net
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -U postgres" ]
       interval: 10s
@@ -92,7 +92,7 @@ services:
       db-cuentas-arcbank:
         condition: service_healthy
     networks:
-      - arcbank-prod-net
+      - arcbank2-net
 
   # ==========================================
   # 2. MICROSERVICIO CLIENTES ARCBANK (Puerto 4083)
@@ -110,7 +110,7 @@ services:
       - postgres_data_clientes_arcbank:/var/lib/postgresql/data
     restart: always
     networks:
-      - arcbank-prod-net
+      - arcbank2-net
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -U postgres" ]
       interval: 10s
@@ -136,10 +136,10 @@ services:
       db-clientes-arcbank:
         condition: service_healthy
     networks:
-      - arcbank-prod-net
+      - arcbank2-net
 
   # ==========================================
-  # 3. MICROSERVICIO TRANSACCIONES ARCBANK (Puerto 4082)
+  # 3. MICROSERVICIO TRANSACCIONES ARCBANK
   # ==========================================
   db-transacciones-arcbank:
     image: postgres:15-alpine
@@ -154,7 +154,7 @@ services:
       - postgres_data_transacciones_arcbank:/var/lib/postgresql/data
       - ./ms-transaccion/init.sql:/docker-entrypoint-initdb.d/init.sql
     networks:
-      - arcbank-prod-net
+      - arcbank2-net
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -U postgres" ]
       interval: 10s
@@ -175,21 +175,13 @@ services:
       DB_PASS: admin
       SERVER_PORT: 8080
       CUENTAS_URL: http://micro-cuentas-arcbank:8081
-      # Switch Interbancario DIGICONECU (IP PUBLICA)
-      APP_SWITCH_URL: http://35.208.155.21:9080
+      # USAMOS LA IP ESTATICA QUE DEFINIMOS
+      APP_SWITCH_URL: ${SWITCH_URL:-http://10.128.0.8:8000/v1/arcbank}
       BANCO_CODIGO: ARCBANK
-      # Configuración SSL para mTLS
-      SSL_ENABLED: "true"
-      SSL_KEYSTORE_PATH: "file:/app/certs/arcbank.p12"
-      SSL_KEYSTORE_PASSWORD: "changeit"
-      SSL_TRUSTSTORE_PATH: "file:/app/certs/truststore.p12"
-      SSL_TRUSTSTORE_PASSWORD: "changeit"
     ports:
       - "4082:8080"
-    volumes:
-      - ./ms-transaccion/certs:/app/certs:ro
     networks:
-      - arcbank-prod-net
+      - arcbank2-net # Solo necesita su red interna local
 
   # ==========================================
   # 4. FRONTEND WEB ARCBANK (Accesible solo via Nginx)
@@ -208,7 +200,7 @@ services:
     depends_on:
       - api-gateway-arcbank
     networks:
-      - arcbank-prod-net
+      - arcbank2-net
 
   # ==========================================
   # 5. FRONTEND CAJERO ARCBANK (Accesible solo via Nginx)
@@ -227,7 +219,7 @@ services:
     depends_on:
       - api-gateway-arcbank
     networks:
-      - arcbank-prod-net
+      - arcbank2-net
 
   # ==========================================
   # 6. MONGODB PARA SUCURSALES
@@ -241,7 +233,7 @@ services:
       - mongodb_data_sucursales_arcbank:/data/db
     restart: always
     networks:
-      - arcbank-prod-net
+      - arcbank2-net
 
   # ==========================================
   # 7. MICROSERVICIO SUCURSALES (Puerto 8080 interno)
@@ -257,7 +249,7 @@ services:
     depends_on:
       - db-sucursales-arcbank
     networks:
-      - arcbank-prod-net
+      - arcbank2-net
 
 volumes:
   postgres_data_cuentas_arcbank:

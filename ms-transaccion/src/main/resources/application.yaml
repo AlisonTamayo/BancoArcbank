@@ -18,7 +18,7 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: create
+      ddl-auto: update
       # CRÍTICO: Esto evita que Hibernate convierta "IdTransaccion" a "id_transaccion".
       # Al usar tablas con comillas en Postgres, necesitamos respetar las mayúsculas exactas de tu SQL.
       naming:
@@ -47,14 +47,14 @@ app:
     codigo: ${BANCO_CODIGO:ARCBANK}
   
   # Configuración SSL/TLS para mTLS (Mutual Authentication)
-  ssl:
-    enabled: ${SSL_ENABLED:true}
+  mtls:
+    enabled: ${MTLS_ENABLED:true}
     keystore:
-      path: ${SSL_KEYSTORE_PATH:file:/app/certs/arcbank.p12}
-      password: ${SSL_KEYSTORE_PASSWORD:changeit}
+      path: ${MTLS_KEYSTORE_PATH:file:/app/certs/arcbank-keystore.p12}
+      password: ${MTLS_KEYSTORE_PASSWORD:arcbank123}
     truststore:
-      path: ${SSL_TRUSTSTORE_PATH:file:/app/certs/truststore.p12}
-      password: ${SSL_TRUSTSTORE_PASSWORD:changeit}
+      path: ${MTLS_TRUSTSTORE_PATH:file:/app/certs/arcbank-truststore.p12}
+      password: ${MTLS_TRUSTSTORE_PASSWORD:arcbank123}
 
 
 # --- CONFIGURACIÓN SWAGGER / OPENAPI ---

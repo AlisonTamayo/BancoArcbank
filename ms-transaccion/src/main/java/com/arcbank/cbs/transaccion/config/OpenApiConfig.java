@@ -20,12 +20,10 @@ public class OpenApiConfig {
 
     @Bean
     public OpenAPI myOpenAPI() {
-        // Definición de Servidores (Local, Dev, Prod)
         Server localServer = new Server();
         localServer.setUrl("http://localhost:" + serverPort);
         localServer.setDescription("Servidor Local (Desarrollo)");
 
-        // Información de la API según OAS 3.0
         Contact contact = new Contact();
         contact.setEmail("dev@arcbank.com");
         contact.setName("Equipo de Desarrollo ArcBank");
@@ -36,8 +34,10 @@ public class OpenApiConfig {
                 .title("Microservicio de Transacciones API")
                 .version("1.0")
                 .contact(contact)
-                .description("API RESTful para la gestión de movimientos financieros (Depósitos, Retiros, Transferencias). " +
-                        "Sigue el estilo arquitectónico Resource-Oriented.")
+                .description(
+                        "API RESTful para la gestión de movimientos financieros (Depósitos, Retiros, Transferencias). "
+                                +
+                                "Sigue el estilo arquitectónico Resource-Oriented.")
                 .license(mitLicense);
 
         return new OpenAPI().info(info).servers(List.of(localServer));
