@@ -33,6 +33,14 @@ public class GlobalExceptionHandler {
                 .body(Map.of("error", ex.getMessage()));
     }
 
+    @ExceptionHandler(com.arcbank.MicroCliente.exception.AuthenticationException.class)
+    public ResponseEntity<Map<String, String>> handleAuthentication(
+            com.arcbank.MicroCliente.exception.AuthenticationException ex) {
+
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(Map.of("error", ex.getMessage()));
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, String>> handleOther(Exception ex) {
         log.error("Error inesperado", ex);

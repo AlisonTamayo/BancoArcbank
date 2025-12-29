@@ -57,14 +57,15 @@ public class ClienteServiceImpl implements ClienteService {
     @Override
     public ClienteResponseDTO login(String identificacion, String clave) {
         Cliente cliente = clienteRepository.findByIdentificacion(identificacion)
-                .orElseThrow(() -> new RuntimeException("Cliente no encontrado"));
+                .orElseThrow(() -> new com.arcbank.MicroCliente.exception.AuthenticationException(
+                        "Credenciales incorrectas"));
 
         if (cliente.getClave() == null || !cliente.getClave().equals(clave)) {
-            throw new RuntimeException("Contraseña incorrecta");
+            throw new com.arcbank.MicroCliente.exception.AuthenticationException("Credenciales incorrectas");
         }
 
         if (!"ACTIVO".equals(cliente.getEstado())) {
-            throw new RuntimeException("Cliente no activo");
+            throw new com.arcbank.MicroCliente.exception.AuthenticationException("Cliente no activo o bloqueado");
         }
 
         return toDTO(cliente);
