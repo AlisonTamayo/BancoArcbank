@@ -1,18 +1,29 @@
-target/
-*.jar
-.mvn/
-mvnw
-mvnw.cmd
-postgres_data*/
-mongodb_data*/
-.git/
+# Git
+.git
 .gitignore
-.dockerignore
-bin/
-obj/
-node_modules/
-dist/
-build/
-.vscode/
-.idea/
+.gitattributes
+
+# Maven
+target
+**/target
+
+# Node
+node_modules
+**/node_modules
+
+# Docker volumes / DB
+postgres_data*
+mongo_data*
+**/postgres_data*
+**/mongo_data*
+
+# Logs
 *.log
+
+# IDE
+.vscode
+.idea
+
+# Certs locales
+*.pem
+*.p12

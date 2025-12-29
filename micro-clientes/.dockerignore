@@ -1,11 +1,7 @@
-target/
-*.jar
-postgres_data/
-postgres_data_cuentas/
-postgres_data_clientes/
-postgres_data_transacciones/
-mongodb_data/
+target
 .git
-.idea
-.vscode
-*.log
+.gitignore
+.gitattributes
+postgres_data*
+mongo_data*
+node_modules
