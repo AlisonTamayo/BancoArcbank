@@ -1,6 +1,7 @@
 package com.arcbank.cbs.transaccion.config;
 
 import feign.Client;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.client5.http.impl.classic.HttpClients;
 import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManagerBuilder;
@@ -9,14 +10,15 @@ import org.apache.hc.client5.http.ssl.SSLConnectionSocketFactory;
 import org.apache.hc.core5.ssl.SSLContextBuilder;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
+// import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.Resource;
 
 import javax.net.ssl.SSLContext;
 import java.io.InputStream;
 import java.security.KeyStore;
 
-@Configuration
+// @Configuration
+@Slf4j
 public class MTLSConfig {
 
     @Value("${app.mtls.keystore.path:classpath:certs/arcbank-keystore.p12}")
@@ -39,6 +41,19 @@ public class MTLSConfig {
         if (!mtlsEnabled) {
             return new Client.Default(null, null);
         }
+
+        // --- FALLBACK ROBUSTO: Si faltan certificados, deshabilitar mTLS para evitar
+        // crash ---
+        if (!keystoreResource.exists() || !truststoreResource.exists()) {
+            log.error(
+                    "⚠️ [CRITICAL] Certificados mTLS no encontrados. Desactivando mTLS para evitar crash de la aplicación.");
+            log.error("Expectativa Keystore: {}", keystoreResource);
+            log.error("Expectativa Truststore: {}", truststoreResource);
+
+            // Retornamos cliente básico para permitir operaciones internas
+            return new Client.Default(null, null);
+        }
+        // -----------------------------------------------------------------------------------
 
         KeyStore keyStore = KeyStore.getInstance("PKCS12");
         try (InputStream keyStoreStream = keystoreResource.getInputStream()) {
