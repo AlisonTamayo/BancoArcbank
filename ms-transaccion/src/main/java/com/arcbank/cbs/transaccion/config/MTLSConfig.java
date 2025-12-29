@@ -10,14 +10,16 @@ import org.apache.hc.client5.http.ssl.SSLConnectionSocketFactory;
 import org.apache.hc.core5.ssl.SSLContextBuilder;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
-// import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.Resource;
 
 import javax.net.ssl.SSLContext;
 import java.io.InputStream;
 import java.security.KeyStore;
 
-// @Configuration
+import feign.RequestInterceptor;
+
+@Configuration
 @Slf4j
 public class MTLSConfig {
 
@@ -35,6 +37,18 @@ public class MTLSConfig {
 
     @Value("${app.mtls.enabled:false}")
     private boolean mtlsEnabled;
+
+    @Value("${app.switch.apikey:}")
+    private String apiKey;
+
+    @Bean
+    public RequestInterceptor requestInterceptor() {
+        return requestTemplate -> {
+            if (apiKey != null && !apiKey.isBlank()) {
+                requestTemplate.header("apikey", apiKey);
+            }
+        };
+    }
 
     @Bean
     public Client feignClient() throws Exception {

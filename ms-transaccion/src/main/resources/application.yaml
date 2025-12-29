@@ -41,6 +41,7 @@ app:
   switch:
     url: ${APP_SWITCH_URL:http://35.208.155.21:9080}
     network-url: ${APP_SWITCH_URL:http://35.208.155.21:9080}
+    apikey: ${APP_SWITCH_APIKEY:}
   
   # Código del banco (para identificarse ante el switch)
   banco:
@@ -48,12 +49,12 @@ app:
   
   # Configuración SSL/TLS para mTLS (Mutual Authentication)
   mtls:
-    enabled: ${MTLS_ENABLED:true}
+    enabled: ${MTLS_ENABLED:false}
     keystore:
-      path: ${MTLS_KEYSTORE_PATH:file:/app/certs/arcbank-keystore.p12}
+      path: ${MTLS_KEYSTORE_PATH:classpath:certs/arcbank-keystore.p12}
       password: ${MTLS_KEYSTORE_PASSWORD:arcbank123}
     truststore:
-      path: ${MTLS_TRUSTSTORE_PATH:file:/app/certs/arcbank-truststore.p12}
+      path: ${MTLS_TRUSTSTORE_PATH:classpath:certs/arcbank-truststore.p12}
       password: ${MTLS_TRUSTSTORE_PASSWORD:arcbank123}
 
 

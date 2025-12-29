@@ -151,10 +151,9 @@ services:
       # Switch Interbancario DIGICONECU
       APP_SWITCH_URL: ${SWITCH_URL:-http://payment-processing:8081}
       BANCO_CODIGO: ARCBANK
+      APP_SWITCH_APIKEY: ${APP_SWITCH_APIKEY:-ARCBANK_SECRET_KEY_2025_XYZ}
     ports:
       - "4082:8080" # Acceso directo (backup)
-    volumes:
-      - ./nginx/certs:/app/certs:ro
     networks:
       - arcbank2-net
       - switch-transaccional-network

@@ -178,10 +178,10 @@ services:
       # USAMOS LA IP ESTATICA QUE DEFINIMOS
       APP_SWITCH_URL: ${SWITCH_URL:-http://10.128.0.8:8000/v1/arcbank}
       BANCO_CODIGO: ARCBANK
+      # API Key para autenticación con Kong
+      APP_SWITCH_APIKEY: ${APP_SWITCH_APIKEY:-ARCBANK_SECRET_KEY_2025_XYZ}
     ports:
       - "4082:8080"
-    volumes:
-      - ./nginx/certs:/app/certs:ro
     networks:
       - arcbank2-net # Solo necesita su red interna local
 
