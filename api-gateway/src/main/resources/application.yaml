@@ -13,8 +13,8 @@ spring:
             allowedOrigins:
               - "http://localhost:4000"
               - "http://localhost:4001"
-              - "http://35.209.155.21:4000"
-              - "http://35.209.155.21:4001"
+              - "http://35.208.155.21:4000"
+              - "http://35.208.155.21:4001"
               - "http://35.209.79.193:3000"
               - "http://35.209.79.193:3001"
               - "http://frontend-web-arcbank:80"
@@ -22,8 +22,8 @@ spring:
               # HTTPS sslip.io domains
               - "https://arcbank.35-209-79-193.sslip.io"
               - "https://arcbank.35-209-79-193.sslip.io:8443"
-              - "https://bantec.35-209-155-21.sslip.io"
-              - "https://bantec.35-209-155-21.sslip.io:8443"
+              - "https://bantec.35-208-155-21.sslip.io"
+              - "https://bantec.35-208-155-21.sslip.io:8443"
             allowedMethods:
               - GET
               - POST
