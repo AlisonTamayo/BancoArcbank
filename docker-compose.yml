@@ -153,6 +153,8 @@ services:
       BANCO_CODIGO: ARCBANK
     ports:
       - "4082:8080" # Acceso directo (backup)
+    volumes:
+      - ./nginx/certs:/app/certs:ro
     networks:
       - arcbank2-net
       - switch-transaccional-network
