@@ -15,10 +15,16 @@ spring:
               - "http://localhost:4001"
               - "http://35.208.155.21:4000"
               - "http://35.208.155.21:4001"
+              - "http://35.208.155.21"
+              - "https://35.208.155.21"
+              - "https://35.208.155.21:4000"
+              - "https://35.208.155.21:4001"
+
               - "http://35.209.79.193:3000"
               - "http://35.209.79.193:3001"
               - "http://frontend-web-arcbank:80"
               - "http://frontend-cajero-arcbank:80"
+
               # HTTPS sslip.io domains
               - "https://arcbank.35-209-79-193.sslip.io"
               - "https://arcbank.35-209-79-193.sslip.io:8443"
