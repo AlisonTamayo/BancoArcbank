@@ -11,7 +11,13 @@ jobs:
     environment: production
     
     steps:
-      - name: Deploy to VM via SSH
+      - name: Debug secrets
+        run: |
+          echo "SSH_HOST loaded -> ${{ secrets.SSH_HOST != '' }}"
+          echo "SSH_USER loaded -> ${{ secrets.SSH_USER != '' }}"
+          echo "SSH_PRIVATE_KEY loaded -> ${{ secrets.SSH_PRIVATE_KEY != '' }}"
+
+      - name: Deploy ARCBANK via SSH
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SSH_HOST }}
@@ -20,33 +26,65 @@ jobs:
           port: 22
           command_timeout: 40m
           script: |
-            # Entrar al directorio del proyecto (Corregido: BancoArcbank)
-            cd ~/BancoArcbank || { echo "❌ Carpeta ~/BancoArcbank no encontrada"; exit 1; }
-            
-            # Asegurar que Git no dé problemas de permisos
+            echo "📌 Inicio de deploy ARCBANK: $(date)"
+
+            # Crear swap si no existe
+            if [ ! -f /swapfile ]; then
+              echo "📝 Creando swap de 2GB..."
+              sudo fallocate -l 2G /swapfile
+              sudo chmod 600 /swapfile
+              sudo mkswap /swapfile
+              sudo swapon /swapfile
+            fi
+
+            # Clonar o actualizar repositorio
+            if [ ! -d ~/BancoArcbank ]; then
+              echo "📥 Clonando repositorio ARCBANK..."
+              cd ~
+              git clone https://github.com/AlisonTamayo/BancoArcbank.git
+            fi
+
+            cd ~/BancoArcbank
+            echo "🔄 Actualizando código desde main..."
+            git fetch origin main
+            git reset --hard origin/main
             git config --global --add safe.directory "*"
-            
-            # Actualizar código
-            echo "📥 Actualizando código desde GitHub..."
-            git reset --hard HEAD
-            git pull origin main
-            
-            # Limpiar el sistema para evitar errores de espacio
+
+            # Preparar certificados
+            echo "🔐 Verificando certificados..."
+
+            # mTLS para comunicación microservices
+            if [ ! -f ~/BancoArcbank/ms-transaccion/src/main/resources/certs/arcbank-keystore.p12 ]; then
+              echo "📝 Generando certificados mTLS por defecto..."
+              chmod +x ~/BancoArcbank/generate-mtls-certs.sh
+              ~/BancoArcbank/generate-mtls-certs.sh
+            fi
+
+            # Certificados SSL para Nginx
+            mkdir -p ~/BancoArcbank/nginx/certs
+            if [ ! -f ~/BancoArcbank/nginx/certs/fullchain.pem ]; then
+              echo "📝 Generando certificados SSL autofirmados para Nginx..."
+              openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+                -keyout ~/BancoArcbank/nginx/certs/privkey.pem \
+                -out ~/BancoArcbank/nginx/certs/fullchain.pem \
+                -subj "/C=EC/ST=Pichincha/L=Quito/O=Arcbank/CN=35.208.155.21"
+            fi
+
+            # Limpiar Docker antes del build
             echo "🧹 Limpiando imágenes y contenedores antiguos..."
             sudo docker system prune -f
-            
-            # Construir y levantar con Docker Compose
-            # Se usa el archivo de producción
-            echo "🚀 Iniciando construcción y despliegue..."
+
+            # Construir y levantar con docker-compose (producción)
+            echo "🚀 Construyendo y desplegando Docker Compose..."
             sudo docker-compose -f docker-compose.prod.yml build --no-cache
             sudo docker-compose -f docker-compose.prod.yml up -d --force-recreate --remove-orphans
-            
-            # Reiniciar Nginx (específicamente por los mapeos de certificados y config)
+
+            # Reiniciar Nginx Proxy para aplicar certificados y configs
             echo "🔄 Reiniciando Proxy Nginx..."
             sudo docker restart nginx-proxy-arcbank || true
-            
-            # Reportar estado final
-            echo "📊 Estado actual de los contenedores:"
+
+            # Mostrar estado final de contenedores
+            echo "📊 Estado actual de contenedores:"
             sudo docker ps
-            
-            echo "✅ ARCBANK Deploy completado exitosamente: $(date)"
+
+            echo "✅ Deploy ARCBANK completado: $(date)"
