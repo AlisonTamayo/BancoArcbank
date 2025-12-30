@@ -4,7 +4,7 @@ import { getMovimientos } from '../services/bancaApi'
 import './Movimientos.css'
 
 export default function Movimientos() {
-  const { state } = useAuth()
+  const { state, refreshAccounts } = useAuth()
 
   // Estado de cuenta seleccionada (Guardamos el ID para el backend)
   const [selectedAccId, setSelectedAccId] = useState('')
@@ -31,6 +31,9 @@ export default function Movimientos() {
 
     setLoading(true)
     try {
+      // Refrescar saldos de cuentas primero
+      await refreshAccounts()
+
       const resp = await getMovimientos(selectedAccId)
       console.log('Movimientos recibidos:', resp)
 

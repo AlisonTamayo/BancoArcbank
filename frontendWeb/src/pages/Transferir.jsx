@@ -4,7 +4,7 @@ import { realizarTransferencia, getCuentaPorNumero } from '../services/bancaApi'
 import { useNavigate } from "react-router-dom";
 
 export default function Transfer() {
-    const { state } = useAuth();
+    const { state, refreshAccounts } = useAuth();
     const navigate = useNavigate();
 
     // 1. Cargar cuentas origen del usuario
@@ -94,6 +94,9 @@ export default function Transfer() {
             }
 
             await realizarTransferencia(request);
+
+            // Refrescar saldos después de la operación exitosa
+            await refreshAccounts();
 
             setStep(4);
             setTimeout(() => { navigate('/movimientos'); }, 3000);

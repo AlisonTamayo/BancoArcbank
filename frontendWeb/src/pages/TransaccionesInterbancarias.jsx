@@ -4,7 +4,7 @@ import { realizarTransferenciaInterbancaria, getBancos } from '../services/banca
 import { useNavigate } from "react-router-dom";
 
 export default function TransaccionesInterbancarias() {
-    const { state, addTransaction } = useAuth(); // addTransaction es opcional si solo usas backend
+    const { state, refreshAccounts } = useAuth();
     const navigate = useNavigate();
 
     // Cuentas del usuario (Manejo defensivo si aún no cargan)
@@ -93,6 +93,9 @@ export default function TransaccionesInterbancarias() {
             }
 
             await realizarTransferenciaInterbancaria(request);
+
+            // Refrescar saldos después de la operación exitosa
+            await refreshAccounts();
 
             // Éxito
             setStep(4);

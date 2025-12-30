@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react'
+import { getConsolidada } from '../services/bancaApi'
 
 // URL Base del Gateway - vacío para usar rutas relativas (nginx hace proxy a api-gateway)
 export const API_BASE = ''
@@ -173,6 +174,24 @@ export function AuthProvider({ children }) {
     })
   }
 
+  const refreshAccounts = async () => {
+    const id = state.user && state.user.identificacion
+    if (!id) return
+
+    try {
+      const cuentasRaw = await getConsolidada(id)
+      const mapped = (cuentasRaw || []).map(c => ({
+        id: String(c.idCuenta),
+        number: c.numeroCuenta,
+        type: c.idTipoCuenta === 1 ? "Ahorros" : "Corriente",
+        balance: Number(c.saldoDisponible || c.saldoActual || 0)
+      }))
+      setUserAccounts(mapped)
+    } catch (e) {
+      console.error('❌ Error refrescando cuentas:', e)
+    }
+  }
+
   return (
     <AuthContext.Provider value={{
       state,
@@ -182,7 +201,8 @@ export function AuthProvider({ children }) {
       updateUser,
       persistIdentification,
       setUserAccounts,
-      addTransaction
+      addTransaction,
+      refreshAccounts
     }}>
       {children}
     </AuthContext.Provider>
