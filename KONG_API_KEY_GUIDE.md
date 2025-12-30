@@ -61,19 +61,14 @@ Una **API Key** es un código secreto único que identifica y autentica a tu ban
 
 ### ✅ Paso 1: Generar tu API Key (Ya hecho)
 
-Ya tienes una API Key de ejemplo en tu código:
+Ya tienes una API Key 
 ```
 ARCBANK_SECRET_KEY_2025_XYZ
 ```
 
-**Opcional**: Puedes generar una más segura con este comando (PowerShell):
-```powershell
--join ((65..90) + (97..122) + (48..57) | Get-Random -Count 32 | % {[char]$_})
-```
-
 ### ✅ Paso 2: Configurar la API Key en tu aplicación (Ya hecho)
 
-Hemos configurado:
+configurado:
 
 **a) `MTLSConfig.java`**: Intercepta todas las peticiones Feign y añade el header `apikey`
 
@@ -100,7 +95,7 @@ Debes ir a la interfaz web de Kong y registrar tu API Key manualmente:
 
 #### 3.1. Acceder a Kong Admin UI
 ```
-URL: http://35.208.155.21:1337
+URL: 
 ```
 
 #### 3.2. Crear Consumer (Consumidor)
@@ -188,7 +183,7 @@ Antes de hacer una transferencia interbancaria, verifica:
 - [ ] **Consumer creado en Kong**: `banco-arcbank`
 - [ ] **API Key registrada en Kong**: Igual a la de tu código
 - [ ] **Certificados mTLS presentes**: En `./nginx/certs/`
-- [ ] **URL del Switch correcta**: `http://35.208.155.21:9080`
+- [ ] **URL del Switch correcta**: ``
 - [ ] **Código del banco configurado**: `ARCBANK`
 
 ---

@@ -1,76 +1,25 @@
-server:
-  port: ${SERVER_PORT:8080}
-
 spring:
-  application:
-    name: ms-transaccion
-
   datasource:
-    # URL de conexión. Si usas Docker Compose, recuerda cambiar localhost por el nombre del servicio db
     url: ${DB_URL:jdbc:postgresql://localhost:5432/db_transacciones}
     username: ${DB_USER:postgres}
     password: ${DB_PASS:admin}
-    driver-class-name: org.postgresql.Driver
-
-  mvc:
-    pathmatch:
-      matching-strategy: ant_path_matcher
-
   jpa:
     hibernate:
       ddl-auto: update
-      # CRÍTICO: Esto evita que Hibernate convierta "IdTransaccion" a "id_transaccion".
-      # Al usar tablas con comillas en Postgres, necesitamos respetar las mayúsculas exactas de tu SQL.
-      naming:
-        physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
-    show-sql: true
-    properties:
-      hibernate:
-        format_sql: true
-        dialect: org.hibernate.dialect.PostgreSQLDialect
-    open-in-view: false
+    show-sql: false
 
-# --- CONFIGURACIÓN PERSONALIZADA (FEIGN) ---
+server:
+  port: ${SERVER_PORT:8080}
+
 app:
-  feign:
-    # Aquí defines la URL donde vive el microservicio de Cuentas.
-    # Si 'ms-cuentas' corre en otro puerto o IP, cámbialo aquí.
-    cuentas-url: ${CUENTAS_URL:http://localhost:8081}
-  
-  # Configuración del Switch Interbancario DIGICONECU
   switch:
-    url: ${APP_SWITCH_URL:http://35.208.155.21:9080}
-    network-url: ${APP_SWITCH_URL:http://35.208.155.21:9080}
-    apikey: ${APP_SWITCH_APIKEY:}
-  
-  # Código del banco (para identificarse ante el switch)
+    url: ${APP_SWITCH_URL:http://3.140.230.212:8000/api/switch/v1/transferir}
+    network-url: ${APP_SWITCH_NETWORK_URL:http://3.140.230.212:8000}
+    apikey: ${APP_SWITCH_APIKEY:ARCBANK_SECRET_KEY_2025_XYZ}
   banco:
     codigo: ${BANCO_CODIGO:ARCBANK}
-  
-  # Configuración SSL/TLS para mTLS (Mutual Authentication)
-  mtls:
-    enabled: ${MTLS_ENABLED:false}
-    keystore:
-      path: ${MTLS_KEYSTORE_PATH:classpath:certs/arcbank-keystore.p12}
-      password: ${MTLS_KEYSTORE_PASSWORD:arcbank123}
-    truststore:
-      path: ${MTLS_TRUSTSTORE_PATH:classpath:certs/arcbank-truststore.p12}
-      password: ${MTLS_TRUSTSTORE_PASSWORD:arcbank123}
-
-
-# --- CONFIGURACIÓN SWAGGER / OPENAPI ---
-springdoc:
-  api-docs:
-    path: /v3/api-docs
-  swagger-ui:
-    path: /swagger-ui.html
-    disable-swagger-default-url: true
-    # Opcional: Ordena los métodos (GET, POST, PUT) en la UI
-    operations-sorter: method
 
 logging:
   level:
-    com.arcbank.cbs.transaccion: DEBUG
+    com.arcbank: DEBUG
     org.springframework.web: INFO
-    # Útil para ver las peticiones que hace Feign
-    com.arcbank.cbs.transaccion.client: DEBUG

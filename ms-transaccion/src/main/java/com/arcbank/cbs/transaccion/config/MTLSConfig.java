@@ -56,18 +56,14 @@ public class MTLSConfig {
             return new Client.Default(null, null);
         }
 
-        // --- FALLBACK ROBUSTO: Si faltan certificados, deshabilitar mTLS para evitar
-        // crash ---
         if (!keystoreResource.exists() || !truststoreResource.exists()) {
             log.error(
                     "⚠️ [CRITICAL] Certificados mTLS no encontrados. Desactivando mTLS para evitar crash de la aplicación.");
             log.error("Expectativa Keystore: {}", keystoreResource);
             log.error("Expectativa Truststore: {}", truststoreResource);
 
-            // Retornamos cliente básico para permitir operaciones internas
             return new Client.Default(null, null);
         }
-        // -----------------------------------------------------------------------------------
 
         KeyStore keyStore = KeyStore.getInstance("PKCS12");
         try (InputStream keyStoreStream = keystoreResource.getInputStream()) {

@@ -193,7 +193,7 @@ useEffect(() => {
 
 1. **✅ URL del Switch** (Ya configurada)
    ```
-   APP_SWITCH_URL=http://35.208.155.21:9080
+   APP_SWITCH_URL=http://3.140.230.212:8000
    ```
 
 2. **✅ API Key generada por tu banco** (Ya implementada)
@@ -202,7 +202,7 @@ useEffect(() => {
    ```
 
 3. **⚠️ API Key registrada en Kong** (DEBES HACER MANUALMENTE)
-   - Ve a Kong Admin: `http://35.208.155.21:1337`
+   - Ve a Kong Admin: `http://3.140.230.212:8000`
    - Crea Consumer: `banco-arcbank`
    - Añade Credential: `ARCBANK_SECRET_KEY_2025_XYZ`
 
@@ -210,36 +210,7 @@ useEffect(() => {
    - **Si NO los tienes**: La app funciona igual (fallback a HTTP + API Key)
    - **Si los tienes**: Mayor seguridad con doble autenticación
    - Ubicación: `./nginx/certs/arcbank-keystore.p12`
-
----
-
-## 🎯 Configuración Actual Recomendada
-
-He dejado **`MTLS_ENABLED=false`** por defecto porque:
-
-✅ **Ventajas:**
-- No bloquea la aplicación si faltan certificados
-- Más fácil para desarrollo y pruebas
-- La API Key ya proporciona autenticación
-- Kong maneja la seguridad de transporte (HTTPS)
-
-⚠️ **Para producción con máxima seguridad:**
-1. Genera certificados mTLS (el Switch te debe proporcionar instrucciones)
-2. Colócalos en `./nginx/certs/`
-3. Cambia a `MTLS_ENABLED=true` en el entorno de producción
-
----
-
-## 📝 Checklist de Comunicación con Switch
-
-- [x] URL del Switch configurada (`APP_SWITCH_URL`)
-- [x] API Key generada (`ARCBANK_SECRET_KEY_2025_XYZ`)
-- [ ] API Key registrada en Kong (PENDIENTE - hazlo manualmente)
-- [x] Endpoint para listar bancos (`/api/bancos`)
-- [x] Endpoint para health check (`/api/bancos/health`)
-- [x] Fallback de seguridad si faltan certificados
-- [ ] Certificados mTLS (OPCIONAL - mejora seguridad)
-
+   
 ---
 
 ## 🚀 Siguiente Paso

@@ -81,20 +81,16 @@ export default function TransaccionesInterbancarias() {
         setError("");
 
         try {
+            // bankName ya contiene el código del banco (ej: ARCBANK, NEXUS, PICHINCHA)
             const request = {
                 tipoOperacion: "TRANSFERENCIA_SALIDA",
-                idCuentaOrigen: fromAccId, // Integer ID interno
+                idCuentaOrigen: parseInt(fromAccId), // Integer ID interno
                 cuentaExterna: toAccount, // Cuenta destino en otro banco
-                bancoDestino: bankName,
-                beneficiario: toName,
+                idBancoExterno: bankName, // Código BIC del banco
                 monto: Number(amount),
                 canal: "WEB",
-                descripcion: `Transferencia a ${toName} (${bankName})`
+                descripcion: `Transferencia a ${toName} - Banco ${bankName}`
             }
-
-            // Nota: Si tu backend ms-transaccion actual NO soporta transferencias externas (campos bancoDestino/cuentaExterna),
-            // esto fallará o requerirá que actualices el DTO Java.
-            // Asumiremos que el método realizarTransferenciaInterbancaria maneja la lógica.
 
             await realizarTransferenciaInterbancaria(request);
 
@@ -147,12 +143,18 @@ export default function TransaccionesInterbancarias() {
                         placeholder="Solo números"
                     />
 
-                    <label>Banco</label>
+                    <label>Banco Destino</label>
                     {banks && banks.length > 0 ? (
-                        <select style={styles.input} value={bankName} onChange={e => setBankName(e.target.value)}>
-                            <option value="">-- Seleccione un banco --</option>
+                        <select
+                            style={styles.input}
+                            value={bankName}
+                            onChange={e => setBankName(e.target.value)}
+                        >
+                            <option value="">-- Seleccione Banco Destino --</option>
                             {banks.map((b, i) => (
-                                <option key={b.id || i} value={b.nombre || b.name || b.id}>{b.nombre || b.name || b.id}</option>
+                                <option key={b.codigo || b.id || i} value={b.codigo || b.id}>
+                                    {b.nombre || b.name || b.id}
+                                </option>
                             ))}
                         </select>
                     ) : (
@@ -160,7 +162,7 @@ export default function TransaccionesInterbancarias() {
                             style={styles.input}
                             value={bankName}
                             onChange={e => setBankName(e.target.value)}
-                            placeholder="Ingrese nombre del banco"
+                            placeholder="Ingrese código del banco (ej: ARCBANK)"
                         />
                     )}
 

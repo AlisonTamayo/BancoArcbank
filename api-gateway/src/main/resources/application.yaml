@@ -26,10 +26,10 @@ spring:
               - "http://frontend-cajero-arcbank:80"
 
               # HTTPS sslip.io domains
-              - "https://arcbank.35-209-79-193.sslip.io"
-              - "https://arcbank.35-209-79-193.sslip.io:8443"
-              - "https://bantec.35-208-155-21.sslip.io"
-              - "https://bantec.35-208-155-21.sslip.io:8443"
+              # - "https://arcbank.35-209-79-193.sslip.io"
+              # - "https://arcbank.35-209-79-193.sslip.io:8443"
+              # - "https://bantec.35-208-155-21.sslip.io"
+              # - "https://bantec.35-208-155-21.sslip.io:8443"
             allowedMethods:
               - GET
               - POST

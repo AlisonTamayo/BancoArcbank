@@ -34,8 +34,9 @@ public class TransaccionServiceImpl implements TransaccionService {
     private final TransaccionRepository transaccionRepository;
     private final CuentaCliente cuentaCliente;
     private final SwitchClient switchClient;
+    private final SwitchClientService switchClientService;
 
-    @Value("${app.banco.codigo:BANTEC}")
+    @Value("${app.banco.codigo:ARCBANK}")
     private String codigoBanco;
 
     @Override
@@ -119,68 +120,30 @@ public class TransaccionServiceImpl implements TransaccionService {
                                     : String.valueOf(request.getIdCuentaOrigen());
 
                     String nombreOrigen = "Cliente Arcbank";
-                    String tipoCuentaOrigen = "SAVINGS";
-
-                    if (cuentaOrigenDetalles != null) {
-                        if (cuentaOrigenDetalles.get("nombreTitular") != null) {
-                            nombreOrigen = cuentaOrigenDetalles.get("nombreTitular").toString();
-                        }
-                        if (cuentaOrigenDetalles.get("tipoCuenta") != null) {
-                            tipoCuentaOrigen = cuentaOrigenDetalles.get("tipoCuenta").toString();
-                        }
+                    if (cuentaOrigenDetalles != null && cuentaOrigenDetalles.get("nombreTitular") != null) {
+                        nombreOrigen = cuentaOrigenDetalles.get("nombreTitular").toString();
                     }
 
                     try {
-                        log.info("Enviando transferencia al switch: {} -> {}", numeroCuentaOrigen,
+                        log.info("Enviando transferencia al switch via SwitchClientService: {} -> {}",
+                                numeroCuentaOrigen,
                                 request.getCuentaExterna());
 
-                        SwitchTransferRequest switchRequest = SwitchTransferRequest.builder()
-                                .header(SwitchTransferRequest.Header.builder()
-                                        .messageId("MSG-" + codigoBanco + "-" + System.currentTimeMillis())
-                                        .creationDateTime(
-                                                OffsetDateTime.now().format(DateTimeFormatter.ISO_OFFSET_DATE_TIME))
-                                        .originatingBankId(codigoBanco)
-                                        .build())
-                                .body(SwitchTransferRequest.Body.builder()
-                                        .instructionId(trx.getReferencia())
-                                        .endToEndId("REF-" + trx.getReferencia())
-                                        .amount(SwitchTransferRequest.Amount.builder()
-                                                .currency("USD")
-                                                .value(request.getMonto())
-                                                .build())
-                                        .debtor(SwitchTransferRequest.Party.builder()
-                                                .name(nombreOrigen)
-                                                .accountId(numeroCuentaOrigen)
-                                                .accountType(tipoCuentaOrigen)
-                                                .build())
-                                        .creditor(SwitchTransferRequest.Party.builder()
-                                                .name("Beneficiario Externo")
-                                                .targetBankId(request.getIdBancoExterno() != null
-                                                        ? String.valueOf(request.getIdBancoExterno())
-                                                        : "UNKNOWN")
-                                                .accountId(request.getCuentaExterna())
-                                                .accountType("SAVINGS")
-                                                .build())
-                                        .remittanceInformation(request.getDescripcion())
-                                        .build())
+                        com.arcbank.cbs.transaccion.dto.TxRequest txRequest = com.arcbank.cbs.transaccion.dto.TxRequest
+                                .builder()
+                                .debtorAccount(numeroCuentaOrigen)
+                                .debtorName(nombreOrigen)
+                                .creditorAccount(request.getCuentaExterna())
+                                .creditorName("Beneficiario Externo")
+                                .targetBankId(
+                                        request.getIdBancoExterno() != null ? request.getIdBancoExterno() : "UNKNOWN")
+                                .amount(request.getMonto())
+                                .description(request.getDescripcion())
                                 .build();
 
-                        SwitchTransferResponse switchResp = switchClient.enviarTransferencia(switchRequest);
+                        String respuestaSwitch = switchClientService.enviarTransferencia(txRequest);
+                        log.info("Respuesta cruda del Switch: {}", respuestaSwitch);
 
-                        if (!switchResp.isSuccess()) {
-                            log.warn("Switch rechazó transferencia, revirtiendo débito local");
-                            procesarSaldo(trx.getIdCuentaOrigen(), request.getMonto());
-                            String errorMsg = switchResp.getError() != null
-                                    ? switchResp.getError().getMessage()
-                                    : "Error desconocido del switch";
-                            throw new BusinessException("Switch rechazó: " + errorMsg);
-                        }
-
-                        log.info("Transferencia enviada al switch exitosamente. Banco destino: {}",
-                                switchResp.getData() != null ? switchResp.getData().getBancoDestino() : "N/A");
-
-                    } catch (BusinessException be) {
-                        throw be;
                     } catch (Exception e) {
                         log.error("Error comunicando con switch, revirtiendo débito: {}", e.getMessage());
                         procesarSaldo(trx.getIdCuentaOrigen(), request.getMonto());
@@ -338,7 +301,7 @@ public class TransaccionServiceImpl implements TransaccionService {
 
         Integer idCuentaDestino = obtenerIdCuentaPorNumero(cuentaDestino);
         if (idCuentaDestino == null) {
-            throw new BusinessException("Cuenta destino no encontrada en BANTEC: " + cuentaDestino);
+            throw new BusinessException("Cuenta destino no encontrada en Arcbank: " + cuentaDestino);
         }
 
         if (transaccionRepository.findByReferencia(instructionId).isPresent()) {

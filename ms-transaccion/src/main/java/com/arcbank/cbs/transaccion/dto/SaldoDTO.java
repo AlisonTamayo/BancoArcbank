@@ -5,10 +5,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 
-/**
- * DTO para enviar saldo a micro-cuentas.
- * Resuelve el problema de serialización JSON de BigDecimal.
- */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
