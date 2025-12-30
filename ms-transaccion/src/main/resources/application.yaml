@@ -12,6 +12,8 @@ server:
   port: ${SERVER_PORT:8080}
 
 app:
+  feign:
+    cuentas-url: ${CUENTAS_URL:http://localhost:8081}
   switch:
     url: ${APP_SWITCH_URL:http://3.140.230.212:8000/api/switch/v1/transferir}
     network-url: ${APP_SWITCH_NETWORK_URL:http://3.140.230.212:8000}

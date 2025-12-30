@@ -153,7 +153,7 @@ export default function TransaccionesInterbancarias() {
                             <option value="">-- Seleccione Banco Destino --</option>
                             {banks.map((b, i) => (
                                 <option key={b.codigo || b.id || i} value={b.codigo || b.id}>
-                                    {b.nombre || b.name || b.id}
+                                    {b.nombre || b.name} ({b.codigo || b.id})
                                 </option>
                             ))}
                         </select>
