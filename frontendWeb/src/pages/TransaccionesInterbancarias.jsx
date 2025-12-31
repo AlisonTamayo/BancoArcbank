@@ -32,19 +32,20 @@ export default function TransaccionesInterbancarias() {
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
-        let cancelled = false
-        getBancos().then(res => {
-            // Adaptar respuesta según venga del backend o mock
-            const list = (res && res.bancos) ? res.bancos : (Array.isArray(res) ? res : [])
-            if (!cancelled) setBanks(list)
-        }).catch(() => { })
+        // Bancos registrados en el Switch (Quemados por requerimiento)
+        const hardcodedBanks = [
+            { id: "NEXUS_BANK", codigo: "NEXUS_BANK", nombre: "Nexus Bank (270100)" },
+            { id: "ECUSOL_BK", codigo: "ECUSOL_BK", nombre: "Ecusol Bank (370100)" },
+            { id: "ARCBANK", codigo: "ARCBANK", nombre: "Arcbank (400000)" },
+            { id: "BANTEC", codigo: "BANTEC", nombre: "Bantec (100000)" },
+        ];
+
+        setBanks(hardcodedBanks);
 
         // Si cambia la lista de cuentas y no hay seleccionada, seleccionar la primera
         if (accounts.length > 0 && !fromAccId) {
             setFromAccId(accounts[0].id)
         }
-
-        return () => { cancelled = true }
     }, [accounts])
 
     const goToStep2 = () => {
