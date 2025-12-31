@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.RequestHeader;
 
 import com.arcbank.cbs.transaccion.dto.SwitchTransferRequest;
 import com.arcbank.cbs.transaccion.service.TransaccionService;
@@ -17,53 +18,77 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @RestController
-@RequestMapping("/api/core/transferencias")
+@RequestMapping("/api/core/transferencias/recepcion")
 @RequiredArgsConstructor
 public class WebhookController {
 
         private final TransaccionService transaccionService;
 
-        @PostMapping("/recepcion")
-        public ResponseEntity<?> recibirTransferenciaEntrante(@RequestBody SwitchTransferRequest payload) {
-                log.info("📥 [INBOUND] Webhook ISO 20022 recibido: {}", payload);
+        @org.springframework.beans.factory.annotation.Value("${app.switch.apikey}")
+        private String switchApiKey;
+
+        @PostMapping
+        public ResponseEntity<?> recibirTransferenciaEntrante(
+                        @RequestHeader(value = "apikey", required = false) String incomingKey,
+                        @RequestBody SwitchTransferRequest request) {
+
+                log.info("Webhook recibido (ISO 20022) en Arcbank: {}", request);
+
+                // Validar Seguridad (API Key del Switch)
+                if (incomingKey == null || !incomingKey.equals(switchApiKey)) {
+                        log.warn("⚠️ Acceso denegado: apikey inválida");
+                        return ResponseEntity.status(401).body(Map.of(
+                                        "status", "NACK",
+                                        "error", "No autorizado"));
+                }
 
                 try {
-                        if (payload == null || payload.getBody() == null) {
-                                return ResponseEntity.badRequest().body(Map.of("error", "Payload inválido"));
+                        if (request.getHeader() == null || request.getBody() == null) {
+                                return ResponseEntity.badRequest().body(Map.of(
+                                                "status", "NACK",
+                                                "error", "Formato de mensaje inválido"));
                         }
 
-                        String accountId = payload.getBody().getCreditor() != null
-                                        ? payload.getBody().getCreditor().getAccountId()
-                                        : null;
-                        BigDecimal amount = payload.getBody().getAmount() != null
-                                        ? payload.getBody().getAmount().getValue()
-                                        : BigDecimal.ZERO;
-                        String instructionId = payload.getBody().getInstructionId();
-                        String bancoOrigen = payload.getHeader() != null ? payload.getHeader().getOriginatingBankId()
-                                        : "UNKNOWN";
+                        String instructionId = request.getBody().getInstructionId();
 
-                        if (accountId == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
-                                log.warn("Webhook con datos incompletos: accountId={}, amount={}", accountId, amount);
-                                return ResponseEntity.badRequest()
-                                                .body(Map.of("error", "Datos obligatorios faltantes"));
+                        String cuentaDestino = null;
+                        if (request.getBody().getCreditor() != null) {
+                                cuentaDestino = request.getBody().getCreditor().getAccountId();
                         }
 
-                        log.info("💰 Solicitud de acreditación interna: Cuenta={}, Monto={}, BancoOrigen={}",
-                                        accountId, amount, bancoOrigen);
+                        String bancoOrigen = "DESCONOCIDO";
+                        if (request.getHeader().getOriginatingBankId() != null) {
+                                bancoOrigen = request.getHeader().getOriginatingBankId();
+                        }
 
-                        transaccionService.procesarTransferenciaEntrante(instructionId, accountId, amount, bancoOrigen);
+                        BigDecimal monto = BigDecimal.ZERO;
+                        if (request.getBody().getAmount() != null && request.getBody().getAmount().getValue() != null) {
+                                monto = request.getBody().getAmount().getValue();
+                        }
 
-                        log.info("✅ Simulación de acreditación EXITOSA para cuenta {}", accountId);
+                        if (instructionId == null || cuentaDestino == null || monto.compareTo(BigDecimal.ZERO) <= 0) {
+                                return ResponseEntity.badRequest().body(Map.of(
+                                                "status", "NACK",
+                                                "error", "Datos críticos faltantes"));
+                        }
+
+                        log.info("Simulando acreditación Arcbank: cuenta={}, monto={}, desde={}", cuentaDestino, monto,
+                                        bancoOrigen);
+
+                        // Llamada al servicio con los 4 argumentos estándar
+                        transaccionService.procesarTransferenciaEntrante(instructionId, cuentaDestino, monto,
+                                        bancoOrigen);
 
                         return ResponseEntity.ok(Map.of(
-                                        "status", "COMPLETADO",
-                                        "mensaje", "Dinero acreditado exitosamente al cliente interno",
-                                        "cuenta", accountId,
-                                        "monto", amount));
+                                        "status", "ACK",
+                                        "message", "Transferencia procesada exitosamente en Arcbank",
+                                        "instructionId", instructionId));
 
                 } catch (Exception e) {
-                        log.error("❌ Error en recepción de transferencia: {}", e.getMessage());
-                        return ResponseEntity.status(500).body(Map.of("error", e.getMessage()));
+                        log.error("Error procesando webhook en Arcbank: {}", e.getMessage());
+                        return ResponseEntity.status(422).body(Map.of(
+                                        "status", "NACK",
+                                        "error", e.getMessage()));
                 }
         }
 }

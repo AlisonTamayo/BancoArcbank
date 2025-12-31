@@ -110,6 +110,7 @@ public class TransaccionServiceImpl implements TransaccionService {
                     trx.setIdCuentaOrigen(request.getIdCuentaOrigen());
                     trx.setIdCuentaDestino(null);
                     trx.setCuentaExterna(request.getCuentaExterna());
+                    trx.setIdBancoExterno(request.getIdBancoExterno()); // ASIGNACIÓN FALTIVA
 
                     BigDecimal saldoOrigen = procesarSaldo(trx.getIdCuentaOrigen(), request.getMonto().negate());
 
@@ -318,7 +319,9 @@ public class TransaccionServiceImpl implements TransaccionService {
                 .idCuentaOrigen(null)
                 .cuentaExterna(cuentaDestino)
                 .monto(monto)
+
                 .saldoResultante(nuevoSaldo)
+                .idBancoExterno(bancoOrigen) // Registrar quién envió
                 .descripcion("Transferencia recibida desde " + bancoOrigen)
                 .canal("SWITCH")
                 .estado("COMPLETADA")
