@@ -8,7 +8,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.bind.annotation.RequestHeader;
 
 import com.arcbank.cbs.transaccion.dto.SwitchTransferRequest;
 import com.arcbank.cbs.transaccion.service.TransaccionService;
@@ -24,42 +23,24 @@ public class WebhookController {
 
         private final TransaccionService transaccionService;
 
-        @org.springframework.beans.factory.annotation.Value("${app.switch.apikey}")
-        private String switchApiKey;
-
         @PostMapping
-        public ResponseEntity<?> recibirTransferenciaEntrante(
-                        @RequestHeader(value = "apikey", required = false) String incomingKey,
-                        @RequestBody SwitchTransferRequest request) {
-
-                log.info("Webhook recibido (ISO 20022) en Arcbank: {}", request);
-
-                // Validar Seguridad (API Key del Switch)
-                if (incomingKey == null || !incomingKey.equals(switchApiKey)) {
-                        log.warn("⚠️ Acceso denegado: apikey inválida");
-                        return ResponseEntity.status(401).body(Map.of(
-                                        "status", "NACK",
-                                        "error", "No autorizado"));
-                }
+        public ResponseEntity<?> recibirTransferenciaEntrante(@RequestBody SwitchTransferRequest request) {
+                log.info("📥 Webhook recibido en Arcbank (ISO 20022): {}", request);
 
                 try {
                         if (request.getHeader() == null || request.getBody() == null) {
                                 return ResponseEntity.badRequest().body(Map.of(
                                                 "status", "NACK",
-                                                "error", "Formato de mensaje inválido"));
+                                                "error", "Formato inválido"));
                         }
 
                         String instructionId = request.getBody().getInstructionId();
-
-                        String cuentaDestino = null;
-                        if (request.getBody().getCreditor() != null) {
-                                cuentaDestino = request.getBody().getCreditor().getAccountId();
-                        }
-
-                        String bancoOrigen = "DESCONOCIDO";
-                        if (request.getHeader().getOriginatingBankId() != null) {
-                                bancoOrigen = request.getHeader().getOriginatingBankId();
-                        }
+                        String cuentaDestino = request.getBody().getCreditor() != null
+                                        ? request.getBody().getCreditor().getAccountId()
+                                        : null;
+                        String bancoOrigen = request.getHeader().getOriginatingBankId() != null
+                                        ? request.getHeader().getOriginatingBankId()
+                                        : "DESCONOCIDO";
 
                         BigDecimal monto = BigDecimal.ZERO;
                         if (request.getBody().getAmount() != null && request.getBody().getAmount().getValue() != null) {
@@ -67,25 +48,27 @@ public class WebhookController {
                         }
 
                         if (instructionId == null || cuentaDestino == null || monto.compareTo(BigDecimal.ZERO) <= 0) {
+                                log.warn("⚠️ Datos incompletos en el webhook: id={}, cuenta={}, monto={}",
+                                                instructionId, cuentaDestino, monto);
                                 return ResponseEntity.badRequest().body(Map.of(
                                                 "status", "NACK",
-                                                "error", "Datos críticos faltantes"));
+                                                "error", "Datos incompletos"));
                         }
 
-                        log.info("Simulando acreditación Arcbank: cuenta={}, monto={}, desde={}", cuentaDestino, monto,
+                        log.info("💰 Solicitud de abono en Arcbank: Cta {} | Monto {} | Desde {}", cuentaDestino, monto,
                                         bancoOrigen);
 
-                        // Llamada al servicio con los 4 argumentos estándar
+                        // Ejecutar acreditación
                         transaccionService.procesarTransferenciaEntrante(instructionId, cuentaDestino, monto,
                                         bancoOrigen);
 
                         return ResponseEntity.ok(Map.of(
                                         "status", "ACK",
-                                        "message", "Transferencia procesada exitosamente en Arcbank",
+                                        "message", "Acreditación exitosa en Arcbank",
                                         "instructionId", instructionId));
 
                 } catch (Exception e) {
-                        log.error("Error procesando webhook en Arcbank: {}", e.getMessage());
+                        log.error("❌ Error procesando abono en Arcbank: {}", e.getMessage());
                         return ResponseEntity.status(422).body(Map.of(
                                         "status", "NACK",
                                         "error", e.getMessage()));
