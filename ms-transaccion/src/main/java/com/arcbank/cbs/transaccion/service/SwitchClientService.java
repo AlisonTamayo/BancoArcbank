@@ -1,14 +1,12 @@
 package com.arcbank.cbs.transaccion.service;
 
+import com.arcbank.cbs.transaccion.client.SwitchClient;
 import com.arcbank.cbs.transaccion.dto.SwitchTransferRequest;
 import com.arcbank.cbs.transaccion.dto.TxRequest;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
 
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
@@ -16,26 +14,17 @@ import java.util.UUID;
 
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class SwitchClientService {
 
-        private final RestTemplate restTemplate;
-        private final String switchUrl;
-        private final String apiKey;
-        private final String bancoCodigo;
+        private final SwitchClient switchClient;
 
-        public SwitchClientService(RestTemplate restTemplate,
-                        @Value("${app.switch.url}") String switchUrl,
-                        @Value("${app.switch.apikey}") String apiKey,
-                        @Value("${app.banco.codigo}") String bancoCodigo) {
-                this.restTemplate = restTemplate;
-                this.switchUrl = switchUrl;
-                this.apiKey = apiKey;
-                this.bancoCodigo = bancoCodigo;
-        }
+        @Value("${app.banco.codigo:ARCBANK}")
+        private String bancoCodigo;
 
         public String enviarTransferencia(TxRequest request) {
-                log.info("Enviando transferencia al Switch DIGICONECU: {} -> {}", request.getDebtorAccount(),
-                                request.getCreditorAccount());
+                log.info("Iniciando envío de transferencia interbancaria via Feign: {} -> {}",
+                                request.getDebtorAccount(), request.getCreditorAccount());
 
                 SwitchTransferRequest isoRequest = SwitchTransferRequest.builder()
                                 .header(SwitchTransferRequest.Header.builder()
@@ -66,22 +55,20 @@ public class SwitchClientService {
                                                 .build())
                                 .build();
 
-                HttpHeaders headers = new HttpHeaders();
-                headers.setContentType(MediaType.APPLICATION_JSON);
-                headers.set("apikey", apiKey);
-
-                HttpEntity<SwitchTransferRequest> entity = new HttpEntity<>(isoRequest, headers);
-
                 try {
-                        log.info("POST a URL: {}", switchUrl);
-                        String response = restTemplate.postForObject(switchUrl, entity, String.class);
-                        if (response == null) {
-                                response = "{\"status\": \"SUCCESS\", \"message\": \"Enviado sin respuesta del cuerpo\"}";
+                        // FeignClient maneja la URL, el mTLS (si está activo) y el apikey header
+                        // automáticamente
+                        String response = switchClient.enviarTransferencia(isoRequest);
+
+                        if (response == null || response.isBlank()) {
+                                response = "{\"status\": \"SUCCESS\", \"message\": \"Transferencia enviada correctamente\"}";
                         }
-                        log.info("Respuesta del Switch: {}", response);
+
+                        log.info("Respuesta del Switch recibida: {}", response);
                         return response;
+
                 } catch (Exception e) {
-                        log.error("Error al enviar transferencia al switch: {}", e.getMessage());
+                        log.error("Error en la comunicación con el Switch via Feign: {}", e.getMessage());
                         throw new RuntimeException("Error en comunicación con el Switch: " + e.getMessage());
                 }
         }

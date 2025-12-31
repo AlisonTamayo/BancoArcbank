@@ -1,8 +1,6 @@
 package com.arcbank.cbs.transaccion.service;
 
 import java.math.BigDecimal;
-import java.time.OffsetDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -15,8 +13,6 @@ import org.springframework.transaction.annotation.Transactional;
 import com.arcbank.cbs.transaccion.client.CuentaCliente;
 import com.arcbank.cbs.transaccion.client.SwitchClient;
 import com.arcbank.cbs.transaccion.dto.SaldoDTO;
-import com.arcbank.cbs.transaccion.dto.SwitchTransferRequest;
-import com.arcbank.cbs.transaccion.dto.SwitchTransferResponse;
 import com.arcbank.cbs.transaccion.dto.TransaccionRequestDTO;
 import com.arcbank.cbs.transaccion.dto.TransaccionResponseDTO;
 import com.arcbank.cbs.transaccion.exception.BusinessException;
@@ -327,7 +323,11 @@ public class TransaccionServiceImpl implements TransaccionService {
                 .estado("COMPLETADA")
                 .build();
 
-        transaccionRepository.save(trx);
+        Transaccion guardada = transaccionRepository.save(trx);
+        if (guardada == null) {
+            log.error("Error crítico: La transacción no se pudo guardar.");
+            return;
+        }
         log.info("✅ Transferencia entrante completada. ID: {}, Nuevo saldo: {}",
                 trx.getIdTransaccion(), nuevoSaldo);
     }
