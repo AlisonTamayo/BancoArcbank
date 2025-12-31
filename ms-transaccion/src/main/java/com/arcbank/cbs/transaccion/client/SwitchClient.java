@@ -15,7 +15,7 @@ import com.arcbank.cbs.transaccion.dto.SwitchTransferResponse;
 @FeignClient(name = "digiconecu-switch", url = "${app.switch.network-url:https://switch-interbank.ddns.net}", configuration = com.arcbank.cbs.transaccion.config.MTLSConfig.class)
 public interface SwitchClient {
 
-    @PostMapping("/api/switch/v1/transferir")
+    @PostMapping("/api/v1/transacciones")
     String enviarTransferencia(@RequestBody SwitchTransferRequest request);
 
     @GetMapping("/api/v1/red/bancos")

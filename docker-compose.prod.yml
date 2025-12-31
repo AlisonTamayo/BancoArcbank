@@ -176,7 +176,7 @@ services:
       SERVER_PORT: 8080
       CUENTAS_URL: http://micro-cuentas-arcbank:8081
       # USAMOS LA IP ESTATICA QUE DEFINIMOS
-      APP_SWITCH_URL: ${SWITCH_URL:-https://switch-interbank.ddns.net/api/switch/v1/transferir}
+      APP_SWITCH_URL: ${SWITCH_URL:-https://switch-interbank.ddns.net/api/v1/transacciones}
       APP_SWITCH_NETWORK_URL: ${APP_SWITCH_NETWORK_URL:-https://switch-interbank.ddns.net}
       BANCO_CODIGO: ARCBANK
       # API Key para autenticación con Kong

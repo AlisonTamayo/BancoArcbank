@@ -149,6 +149,7 @@ services:
       SERVER_PORT: 8080
       CUENTAS_URL: http://micro-cuentas-arcbank:8081
       # Switch Interbancario DIGICONECU
+      APP_SWITCH_URL: ${SWITCH_URL:-https://switch-interbank.ddns.net/api/v1/transacciones}
       APP_SWITCH_NETWORK_URL: ${APP_SWITCH_NETWORK_URL:-https://switch-interbank.ddns.net}
       BANCO_CODIGO: ARCBANK
       APP_SWITCH_APIKEY: ${APP_SWITCH_APIKEY:-ARCBANK_SECRET_KEY_2025_XYZ}
