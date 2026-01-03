@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useAuth } from "../context/AuthContext";
-import { loginExitoso, crearCuentaWeb } from "../services/bancaApi";
+import { crearCuentaWeb } from "../services/bancaApi";
 import { useNavigate } from "react-router-dom";
 import { FiLock, FiUser, FiArrowRight, FiShield } from "react-icons/fi";
 
@@ -25,9 +25,12 @@ export default function Login() {
         setIsRegister(false);
         setError("Cuenta verificada. Proceda con su acceso.");
       } else {
-        const user = await loginExitoso(identificacion, password);
-        authLogin(user);
-        navigate("/");
+        const result = await authLogin(identificacion, password);
+        if (result.ok) {
+          navigate("/");
+        } else {
+          throw new Error(result.error || "Acceso denegado");
+        }
       }
     } catch (err) {
       setError(err.message || "Credenciales no autorizadas");

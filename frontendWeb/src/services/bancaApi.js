@@ -126,14 +126,29 @@ export async function getBancos() {
   }
 }
 
+export async function crearCuentaWeb(data) {
+  // data: { identificacion, password, name, tipoIdentificacion }
+  // Endpoint real en micro-clientes: POST /api/v1/clientes
+  return await request('/api/v1/clientes', {
+    method: 'POST',
+    body: JSON.stringify({
+      identificacion: data.identificacion,
+      tipoIdentificacion: data.tipoIdentificacion || 'CEDULA',
+      nombreCompleto: data.name,
+      clave: data.password
+    })
+  });
+}
+
 const bancaApi = {
   getClientePorIdentificacion,
   getCuentaPorNumero,
-  getConsolidada, // Usamos el nombre que espera tu Home.js
+  getConsolidada,
   getMovimientos,
   realizarTransferencia,
   realizarTransferenciaInterbancaria,
-  getBancos
+  getBancos,
+  crearCuentaWeb
 }
 
 export default bancaApi;
