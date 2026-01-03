@@ -43,28 +43,22 @@ export default function App() {
         />
       )}
 
-      <main className="main" style={{ width: "100%" }}>
+      <main className="main-content">
         {/* Botón hamburguesa visible en pantallas pequeñas */}
         {(loggedIn || isDevView) && !isLoginPage && (
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "flex-start",
-              paddingBottom: 8,
-            }}
-          >
+          <div style={{ marginBottom: '24px' }}>
             <button
               onClick={() => setSidebarOpen((s) => !s)}
               aria-label="Toggle sidebar"
+              className="modern-btn modern-btn-outline"
               style={{
-                background: "transparent",
-                border: "none",
-                cursor: "pointer",
-                fontSize: 22,
-                padding: 8,
+                width: 'auto',
+                padding: '8px 12px',
+                border: 'none',
+                background: 'rgba(0,0,0,0.03)'
               }}
             >
-              {sidebarOpen ? <FiX /> : <FiMenu />}
+              {sidebarOpen ? <FiX size={20} /> : <FiMenu size={20} />}
             </button>
           </div>
         )}

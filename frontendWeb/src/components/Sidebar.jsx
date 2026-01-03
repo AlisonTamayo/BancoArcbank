@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { NavLink, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { FiHome, FiList, FiLogOut } from "react-icons/fi";
+import { FiHome, FiList, FiLogOut, FiUser, FiArrowLeftRight, FiMenu, FiX } from "react-icons/fi";
 import { TbArrowsExchange } from "react-icons/tb";
 
 export default function Sidebar({ isOpen = true, onRequestClose }) {
@@ -10,14 +10,13 @@ export default function Sidebar({ isOpen = true, onRequestClose }) {
   const location = useLocation();
 
   const isDevView = location.pathname && location.pathname.includes("-dev");
-
   const interbancariasPath = isDevView ? "/interbancarias-dev" : "/interbancarias";
   const transferirPath = isDevView ? "/transferir-dev" : "/transferir";
 
-  const [isMobile, setIsMobile] = useState(window.innerWidth <= 900);
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 1024);
 
   useEffect(() => {
-    const onResize = () => setIsMobile(window.innerWidth <= 900);
+    const onResize = () => setIsMobile(window.innerWidth <= 1024);
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
   }, []);
@@ -27,130 +26,129 @@ export default function Sidebar({ isOpen = true, onRequestClose }) {
     navigate("/login");
   };
 
-  // Estilos dinámicos
-  const sidebarStyle = {
-    ...styles.sidebar,
-    ...(isMobile && isOpen ? styles.mobileOverlay : {}),
-    ...(isOpen ? {} : styles.hidden)
-  };
+  const navItems = [
+    { path: "/", icon: <FiHome />, label: "Dashboard", end: true },
+    { path: "/movimientos", icon: <FiList />, label: "Movimientos" },
+    { path: transferirPath, icon: <FiArrowLeftRight />, label: "Transferir" },
+    { path: interbancariasPath, icon: <TbArrowsExchange />, label: "Otros Bancos" },
+    { path: "/perfil", icon: <FiUser />, label: "Mi Perfil" },
+  ];
 
   return (
-    <aside className="sidebar" style={sidebarStyle}>
-      <div className="brand" style={styles.brand}>
-        <span style={styles.brandDiamond}>◆</span> ARCBANK
-      </div>
-
-      <div style={styles.userSection}>
-        <div style={styles.avatar}>
-          {state?.user?.name ? state.user.name[0].toUpperCase() : "U"}
+    <>
+      <aside
+        className={`sidebar ${isOpen ? 'open' : 'closed'}`}
+        style={styles.sidebar(isOpen, isMobile)}
+      >
+        <div style={styles.brandContainer}>
+          <div style={styles.logoIcon}>A</div>
+          <span style={styles.brandTitle} className="brand-text">ARCBANK</span>
         </div>
-        <div style={styles.userInfo}>
-          <span style={styles.userName}>{state?.user?.name || "Premium User"}</span>
-          <span style={styles.userStatus}>Cliente Verificado</span>
+
+        <div style={styles.userCard}>
+          <div style={styles.avatar}>
+            {state?.user?.name ? state.user.name[0].toUpperCase() : "U"}
+          </div>
+          <div style={styles.userInfo}>
+            <div style={styles.userName}>{state?.user?.name || "Premium User"}</div>
+            <div style={styles.userRole}>Private Banking</div>
+          </div>
         </div>
-      </div>
 
-      <nav style={styles.nav}>
-        <ul style={styles.navList}>
-          <li>
-            <NavLink to="/" end style={({ isActive }) => isActive ? { ...styles.link, ...styles.activeLink } : styles.link} onClick={handleNavClick}>
-              <FiHome size={20} /> <span>Inicio</span>
-            </NavLink>
-          </li>
-          <li>
-            <NavLink to="/movimientos" style={({ isActive }) => isActive ? { ...styles.link, ...styles.activeLink } : styles.link} onClick={handleNavClick}>
-              <FiList size={20} /> <span>Movimientos</span>
-            </NavLink>
-          </li>
-          <li>
-            <NavLink to={transferirPath} style={({ isActive }) => isActive ? { ...styles.link, ...styles.activeLink } : styles.link} onClick={handleNavClick}>
-              <TbArrowsExchange size={22} /> <span>Transferencias</span>
-            </NavLink>
-          </li>
-          <li>
-            <NavLink to={interbancariasPath} style={({ isActive }) => isActive ? { ...styles.link, ...styles.activeLink } : styles.link} onClick={handleNavClick}>
-              <TbArrowsExchange size={22} /> <span>Interbancarias</span>
-            </NavLink>
-          </li>
-          <li>
-            <NavLink to="/perfil" style={({ isActive }) => isActive ? { ...styles.link, ...styles.activeLink } : styles.link} onClick={handleNavClick}>
-              <span style={{ fontSize: 20 }}>👤</span> <span>Mi Perfil</span>
-            </NavLink>
-          </li>
-        </ul>
-      </nav>
+        <nav style={styles.nav}>
+          <ul style={styles.navList}>
+            {navItems.map((item) => (
+              <li key={item.path}>
+                <NavLink
+                  to={item.path}
+                  end={item.end}
+                  style={({ isActive }) => styles.navLink(isActive)}
+                  onClick={isMobile ? onRequestClose : undefined}
+                >
+                  <span style={styles.navIcon}>{item.icon}</span>
+                  <span style={styles.navLabel}>{item.label}</span>
+                </NavLink>
+              </li>
+            ))}
+          </ul>
+        </nav>
 
-      <div style={styles.footer}>
-        <button onClick={handleLogout} style={styles.logoutBtn}>
-          <FiLogOut size={18} /> <span>Cerrar Sesión</span>
-        </button>
-      </div>
-    </aside>
+        <div style={styles.footer}>
+          <button onClick={handleLogout} style={styles.logoutBtn}>
+            <FiLogOut size={18} /> <span>Cerrar Sesión</span>
+          </button>
+        </div>
+      </aside>
+
+      {isMobile && isOpen && (
+        <div style={styles.mobileOverlay} onClick={onRequestClose} />
+      )}
+    </>
   );
 }
 
 const styles = {
-  sidebar: {
+  sidebar: (isOpen, isMobile) => ({
     width: "var(--sidebar-width)",
     background: "var(--secondary)",
-    color: "#fff",
     height: "100vh",
     display: "flex",
     flexDirection: "column",
-    padding: "32px 16px",
-    position: "sticky",
+    padding: "40px 24px",
+    position: isMobile ? "fixed" : "sticky",
     top: 0,
-    zIndex: 1000,
-    transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-  },
-  hidden: {
-    width: "0",
-    padding: "0",
-    overflow: "hidden",
-    transform: "translateX(-100%)",
-  },
-  mobileOverlay: {
-    position: "fixed",
-    left: 0,
-    top: 0,
-    height: "100%",
-    transform: "translateX(0)",
-  },
-  brand: {
-    fontSize: "26px",
-    fontWeight: "800",
-    color: "var(--accent)",
-    letterSpacing: "2px",
-    marginBottom: "48px",
-    display: "flex",
-    alignItems: "center",
-    gap: "10px",
-    paddingLeft: "12px",
-  },
-  brandDiamond: {
-    fontSize: "20px",
+    left: isMobile && !isOpen ? "-100%" : 0,
+    zIndex: 1100,
+    transition: "all 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
+    boxShadow: "10px 0 30px rgba(0,0,0,0.2)",
     color: "#fff",
-  },
-  userSection: {
+  }),
+  brandContainer: {
     display: "flex",
     alignItems: "center",
-    gap: "12px",
-    padding: "16px",
-    background: "rgba(255,255,255,0.05)",
+    gap: "14px",
+    marginBottom: "48px",
+    paddingLeft: "8px",
+  },
+  logoIcon: {
+    width: "32px",
+    height: "32px",
+    background: "var(--primary-gradient)",
+    borderRadius: "8px",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontWeight: "800",
+    color: "#fff",
+    fontSize: "18px",
+  },
+  brandTitle: {
+    fontSize: "24px",
+    letterSpacing: "3px",
+    color: "var(--accent)",
+  },
+  userCard: {
+    display: "flex",
+    alignItems: "center",
+    gap: "14px",
+    padding: "20px",
+    background: "var(--secondary-light)",
     borderRadius: "16px",
-    marginBottom: "32px",
+    marginBottom: "40px",
+    border: "1px solid rgba(255,255,255,0.05)",
   },
   avatar: {
-    width: "44px",
-    height: "44px",
-    borderRadius: "12px",
+    width: "48px",
+    height: "48px",
+    borderRadius: "50%",
     background: "var(--primary-gradient)",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
     fontWeight: "700",
-    fontSize: "18px",
-    boxShadow: "0 4px 12px rgba(0,0,0,0.2)",
+    fontSize: "20px",
+    color: "#fff",
+    border: "2px solid rgba(255,255,255,0.1)",
   },
   userInfo: {
     display: "flex",
@@ -159,52 +157,60 @@ const styles = {
   userName: {
     fontSize: "15px",
     fontWeight: "600",
-    color: "#fff",
+    whiteSpace: "nowrap",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    maxWidth: "140px",
   },
-  userStatus: {
+  userRole: {
     fontSize: "11px",
-    color: "rgba(255,255,255,0.5)",
+    color: "var(--primary-light)",
     textTransform: "uppercase",
     letterSpacing: "1px",
+    marginTop: "2px",
   },
   nav: {
     flex: 1,
   },
   navList: {
     listStyle: "none",
+    padding: 0,
+    margin: 0,
     display: "flex",
     flexDirection: "column",
-    gap: "8px",
+    gap: "10px",
   },
-  link: {
+  navLink: (isActive) => ({
     display: "flex",
     alignItems: "center",
-    gap: "12px",
-    padding: "12px 16px",
-    borderRadius: "12px",
-    color: "rgba(255,255,255,0.7)",
+    gap: "16px",
+    padding: "16px 20px",
+    borderRadius: "14px",
+    color: isActive ? "#fff" : "rgba(255,255,255,0.5)",
     textDecoration: "none",
     fontSize: "15px",
-    fontWeight: "500",
+    fontWeight: isActive ? "600" : "500",
+    background: isActive ? "rgba(255,255,255,0.08)" : "transparent",
     transition: "all 0.2s ease",
+    borderLeft: isActive ? "4px solid var(--primary)" : "4px solid transparent",
+  }),
+  navIcon: {
+    fontSize: "20px",
+    display: "flex",
   },
-  activeLink: {
-    background: "var(--primary-gradient)",
-    color: "#fff",
-    boxShadow: "0 4px 12px rgba(184, 134, 11, 0.25)",
-  },
+  navLabel: {},
   footer: {
     marginTop: "auto",
-    paddingTop: "20px",
-    borderTop: "1px solid rgba(255,255,255,0.1)",
+    paddingTop: "30px",
+    borderTop: "1px solid rgba(255,255,255,0.05)",
   },
   logoutBtn: {
     width: "100%",
     display: "flex",
     alignItems: "center",
     gap: "12px",
-    padding: "12px 16px",
-    borderRadius: "12px",
+    padding: "16px 20px",
+    borderRadius: "14px",
     background: "transparent",
     border: "none",
     color: "#ff6b6b",
@@ -213,4 +219,13 @@ const styles = {
     cursor: "pointer",
     transition: "all 0.2s ease",
   },
+  mobileOverlay: {
+    position: "fixed",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    background: "rgba(0,0,0,0.5)",
+    zIndex: 1050,
+  }
 };

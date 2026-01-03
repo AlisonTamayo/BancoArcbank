@@ -8,103 +8,100 @@ export default function Home() {
 
   useEffect(() => {
     const loadAccounts = async () => {
-      // Usamos la identificación (cédula) guardada en el login
       const id = state.user && state.user.identificacion
-      console.log('🔍 Home - Identificacion del usuario:', id)
-
-      if (!id) {
-        console.warn('⚠️ No hay identificación, no se cargan cuentas')
-        return
-      }
+      if (!id) return
 
       try {
-        console.log('📡 Llamando a getConsolidada con:', id)
         const cuentasRaw = await getConsolidada(id)
-        console.log('✅ Cuentas crudas recibidas:', cuentasRaw)
-
-        // Mapeo de DTO Backend -> Estado Frontend
         const mapped = (cuentasRaw || []).map(c => ({
           id: String(c.idCuenta),
           number: c.numeroCuenta,
-          // Mapeo simple de tipo. Si tienes un endpoint de tipos, mejor.
           type: c.idTipoCuenta === 1 ? "Ahorros" : "Corriente",
           balance: Number(c.saldoDisponible || c.saldoActual || 0)
         }))
-
-        console.log('✅ Cuentas mapeadas para UI:', mapped)
         setUserAccounts(mapped)
       } catch (e) {
         console.error('❌ Error cargando cuentas:', e.message)
       }
     }
 
-    if (state.user) {
-      loadAccounts()
-    }
-  }, [state.user?.identificacion]) // Dependencia segura
+    if (state.user) loadAccounts()
+  }, [state.user?.identificacion, setUserAccounts])
 
   return (
-    <div className="home-dashboard">
+    <div className="main-content fade-in">
       <header className="header-inline">
         <div>
-          <h1 className="text-gradient" style={{ fontSize: '32px', fontWeight: '800' }}>Panel de Control</h1>
-          <p style={{ color: 'var(--text-muted)' }}>Gestiona tus finanzas en Arcbank</p>
+          <h1 className="text-gradient" style={{ fontSize: '38px', letterSpacing: '-1px' }}>Global Portfolio</h1>
+          <p style={{ color: 'var(--text-muted)', fontWeight: '500' }}>Resumen de sus activos en ARCBANK Premium</p>
         </div>
-        <div style={{ textAlign: 'right' }}>
-          <div className="small" style={{ fontWeight: '600' }}>Bienvenido de nuevo</div>
-          <div style={{ fontSize: '18px', fontWeight: '700', color: 'var(--primary)' }}>{state.user?.name || "Premium User"}</div>
+        <div style={styles.dateLabel}>
+          {new Date().toLocaleDateString('es-EC', { weekday: 'long', day: 'numeric', month: 'long' })}
         </div>
       </header>
 
-      <section style={{ marginTop: '40px' }}>
-        <h2 style={{ fontSize: '20px', marginBottom: '20px', fontWeight: '700' }}>Tus Productos Financieros</h2>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(320px,1fr))', gap: '24px' }}>
+      <section style={{ marginTop: '48px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+          <h2 style={{ fontSize: '22px', fontWeight: '800' }}>Cuentas y Productos</h2>
+          <span style={{ fontSize: '14px', color: 'var(--primary)', fontWeight: '700' }}>{state.user?.accounts?.length || 0} Activos</span>
+        </div>
+
+        <div style={styles.cardGrid}>
           {state.user?.accounts?.length > 0 ? (
             state.user.accounts.map(a => (
-              <div key={a.id} className="premium-card account-card" style={styles.accountCard}>
-                <div style={styles.cardHeader}>
-                  <div style={styles.chip}></div>
-                  <span style={styles.bankName}>ARCBANK</span>
-                </div>
-
-                <div style={styles.cardBody}>
-                  <div style={styles.accountType}>{a.type}</div>
-                  <div style={styles.accountNumber}>•••• •••• •••• {a.number.slice(-4)}</div>
-                </div>
-
-                <div style={styles.cardFooter}>
-                  <div>
-                    <div style={styles.balanceLabel}>Saldo Disponible</div>
-                    <div style={styles.balanceValue}>${a.balance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+              <div key={a.id} className="premium-card" style={styles.metalCard}>
+                <div style={styles.metalOverlay}></div>
+                <div style={styles.cardInfo}>
+                  <div style={styles.cardHead}>
+                    <div style={styles.chip}></div>
+                    <div style={styles.cardBrand}>ARCBANK</div>
                   </div>
-                  <Link to={`/movimientos?cuenta=${a.number}`} style={styles.viewLink}>
-                    Ver Detalles →
-                  </Link>
+
+                  <div style={styles.cardMiddle}>
+                    <div style={styles.accTypeBadge}>{a.type}</div>
+                    <div style={styles.accNum}>{a.number.replace(/(.{4})/g, '$1 ')}</div>
+                  </div>
+
+                  <div style={styles.cardBottom}>
+                    <div style={styles.balContainer}>
+                      <div style={styles.balLabel}>Saldo Disponible</div>
+                      <div style={styles.balValue}>
+                        <span style={styles.currency}>$</span>
+                        {a.balance.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                      </div>
+                    </div>
+                    <Link to="/movimientos" style={styles.miniBtn}>Detalles</Link>
+                  </div>
                 </div>
               </div>
             ))
           ) : (
-            <div className="premium-card" style={{ textAlign: 'center', padding: '40px' }}>
-              <div style={{ fontSize: '40px', marginBottom: '16px' }}>💳</div>
-              <p style={{ color: 'var(--text-muted)' }}>No se encontraron cuentas activas.</p>
+            <div className="premium-card" style={{ gridColumn: '1/-1', textAlign: 'center', padding: '60px' }}>
+              <p style={{ color: 'var(--text-muted)' }}>Cargando portafolio...</p>
             </div>
           )}
         </div>
       </section>
 
-      <section style={{ marginTop: '60px' }}>
-        <div style={styles.quickActions}>
-          <div className="premium-card" style={styles.actionCard}>
-            <div style={{ ...styles.actionIcon, background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6' }}>🔄</div>
-            <h3 style={{ fontSize: '16px', marginTop: '12px' }}>Pagos y Transferencias</h3>
-            <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '4px' }}>Envía dinero al instante</p>
-            <Link to="/transferir" className="modern-btn modern-btn-outline" style={{ marginTop: '16px', fontSize: '14px' }}>Ir a transferir</Link>
+      <section style={{ marginTop: '64px' }}>
+        <h2 style={{ fontSize: '20px', marginBottom: '24px', fontWeight: '800' }}>Atajos Ejecutivos</h2>
+        <div style={styles.shortcutGrid}>
+          <div className="premium-card" style={styles.shortcutCard}>
+            <div style={styles.iconCircle}>💳</div>
+            <div style={{ flex: 1 }}>
+              <h3 style={{ fontSize: '16px' }}>Transferencias Directas</h3>
+              <p style={{ fontSize: '13px', color: 'var(--text-muted)' }}>Mueva fondos entre cuentas Arcbank</p>
+            </div>
+            <Link to="/transferir" className="modern-btn modern-btn-outline" style={{ padding: '8px 16px', fontSize: '12px' }}>Iniciar</Link>
           </div>
-          <div className="premium-card" style={styles.actionCard}>
-            <div style={{ ...styles.actionIcon, background: 'rgba(16, 185, 129, 0.1)', color: '#10b981' }}>📊</div>
-            <h3 style={{ fontSize: '16px', marginTop: '12px' }}>Resumen Mensual</h3>
-            <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '4px' }}>Revisa tu progreso financiero</p>
-            <Link to="/movimientos" className="modern-btn modern-btn-outline" style={{ marginTop: '16px', fontSize: '14px' }}>Ver estadística</Link>
+
+          <div className="premium-card" style={styles.shortcutCard}>
+            <div style={styles.iconCircle}>🌐</div>
+            <div style={{ flex: 1 }}>
+              <h3 style={{ fontSize: '16px' }}>Red Interbancaria</h3>
+              <p style={{ fontSize: '13px', color: 'var(--text-muted)' }}>Pagos a nivel nacional e internacional</p>
+            </div>
+            <Link to="/interbancarias" className="modern-btn modern-btn-outline" style={{ padding: '8px 16px', fontSize: '12px' }}>Operar</Link>
           </div>
         </div>
       </section>
@@ -113,88 +110,136 @@ export default function Home() {
 }
 
 const styles = {
-  accountCard: {
-    padding: '28px',
-    background: 'linear-gradient(135deg,rgba(26, 28, 30, 0.95) 0%, rgba(45, 49, 53, 0.95) 100%)',
+  dateLabel: {
+    background: '#fff',
+    padding: '8px 20px',
+    borderRadius: '30px',
+    fontSize: '14px',
+    fontWeight: '600',
+    color: 'var(--text-muted)',
+    boxShadow: 'var(--shadow-premium)',
+    textTransform: 'capitalize',
+  },
+  cardGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(380px, 1fr))',
+    gap: '32px',
+  },
+  metalCard: {
+    padding: 0,
+    background: '#1a1c1e',
+    height: '240px',
     color: '#fff',
-    border: 'none',
     position: 'relative',
     overflow: 'hidden',
+    border: 'none',
   },
-  cardHeader: {
+  metalOverlay: {
+    position: 'absolute',
+    top: 0, left: 0, right: 0, bottom: 0,
+    background: 'linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 50%, rgba(0,0,0,0.2) 100%)',
+    zIndex: 1,
+  },
+  cardInfo: {
+    position: 'relative',
+    zIndex: 2,
+    padding: '32px',
+    height: '100%',
+    display: 'flex',
+    flexDirection: 'column',
+    justifyContent: 'space-between',
+  },
+  cardHead: {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: '32px',
   },
   chip: {
-    width: '45px',
-    height: '35px',
-    background: 'linear-gradient(135deg, #ffd700 0%, #daa520 100%)',
-    borderRadius: '6px',
-    opacity: '0.8',
+    width: '50px',
+    height: '38px',
+    background: 'linear-gradient(135deg, #dfc18d 0%, #8e6d2f 100%)',
+    borderRadius: '8px',
+    position: 'relative',
+    '&:after': {
+      content: '""',
+      position: 'absolute',
+      width: '30px', height: '1px', background: 'rgba(0,0,0,0.1)', top: '50%', left: '10%'
+    }
   },
-  bankName: {
+  cardBrand: {
     fontFamily: 'Outfit',
     fontWeight: '800',
-    fontSize: '16px',
-    letterSpacing: '2px',
-    color: 'var(--accent)',
+    letterSpacing: '3px',
+    fontSize: '14px',
+    color: 'var(--primary)',
   },
-  cardBody: {
-    marginBottom: '32px',
+  cardMiddle: {
+    marginTop: '20px',
   },
-  accountType: {
-    fontSize: '12px',
+  accTypeBadge: {
+    fontSize: '10px',
     textTransform: 'uppercase',
-    letterSpacing: '1px',
-    color: 'rgba(255,255,255,0.6)',
-    marginBottom: '4px',
+    letterSpacing: '2px',
+    color: 'rgba(255,255,255,0.4)',
+    marginBottom: '8px',
   },
-  accountNumber: {
+  accNum: {
     fontSize: '22px',
     fontFamily: 'monospace',
     letterSpacing: '2px',
+    color: '#fff',
   },
-  cardFooter: {
+  cardBottom: {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'flex-end',
   },
-  balanceLabel: {
+  balLabel: {
     fontSize: '11px',
     textTransform: 'uppercase',
+    color: 'rgba(255,255,255,0.4)',
     letterSpacing: '1px',
-    color: 'rgba(255,255,255,0.6)',
     marginBottom: '4px',
   },
-  balanceValue: {
-    fontSize: '26px',
+  balValue: {
+    fontSize: '32px',
     fontWeight: '700',
+    fontFamily: 'Outfit',
   },
-  viewLink: {
-    color: 'var(--accent)',
+  currency: {
+    fontSize: '18px',
+    marginRight: '6px',
+    color: 'var(--primary)',
+  },
+  miniBtn: {
+    color: 'var(--primary)',
     textDecoration: 'none',
     fontSize: '13px',
-    fontWeight: '600',
+    fontWeight: '700',
+    padding: '6px 14px',
+    background: 'rgba(255,255,255,0.05)',
+    borderRadius: '8px',
   },
-  quickActions: {
+  shortcutGrid: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))',
     gap: '24px',
   },
-  actionCard: {
+  shortcutCard: {
     display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'flex-start',
+    alignItems: 'center',
+    gap: '20px',
+    padding: '30px',
   },
-  actionIcon: {
-    width: '48px',
-    height: '48px',
-    borderRadius: '12px',
+  iconCircle: {
+    width: '56px',
+    height: '56px',
+    borderRadius: '50%',
+    background: 'var(--bg)',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     fontSize: '24px',
+    boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.05)',
   }
-};
+}

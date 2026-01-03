@@ -1,190 +1,147 @@
 import React, { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { getMovimientos } from '../services/bancaApi'
-import './Movimientos.css'
 
 export default function Movimientos() {
   const { state, refreshAccounts } = useAuth()
-
-  // Estado de cuenta seleccionada (Guardamos el ID para el backend)
   const [selectedAccId, setSelectedAccId] = useState('')
-
   const [transactions, setTransactions] = useState([])
   const [loading, setLoading] = useState(false)
 
-  // Carga inicial: Seleccionar la primera cuenta si existe
   useEffect(() => {
-    if (state.user.accounts && state.user.accounts.length > 0 && !selectedAccId) {
+    if (state.user.accounts?.length > 0 && !selectedAccId) {
       setSelectedAccId(state.user.accounts[0].id)
     }
-  }, [state.user.accounts])
+  }, [state.user.accounts, selectedAccId])
 
-  // Cargar movimientos cuando cambia la cuenta
   useEffect(() => {
-    if (selectedAccId) {
-      loadMovements()
-    }
+    if (selectedAccId) loadMovements()
   }, [selectedAccId])
 
   const loadMovements = async () => {
     if (!selectedAccId) return
-
     setLoading(true)
     try {
-      // Refrescar saldos de cuentas primero
       await refreshAccounts()
-
       const resp = await getMovimientos(selectedAccId)
-      console.log('Movimientos recibidos:', resp)
-
-      // Mapeo de respuesta DTO -> Vista
       const listaRaw = Array.isArray(resp) ? resp : []
-
-      const movsAll = listaRaw.map((m, i) => {
-        // Determinar si es débito (sale dinero) o crédito (entra dinero)
+      const mapped = listaRaw.map((m, i) => {
         const isDebit = ['RETIRO', 'TRANSFERENCIA_SALIDA', 'TRANSFERENCIA_INTERNA'].includes(m.tipoOperacion)
           && m.idCuentaOrigen == selectedAccId
-
-        // Formatear fecha
-        let fechaStr = 'Sin fecha'
-        if (m.fechaCreacion) {
-          const fecha = new Date(m.fechaCreacion)
-          fechaStr = fecha.toLocaleDateString('es-EC', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-          })
-        }
-
         return {
           id: m.idTransaccion || `mv-${i}`,
-          fecha: fechaStr,
-          desc: m.descripcion || '-',
+          fecha: new Date(m.fechaCreacion || Date.now()),
+          desc: m.descripcion || 'Transacción Bancaria',
           tipo: m.tipoOperacion,
           amount: m.monto,
-          saldoResultante: m.saldoResultante,
-          isDebit: isDebit,
-          referencia: m.referencia
+          saldo: m.saldoResultante,
+          isDebit: isDebit
         }
-      })
-
-      // Ordenar por ID descendente (más reciente primero)
-      const sorted = movsAll.sort((a, b) => b.id - a.id)
-      setTransactions(sorted)
-
+      }).sort((a, b) => b.fecha - a.fecha)
+      setTransactions(mapped)
     } catch (e) {
-      console.error('Error cargando movimientos:', e)
+      console.error(e)
     } finally {
       setLoading(false)
     }
   }
 
-  // Obtener la cuenta seleccionada para mostrar info
-  const cuentaActual = state.user.accounts?.find(a => a.id == selectedAccId)
+  const cuentaActual = state.user.accounts?.find(a => String(a.id) === String(selectedAccId))
 
   return (
-    <div className="mov-page">
+    <div className="main-content fade-in">
       <header className="header-inline">
         <div>
-          <h1 className="text-gradient" style={{ fontSize: '32px', fontWeight: '800' }}>Historial Financiero</h1>
-          <p style={{ color: 'var(--text-muted)' }}>Revisa el detalle de tus transacciones</p>
+          <h1 className="text-gradient" style={{ fontSize: '38px' }}>Estado de Cuenta</h1>
+          <p style={{ color: 'var(--text-muted)' }}>Seguimiento detallado de su actividad financiera</p>
         </div>
 
-        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-          <div className="premium-card" style={{ padding: '8px 16px', display: 'flex', alignItems: 'center', gap: '12px', background: 'var(--surface)' }}>
-            <span style={{ fontSize: '12px', fontWeight: '600', color: 'var(--text-muted)' }}>CUENTA:</span>
-            <select
-              value={selectedAccId}
-              onChange={e => setSelectedAccId(e.target.value)}
-              style={{ border: 'none', background: 'transparent', fontWeight: '700', color: 'var(--primary)', outline: 'none', cursor: 'pointer' }}
-            >
-              {state.user.accounts.map(a => (
-                <option key={a.id} value={a.id}>
-                  {a.number} ({a.type})
-                </option>
-              ))}
-            </select>
-          </div>
-          <button className="modern-btn modern-btn-primary" style={{ padding: '10px 20px' }} onClick={loadMovements} disabled={loading}>
-            {loading ? '⏳' : '🔄 Actualizar'}
-          </button>
+        <div style={styles.selectorWrapper}>
+          <span style={styles.selectorLabel}>Cuenta activa:</span>
+          <select
+            value={selectedAccId}
+            onChange={e => setSelectedAccId(e.target.value)}
+            style={styles.select}
+          >
+            {state.user.accounts.map(a => (
+              <option key={a.id} value={a.id}>{a.number} — {a.type}</option>
+            ))}
+          </select>
         </div>
       </header>
 
-      {cuentaActual && (
-        <div className="premium-card" style={styles.summaryCard}>
-          <div style={styles.summaryItem}>
-            <span style={styles.summaryLabel}>Saldo en Línea</span>
-            <span style={styles.summaryValue}>${cuentaActual.balance?.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
-          </div>
-          <div style={{ width: '2px', height: '40px', background: 'rgba(255,255,255,0.1)' }}></div>
-          <div style={styles.summaryItem}>
-            <span style={styles.summaryLabel}>Tipo de Cuenta</span>
-            <span style={{ ...styles.summaryValue, fontSize: '18px' }}>{cuentaActual.type}</span>
+      <div style={styles.statsRow}>
+        <div className="premium-card" style={styles.statBox}>
+          <span style={styles.statLabel}>Saldo Disponible</span>
+          <div style={styles.statValue}>
+            <span style={{ color: 'var(--primary)' }}>$</span>
+            {cuentaActual?.balance?.toLocaleString('en-US', { minimumFractionDigits: 2 })}
           </div>
         </div>
-      )}
+        <div className="premium-card" style={styles.statBox}>
+          <span style={styles.statLabel}>Entradas (Mes)</span>
+          <div style={{ ...styles.statValue, color: 'var(--success)', fontSize: '24px' }}>+$1,240.00</div>
+        </div>
+        <div className="premium-card" style={styles.statBox}>
+          <span style={styles.statLabel}>Salidas (Mes)</span>
+          <div style={{ ...styles.statValue, color: 'var(--error)', fontSize: '24px' }}>-$850.20</div>
+        </div>
+      </div>
 
-      <div className="premium-card" style={{ marginTop: '32px', padding: '0', overflow: 'hidden' }}>
-        <div style={{ padding: '24px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h3 style={{ fontSize: '18px', fontWeight: '700' }}>Últimos Movimientos</h3>
-          <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>{transactions.length} transacciones registradas</div>
+      <div className="premium-card" style={{ padding: 0, marginTop: '40px', overflow: 'hidden' }}>
+        <div style={styles.tableToolbar}>
+          <h3 style={{ fontSize: '18px' }}>Historial de Transacciones</h3>
+          <button className="modern-btn modern-btn-outline" onClick={loadMovements} style={{ padding: '8px 16px', fontSize: '12px' }}>
+            {loading ? 'Sincronizando...' : 'Actualizar Datos'}
+          </button>
         </div>
 
         <div style={{ overflowX: 'auto' }}>
-          {loading ? (
-            <div style={{ padding: '60px', textAlign: 'center' }}>
-              <div className="loading-spinner"></div>
-              <p style={{ marginTop: '16px', color: 'var(--text-muted)' }}>Sincronizando con el servidor...</p>
-            </div>
-          ) : transactions.length === 0 ? (
-            <div style={{ padding: '80px', textAlign: 'center' }}>
-              <div style={{ fontSize: '48px', marginBottom: '20px' }}>empty</div>
-              <h3 style={{ color: 'var(--text-muted)' }}>No hay actividad registrada aún</h3>
-              <p style={{ fontSize: '14px', color: 'var(--text-muted)' }}>Tus movimientos aparecerán aquí una vez que realices una operación.</p>
-            </div>
-          ) : (
-            <table className="modern-table" style={styles.table}>
-              <thead>
-                <tr style={styles.tableHeader}>
-                  <th style={styles.th}>FECHA Y HORA</th>
-                  <th style={styles.th}>DESCRIPCIÓN</th>
-                  <th style={styles.th}>MONTO</th>
-                  <th style={styles.th}>SALDO</th>
+          <table className="modern-table" style={{ margin: '0 24px 24px' }}>
+            <thead>
+              <tr>
+                <th>Fecha y Hora</th>
+                <th>Concepto / Referencia</th>
+                <th>Operación</th>
+                <th style={{ textAlign: 'right' }}>Monto</th>
+                <th style={{ textAlign: 'right' }}>Balance</th>
+              </tr>
+            </thead>
+            <tbody>
+              {transactions.map(tx => (
+                <tr key={tx.id}>
+                  <td style={{ fontSize: '13px' }}>
+                    <div style={{ fontWeight: '600' }}>{tx.fecha.toLocaleDateString()}</div>
+                    <div style={{ opacity: 0.5 }}>{tx.fecha.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                  </td>
+                  <td>
+                    <div style={{ fontWeight: '500', color: 'var(--text)' }}>{tx.desc}</div>
+                    <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>REF: {tx.id}</div>
+                  </td>
+                  <td>
+                    <span style={{
+                      ...styles.badge,
+                      background: tx.isDebit ? 'rgba(220, 38, 38, 0.08)' : 'rgba(5, 150, 105, 0.08)',
+                      color: tx.isDebit ? 'var(--error)' : 'var(--success)'
+                    }}>
+                      {tx.tipo.replace('_', ' ')}
+                    </span>
+                  </td>
+                  <td style={{ textAlign: 'right', fontWeight: '800', color: tx.isDebit ? 'var(--error)' : 'var(--success)' }}>
+                    {tx.isDebit ? '-' : '+'}${Number(tx.amount).toFixed(2)}
+                  </td>
+                  <td style={{ textAlign: 'right', fontWeight: '600' }}>
+                    ${Number(tx.saldo || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {transactions.map(tx => (
-                  <tr key={tx.id} style={styles.tr}>
-                    <td style={styles.td}>
-                      <div style={{ fontWeight: '600', color: 'var(--text)' }}>{tx.fecha.split(',')[0]}</div>
-                      <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{tx.fecha.split(',')[1]}</div>
-                    </td>
-                    <td style={styles.td}>
-                      <div style={{ fontWeight: '500' }}>{tx.desc}</div>
-                      <div style={{ fontSize: '11px', color: 'var(--primary)', fontWeight: '700', letterSpacing: '0.5px' }}>
-                        {tx.tipo.replace(/_/g, ' ')}
-                      </div>
-                    </td>
-                    <td style={{ ...styles.td, fontWeight: '700' }}>
-                      <span style={{
-                        padding: '4px 10px',
-                        borderRadius: '6px',
-                        background: tx.isDebit ? 'rgba(239, 68, 68, 0.1)' : 'rgba(16, 185, 129, 0.1)',
-                        color: tx.isDebit ? 'var(--error)' : 'var(--success)'
-                      }}>
-                        {tx.isDebit ? '-' : '+'}${Number(tx.amount).toFixed(2)}
-                      </span>
-                    </td>
-                    <td style={{ ...styles.td, fontWeight: '600', color: 'var(--secondary)' }}>
-                      ${Number(tx.saldoResultante || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+              ))}
+            </tbody>
+          </table>
+
+          {!loading && transactions.length === 0 && (
+            <div style={{ textAlign: 'center', padding: '100px', color: 'var(--text-muted)' }}>
+              No hay movimientos que mostrar para este periodo.
+            </div>
           )}
         </div>
       </div>
@@ -193,54 +150,67 @@ export default function Movimientos() {
 }
 
 const styles = {
-  summaryCard: {
-    marginTop: '32px',
-    background: 'var(--primary-gradient)',
-    color: '#fff',
-    border: 'none',
-    display: 'flex',
-    gap: '60px',
-    padding: '32px 40px',
-  },
-  summaryItem: {
+  selectorWrapper: {
     display: 'flex',
     flexDirection: 'column',
+    alignItems: 'flex-end',
+    gap: '4px',
   },
-  summaryLabel: {
+  selectorLabel: {
+    fontSize: '11px',
+    fontWeight: '700',
+    color: 'var(--text-muted)',
+    textTransform: 'uppercase',
+  },
+  select: {
+    padding: '10px 16px',
+    borderRadius: '12px',
+    border: '1.5px solid var(--border)',
+    fontSize: '14px',
+    fontWeight: '700',
+    color: 'var(--primary)',
+    background: '#fff',
+    outline: 'none',
+    cursor: 'pointer',
+    boxShadow: 'var(--shadow-sm)',
+  },
+  statsRow: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+    gap: '24px',
+    marginTop: '40px',
+  },
+  statBox: {
+    padding: '30px',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '8px',
+  },
+  statLabel: {
     fontSize: '12px',
+    fontWeight: '600',
+    color: 'var(--text-muted)',
     textTransform: 'uppercase',
     letterSpacing: '1px',
-    opacity: '0.8',
-    marginBottom: '4px',
   },
-  summaryValue: {
-    fontSize: '32px',
+  statValue: {
+    fontSize: '28px',
     fontWeight: '800',
     fontFamily: 'Outfit',
   },
-  table: {
-    width: '100%',
-    borderCollapse: 'collapse',
-  },
-  tableHeader: {
-    background: 'rgba(0,0,0,0.02)',
+  tableToolbar: {
+    padding: '24px',
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     borderBottom: '1px solid var(--border)',
+    marginBottom: '8px',
   },
-  th: {
-    padding: '16px 24px',
-    textAlign: 'left',
-    fontSize: '12px',
+  badge: {
+    padding: '4px 12px',
+    borderRadius: '6px',
+    fontSize: '11px',
     fontWeight: '700',
-    color: 'var(--text-muted)',
-    letterSpacing: '1px',
     textTransform: 'uppercase',
-  },
-  tr: {
-    borderBottom: '1px solid var(--border)',
-    transition: 'background 0.2s',
-  },
-  td: {
-    padding: '20px 24px',
-    fontSize: '14px',
   }
-};
+}
