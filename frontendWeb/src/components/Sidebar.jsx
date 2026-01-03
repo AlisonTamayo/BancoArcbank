@@ -1,231 +1,176 @@
 import React, { useState, useEffect } from "react";
-import { NavLink, useNavigate, useLocation } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { FiHome, FiList, FiLogOut, FiUser, FiArrowLeftRight, FiMenu, FiX } from "react-icons/fi";
-import { TbArrowsExchange } from "react-icons/tb";
+import { FiHome, FiActivity, FiArrowRight, FiLogOut, FiUser, FiZap } from "react-icons/fi";
 
-export default function Sidebar({ isOpen = true, onRequestClose }) {
+export default function Sidebar({ isOpen, onRequestClose }) {
   const { state, logout } = useAuth();
   const navigate = useNavigate();
-  const location = useLocation();
-
-  const isDevView = location.pathname && location.pathname.includes("-dev");
-  const interbancariasPath = isDevView ? "/interbancarias-dev" : "/interbancarias";
-  const transferirPath = isDevView ? "/transferir-dev" : "/transferir";
-
-  const [isMobile, setIsMobile] = useState(window.innerWidth <= 1024);
-
-  useEffect(() => {
-    const onResize = () => setIsMobile(window.innerWidth <= 1024);
-    window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
-  }, []);
 
   const handleLogout = () => {
     logout();
     navigate("/login");
   };
 
-  const navItems = [
-    { path: "/", icon: <FiHome />, label: "Dashboard", end: true },
-    { path: "/movimientos", icon: <FiList />, label: "Movimientos" },
-    { path: transferirPath, icon: <FiArrowLeftRight />, label: "Transferir" },
-    { path: interbancariasPath, icon: <TbArrowsExchange />, label: "Otros Bancos" },
-    { path: "/perfil", icon: <FiUser />, label: "Mi Perfil" },
+  const menuItems = [
+    { path: "/", icon: <FiHome />, label: "PANEL ELITE", end: true },
+    { path: "/movimientos", icon: <FiActivity />, label: "ACTIVIDAD" },
+    { path: "/transferir", icon: <FiZap />, label: "TRANSFERIR" },
+    { path: "/interbancarias", icon: <FiArrowRight />, label: "RED EXTERNA" },
+    { path: "/perfil", icon: <FiUser />, label: "PORTAFOLIO" },
   ];
 
   return (
-    <>
-      <aside
-        className={`sidebar ${isOpen ? 'open' : 'closed'}`}
-        style={styles.sidebar(isOpen, isMobile)}
-      >
-        <div style={styles.brandContainer}>
-          <div style={styles.logoIcon}>A</div>
-          <span style={styles.brandTitle} className="brand-text">ARCBANK</span>
+    <aside style={styles.sidebar}>
+      <div style={styles.brandArea}>
+        <div style={styles.brandLogo}>A</div>
+        <h1 style={styles.brandText}>ARCBANK</h1>
+        <div style={styles.brandSub}>EST. 2025</div>
+      </div>
+
+      <div style={styles.userCard}>
+        <div style={styles.avatar}>
+          {state?.user?.name ? state.user.name[0] : "A"}
         </div>
-
-        <div style={styles.userCard}>
-          <div style={styles.avatar}>
-            {state?.user?.name ? state.user.name[0].toUpperCase() : "U"}
-          </div>
-          <div style={styles.userInfo}>
-            <div style={styles.userName}>{state?.user?.name || "Premium User"}</div>
-            <div style={styles.userRole}>Private Banking</div>
-          </div>
+        <div style={styles.userMeta}>
+          <div style={styles.userName}>{state?.user?.name || "Premium Member"}</div>
+          <div style={styles.accStatus}>PRIVATE BANKING</div>
         </div>
+      </div>
 
-        <nav style={styles.nav}>
-          <ul style={styles.navList}>
-            {navItems.map((item) => (
-              <li key={item.path}>
-                <NavLink
-                  to={item.path}
-                  end={item.end}
-                  style={({ isActive }) => styles.navLink(isActive)}
-                  onClick={isMobile ? onRequestClose : undefined}
-                >
-                  <span style={styles.navIcon}>{item.icon}</span>
-                  <span style={styles.navLabel}>{item.label}</span>
-                </NavLink>
-              </li>
-            ))}
-          </ul>
-        </nav>
+      <nav style={styles.nav}>
+        {menuItems.map((item) => (
+          <NavLink
+            key={item.path}
+            to={item.path}
+            end={item.end}
+            style={({ isActive }) => styles.navLink(isActive)}
+          >
+            <span style={styles.icon}>{item.icon}</span>
+            <span style={styles.label}>{item.label}</span>
+          </NavLink>
+        ))}
+      </nav>
 
-        <div style={styles.footer}>
-          <button onClick={handleLogout} style={styles.logoutBtn}>
-            <FiLogOut size={18} /> <span>Cerrar Sesión</span>
-          </button>
-        </div>
-      </aside>
-
-      {isMobile && isOpen && (
-        <div style={styles.mobileOverlay} onClick={onRequestClose} />
-      )}
-    </>
+      <div style={styles.footer}>
+        <button onClick={handleLogout} style={styles.logoutBtn}>
+          <FiLogOut /> <span>FINALIZAR SESIÓN</span>
+        </button>
+      </div>
+    </aside>
   );
 }
 
 const styles = {
-  sidebar: (isOpen, isMobile) => ({
-    width: "var(--sidebar-width)",
-    background: "var(--secondary)",
-    height: "100vh",
+  sidebar: {
+    width: "var(--sidebar-w)",
+    backgroundColor: "#000",
+    borderRight: "1px solid rgba(212, 175, 55, 0.3)",
     display: "flex",
     flexDirection: "column",
-    padding: "40px 24px",
-    position: isMobile ? "fixed" : "sticky",
+    padding: "50px 0",
+    height: "100vh",
+    position: "sticky",
     top: 0,
-    left: isMobile && !isOpen ? "-100%" : 0,
-    zIndex: 1100,
-    transition: "all 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
-    boxShadow: "10px 0 30px rgba(0,0,0,0.2)",
-    color: "#fff",
-  }),
-  brandContainer: {
-    display: "flex",
-    alignItems: "center",
-    gap: "14px",
-    marginBottom: "48px",
-    paddingLeft: "8px",
+    zIndex: 100,
   },
-  logoIcon: {
-    width: "32px",
-    height: "32px",
-    background: "var(--primary-gradient)",
-    borderRadius: "8px",
+  brandArea: {
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    marginBottom: "60px",
+  },
+  brandLogo: {
+    width: "45px",
+    height: "45px",
+    background: "linear-gradient(135deg, #BF953F, #AA771C)",
+    borderRadius: "2px",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    fontWeight: "800",
-    color: "#fff",
-    fontSize: "18px",
-  },
-  brandTitle: {
     fontSize: "24px",
+    fontWeight: "900",
+    color: "#000",
+    marginBottom: "15px",
+    boxShadow: "0 0 20px rgba(191, 149, 63, 0.4)",
+  },
+  brandText: {
+    fontSize: "20px",
+    fontWeight: "900",
+    letterSpacing: "5px",
+    color: "#fff",
+  },
+  brandSub: {
+    fontSize: "10px",
     letterSpacing: "3px",
-    color: "var(--accent)",
+    color: "var(--gold-primary)",
+    marginTop: "5px",
   },
   userCard: {
+    padding: "0 25px",
+    marginBottom: "50px",
     display: "flex",
     alignItems: "center",
-    gap: "14px",
-    padding: "20px",
-    background: "var(--secondary-light)",
-    borderRadius: "16px",
-    marginBottom: "40px",
-    border: "1px solid rgba(255,255,255,0.05)",
+    gap: "15px",
   },
   avatar: {
-    width: "48px",
-    height: "48px",
-    borderRadius: "50%",
-    background: "var(--primary-gradient)",
+    width: "40px",
+    height: "40px",
+    background: "#111",
+    border: "1px solid var(--gold-primary)",
+    borderRadius: "4px",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
     fontWeight: "700",
-    fontSize: "20px",
-    color: "#fff",
-    border: "2px solid rgba(255,255,255,0.1)",
+    color: "var(--gold-primary)",
   },
-  userInfo: {
-    display: "flex",
-    flexDirection: "column",
-  },
+  userMeta: {},
   userName: {
-    fontSize: "15px",
-    fontWeight: "600",
-    whiteSpace: "nowrap",
-    overflow: "hidden",
-    textOverflow: "ellipsis",
-    maxWidth: "140px",
+    fontSize: "13px",
+    fontWeight: "700",
+    color: "#fff",
   },
-  userRole: {
-    fontSize: "11px",
-    color: "var(--primary-light)",
-    textTransform: "uppercase",
+  accStatus: {
+    fontSize: "9px",
+    color: "var(--gold-primary)",
     letterSpacing: "1px",
     marginTop: "2px",
   },
   nav: {
     flex: 1,
+    padding: "0 15px",
   },
-  navList: {
-    listStyle: "none",
-    padding: 0,
-    margin: 0,
-    display: "flex",
-    flexDirection: "column",
-    gap: "10px",
-  },
-  navLink: (isActive) => ({
+  navLink: (active) => ({
     display: "flex",
     alignItems: "center",
-    gap: "16px",
+    gap: "15px",
     padding: "16px 20px",
-    borderRadius: "14px",
-    color: isActive ? "#fff" : "rgba(255,255,255,0.5)",
     textDecoration: "none",
-    fontSize: "15px",
-    fontWeight: isActive ? "600" : "500",
-    background: isActive ? "rgba(255,255,255,0.08)" : "transparent",
-    transition: "all 0.2s ease",
-    borderLeft: isActive ? "4px solid var(--primary)" : "4px solid transparent",
+    color: active ? "#000" : "rgba(255,255,255,0.4)",
+    background: active ? "var(--gold-primary)" : "transparent",
+    fontWeight: active ? "900" : "500",
+    fontSize: "11px",
+    letterSpacing: "2px",
+    borderRadius: "2px",
+    marginBottom: "10px",
+    transition: "0.2s ease",
   }),
-  navIcon: {
-    fontSize: "20px",
-    display: "flex",
-  },
-  navLabel: {},
+  icon: { fontSize: "16px" },
   footer: {
+    padding: "0 30px",
     marginTop: "auto",
-    paddingTop: "30px",
-    borderTop: "1px solid rgba(255,255,255,0.05)",
   },
   logoutBtn: {
-    width: "100%",
+    background: "none",
+    border: "none",
+    color: "#ff4d4d",
+    fontSize: "10px",
+    fontWeight: "800",
+    letterSpacing: "2px",
     display: "flex",
     alignItems: "center",
-    gap: "12px",
-    padding: "16px 20px",
-    borderRadius: "14px",
-    background: "transparent",
-    border: "none",
-    color: "#ff6b6b",
-    fontSize: "15px",
-    fontWeight: "600",
+    gap: "10px",
     cursor: "pointer",
-    transition: "all 0.2s ease",
-  },
-  mobileOverlay: {
-    position: "fixed",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    background: "rgba(0,0,0,0.5)",
-    zIndex: 1050,
   }
 };

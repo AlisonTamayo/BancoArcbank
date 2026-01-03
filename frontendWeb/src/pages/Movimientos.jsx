@@ -5,7 +5,7 @@ import { getMovimientos } from '../services/bancaApi'
 export default function Movimientos() {
   const { state, refreshAccounts } = useAuth()
   const [selectedAccId, setSelectedAccId] = useState('')
-  const [transactions, setTransactions] = useState([])
+  const [txs, setTxs] = useState([])
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
@@ -15,30 +15,26 @@ export default function Movimientos() {
   }, [state.user.accounts, selectedAccId])
 
   useEffect(() => {
-    if (selectedAccId) loadMovements()
+    if (selectedAccId) load()
   }, [selectedAccId])
 
-  const loadMovements = async () => {
-    if (!selectedAccId) return
+  const load = async () => {
     setLoading(true)
     try {
       await refreshAccounts()
       const resp = await getMovimientos(selectedAccId)
-      const listaRaw = Array.isArray(resp) ? resp : []
-      const mapped = listaRaw.map((m, i) => {
-        const isDebit = ['RETIRO', 'TRANSFERENCIA_SALIDA', 'TRANSFERENCIA_INTERNA'].includes(m.tipoOperacion)
-          && m.idCuentaOrigen == selectedAccId
-        return {
-          id: m.idTransaccion || `mv-${i}`,
-          fecha: new Date(m.fechaCreacion || Date.now()),
-          desc: m.descripcion || 'Transacción Bancaria',
-          tipo: m.tipoOperacion,
-          amount: m.monto,
-          saldo: m.saldoResultante,
-          isDebit: isDebit
-        }
-      }).sort((a, b) => b.fecha - a.fecha)
-      setTransactions(mapped)
+      const list = Array.isArray(resp) ? resp : []
+      const mapped = list.map(m => ({
+        id: m.idTransaccion,
+        date: new Date(m.fechaCreacion),
+        desc: m.descripcion || 'Servicio General',
+        type: m.tipoOperacion,
+        amount: m.monto,
+        balance: m.saldoResultante,
+        isDebit: ['RETIRO', 'TRANSFERENCIA_SALIDA', 'TRANSFERENCIA_INTERNA'].includes(m.tipoOperacion)
+          && String(m.idCuentaOrigen) === String(selectedAccId)
+      })).sort((a, b) => b.date - a.date)
+      setTxs(mapped)
     } catch (e) {
       console.error(e)
     } finally {
@@ -46,18 +42,16 @@ export default function Movimientos() {
     }
   }
 
-  const cuentaActual = state.user.accounts?.find(a => String(a.id) === String(selectedAccId))
-
   return (
     <div className="main-content fade-in">
-      <header className="header-inline">
+      <header style={styles.header}>
         <div>
-          <h1 className="text-gradient" style={{ fontSize: '38px' }}>Estado de Cuenta</h1>
-          <p style={{ color: 'var(--text-muted)' }}>Seguimiento detallado de su actividad financiera</p>
+          <h2 style={{ fontSize: '12px', letterSpacing: '4px', color: 'var(--gold-primary)', marginBottom: '10px' }}>REGISTRO HISTÓRICO</h2>
+          <h1 className="title-xl">Libro Mayor</h1>
         </div>
 
-        <div style={styles.selectorWrapper}>
-          <span style={styles.selectorLabel}>Cuenta activa:</span>
+        <div style={styles.filterBox}>
+          <label style={styles.filterLabel}>SELECCIONAR INSTRUMENTO</label>
           <select
             value={selectedAccId}
             onChange={e => setSelectedAccId(e.target.value)}
@@ -70,147 +64,125 @@ export default function Movimientos() {
         </div>
       </header>
 
-      <div style={styles.statsRow}>
-        <div className="premium-card" style={styles.statBox}>
-          <span style={styles.statLabel}>Saldo Disponible</span>
-          <div style={styles.statValue}>
-            <span style={{ color: 'var(--primary)' }}>$</span>
-            {cuentaActual?.balance?.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+      <div style={styles.summaryGrid}>
+        <div className="premium-card" style={styles.summaryCard}>
+          <div style={styles.sumLabel}>LIQUIDEZ ACTUAL</div>
+          <div style={styles.sumVal}>
+            ${state.user.accounts.find(a => String(a.id) === String(selectedAccId))?.balance.toLocaleString('en-US', { minimumFractionDigits: 2 })}
           </div>
         </div>
-        <div className="premium-card" style={styles.statBox}>
-          <span style={styles.statLabel}>Entradas (Mes)</span>
-          <div style={{ ...styles.statValue, color: 'var(--success)', fontSize: '24px' }}>+$1,240.00</div>
-        </div>
-        <div className="premium-card" style={styles.statBox}>
-          <span style={styles.statLabel}>Salidas (Mes)</span>
-          <div style={{ ...styles.statValue, color: 'var(--error)', fontSize: '24px' }}>-$850.20</div>
+        <div className="premium-card" style={styles.summaryCard}>
+          <div style={styles.sumLabel}>OPERACIONES TOTALES</div>
+          <div style={styles.sumVal}>{txs.length}</div>
         </div>
       </div>
 
-      <div className="premium-card" style={{ padding: 0, marginTop: '40px', overflow: 'hidden' }}>
-        <div style={styles.tableToolbar}>
-          <h3 style={{ fontSize: '18px' }}>Historial de Transacciones</h3>
-          <button className="modern-btn modern-btn-outline" onClick={loadMovements} style={{ padding: '8px 16px', fontSize: '12px' }}>
-            {loading ? 'Sincronizando...' : 'Actualizar Datos'}
-          </button>
-        </div>
-
-        <div style={{ overflowX: 'auto' }}>
-          <table className="modern-table" style={{ margin: '0 24px 24px' }}>
-            <thead>
-              <tr>
-                <th>Fecha y Hora</th>
-                <th>Concepto / Referencia</th>
-                <th>Operación</th>
-                <th style={{ textAlign: 'right' }}>Monto</th>
-                <th style={{ textAlign: 'right' }}>Balance</th>
+      <div className="premium-card" style={{ padding: 0, marginTop: '40px' }}>
+        <table className="luxury-table">
+          <thead>
+            <tr>
+              <th>CRONOLOGÍA</th>
+              <th>CONCEPTO</th>
+              <th>MODALIDAD</th>
+              <th style={{ textAlign: 'right' }}>VALOR</th>
+              <th style={{ textAlign: 'right' }}>RESERVA FINAL</th>
+            </tr>
+          </thead>
+          <tbody>
+            {txs.map(tx => (
+              <tr key={tx.id}>
+                <td style={{ color: 'var(--text-dim)', fontSize: '13px' }}>
+                  {tx.date.toLocaleDateString()} <br />
+                  <span style={{ fontSize: '10px' }}>{tx.date.toLocaleTimeString()}</span>
+                </td>
+                <td style={{ fontWeight: '600', letterSpacing: '0.5px' }}>{tx.desc}</td>
+                <td>
+                  <span style={{
+                    color: tx.isDebit ? 'var(--error-glow)' : 'var(--success-glow)',
+                    fontSize: '10px',
+                    fontWeight: '800',
+                    border: `1px solid ${tx.isDebit ? 'var(--error-glow)' : 'var(--success-glow)'}`,
+                    padding: '4px 8px',
+                    borderRadius: '2px'
+                  }}>
+                    {tx.type}
+                  </span>
+                </td>
+                <td style={{
+                  textAlign: 'right',
+                  fontWeight: '900',
+                  fontSize: '18px',
+                  color: tx.isDebit ? 'var(--error-glow)' : 'var(--success-glow)'
+                }}>
+                  {tx.isDebit ? '-' : '+'}${tx.amount.toFixed(2)}
+                </td>
+                <td style={{ textAlign: 'right', fontWeight: '800', fontFamily: 'monospace' }}>
+                  ${(tx.balance || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                </td>
               </tr>
-            </thead>
-            <tbody>
-              {transactions.map(tx => (
-                <tr key={tx.id}>
-                  <td style={{ fontSize: '13px' }}>
-                    <div style={{ fontWeight: '600' }}>{tx.fecha.toLocaleDateString()}</div>
-                    <div style={{ opacity: 0.5 }}>{tx.fecha.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
-                  </td>
-                  <td>
-                    <div style={{ fontWeight: '500', color: 'var(--text)' }}>{tx.desc}</div>
-                    <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>REF: {tx.id}</div>
-                  </td>
-                  <td>
-                    <span style={{
-                      ...styles.badge,
-                      background: tx.isDebit ? 'rgba(220, 38, 38, 0.08)' : 'rgba(5, 150, 105, 0.08)',
-                      color: tx.isDebit ? 'var(--error)' : 'var(--success)'
-                    }}>
-                      {tx.tipo.replace('_', ' ')}
-                    </span>
-                  </td>
-                  <td style={{ textAlign: 'right', fontWeight: '800', color: tx.isDebit ? 'var(--error)' : 'var(--success)' }}>
-                    {tx.isDebit ? '-' : '+'}${Number(tx.amount).toFixed(2)}
-                  </td>
-                  <td style={{ textAlign: 'right', fontWeight: '600' }}>
-                    ${Number(tx.saldo || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-
-          {!loading && transactions.length === 0 && (
-            <div style={{ textAlign: 'center', padding: '100px', color: 'var(--text-muted)' }}>
-              No hay movimientos que mostrar para este periodo.
-            </div>
-          )}
-        </div>
+            ))}
+          </tbody>
+        </table>
+        {txs.length === 0 && !loading && (
+          <div style={{ padding: '60px', textAlign: 'center', color: 'var(--text-dim)' }}>
+            SIN ACTIVIDAD REGISTRADA EN ESTE INSTRUMENTO.
+          </div>
+        )}
       </div>
     </div>
   )
 }
 
 const styles = {
-  selectorWrapper: {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'flex-end',
-    gap: '4px',
-  },
-  selectorLabel: {
-    fontSize: '11px',
-    fontWeight: '700',
-    color: 'var(--text-muted)',
-    textTransform: 'uppercase',
-  },
-  select: {
-    padding: '10px 16px',
-    borderRadius: '12px',
-    border: '1.5px solid var(--border)',
-    fontSize: '14px',
-    fontWeight: '700',
-    color: 'var(--primary)',
-    background: '#fff',
-    outline: 'none',
-    cursor: 'pointer',
-    boxShadow: 'var(--shadow-sm)',
-  },
-  statsRow: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-    gap: '24px',
-    marginTop: '40px',
-  },
-  statBox: {
-    padding: '30px',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '8px',
-  },
-  statLabel: {
-    fontSize: '12px',
-    fontWeight: '600',
-    color: 'var(--text-muted)',
-    textTransform: 'uppercase',
-    letterSpacing: '1px',
-  },
-  statValue: {
-    fontSize: '28px',
-    fontWeight: '800',
-    fontFamily: 'Outfit',
-  },
-  tableToolbar: {
-    padding: '24px',
+  header: {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-    borderBottom: '1px solid var(--border)',
-    marginBottom: '8px',
+    marginBottom: '60px',
   },
-  badge: {
-    padding: '4px 12px',
-    borderRadius: '6px',
+  filterBox: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'flex-end',
+    gap: '10px',
+  },
+  filterLabel: {
+    fontSize: '9px',
+    letterSpacing: '2px',
+    color: 'rgba(255,255,255,0.4)',
+  },
+  select: {
+    background: '#000',
+    color: 'var(--gold-primary)',
+    border: '1px solid var(--gold-primary)',
+    padding: '12px 20px',
+    fontSize: '12px',
+    fontWeight: '800',
+    letterSpacing: '1px',
+    outline: 'none',
+    cursor: 'pointer',
+    borderRadius: '4px',
+  },
+  summaryGrid: {
+    display: 'grid',
+    gridTemplateColumns: '1fr 1fr',
+    gap: '24px',
+  },
+  summaryCard: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: '30px 40px',
+  },
+  sumLabel: {
     fontSize: '11px',
-    fontWeight: '700',
-    textTransform: 'uppercase',
+    letterSpacing: '2px',
+    color: 'var(--text-dim)',
+  },
+  sumVal: {
+    fontSize: '28px',
+    fontWeight: '900',
+    color: '#fff',
+    fontFamily: 'monospace',
   }
 }

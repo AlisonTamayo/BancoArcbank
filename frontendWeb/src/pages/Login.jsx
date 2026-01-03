@@ -2,18 +2,14 @@ import React, { useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { loginExitoso, crearCuentaWeb } from "../services/bancaApi";
 import { useNavigate } from "react-router-dom";
-import { FiUser, FiLock, FiEye, FiEyeOff, FiCreditCard } from "react-icons/fi";
 
 export default function Login() {
   const [isRegister, setIsRegister] = useState(false);
   const [identificacion, setIdentificacion] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
-  const [tipoIdentificacion, setTipoIdentificacion] = useState("CEDULA");
-
-  const [showPass, setShowPass] = useState(false);
-  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   const { login: authLogin } = useAuth();
   const navigate = useNavigate();
@@ -22,22 +18,18 @@ export default function Login() {
     e.preventDefault();
     setError("");
     setLoading(true);
-
     try {
       if (isRegister) {
-        if (!name || !identificacion || !password) throw new Error("Todos los campos son requeridos");
-        const resp = await crearCuentaWeb({ identificacion, password, name, tipoIdentificacion });
-        if (resp) {
-          setIsRegister(false);
-          setError("Cuenta creada con éxito. Por favor, inicie sesión.");
-        }
+        await crearCuentaWeb({ identificacion, password, name, tipoIdentificacion: "CEDULA" });
+        setIsRegister(false);
+        setError("REGISTRO EXITOSO. PROCEDA A IDENTIFICARSE.");
       } else {
         const user = await loginExitoso(identificacion, password);
         authLogin(user);
         navigate("/");
       }
     } catch (err) {
-      setError(err.message || "Error en la operación");
+      setError(err.message || "FALLO EN LA AUTENTICACIÓN");
     } finally {
       setLoading(false);
     }
@@ -45,89 +37,62 @@ export default function Login() {
 
   return (
     <div style={styles.container}>
-      <div style={styles.loginCard} className="fade-in">
-        <div style={styles.leftPane}>
-          <div style={styles.brandBox}>
-            <div style={styles.logoIcon}>A</div>
-            <h1 className="brand-text" style={styles.brandTitle}>ARCBANK</h1>
-          </div>
-
-          <div style={styles.contentHeader}>
-            <h2 style={styles.formTitle}>{isRegister ? "Join the Circle" : "Welcome Back"}</h2>
-            <p style={styles.formSubtitle}>
-              {isRegister ? "Start your journey with premium banking services." : "Experience elite financial management at your fingertips."}
-            </p>
-          </div>
-
-          <form onSubmit={handleSubmit} style={styles.form}>
-            {isRegister && (
-              <div style={styles.inputGroup}>
-                <label className="label-text">Nombre Completo</label>
-                <div style={styles.inputWrapper}>
-                  <FiUser style={styles.inputIcon} />
-                  <input
-                    className="modern-input"
-                    placeholder="Ej: Alejandro Magno"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                  />
-                </div>
-              </div>
-            )}
-
-            <div style={styles.row}>
-              <div style={{ flex: 1, ...styles.inputGroup }}>
-                <label className="label-text">DNI / Identificación</label>
-                <div style={styles.inputWrapper}>
-                  <FiCreditCard style={styles.inputIcon} />
-                  <input
-                    className="modern-input"
-                    placeholder="Número de identificación"
-                    value={identificacion}
-                    onChange={(e) => setIdentificacion(e.target.value)}
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div style={styles.inputGroup}>
-              <label className="label-text">Contraseña Segura</label>
-              <div style={styles.inputWrapper}>
-                <FiLock style={styles.inputIcon} />
-                <input
-                  type={showPass ? "text" : "password"}
-                  className="modern-input"
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                />
-                <div onClick={() => setShowPass(!showPass)} style={styles.eyeIcon}>
-                  {showPass ? <FiEyeOff /> : <FiEye />}
-                </div>
-              </div>
-            </div>
-
-            {error && <div style={styles.errorMsg}>{error}</div>}
-
-            <button className="modern-btn modern-btn-primary" style={{ width: "100%", marginTop: "10px" }} disabled={loading}>
-              {loading ? "Procesando..." : isRegister ? "Create Account" : "Sign In"}
-            </button>
-          </form>
-
-          <div style={styles.toggleText}>
-            {isRegister ? "¿Ya eres cliente premium?" : "¿Nuevo en Arcbank?"}{" "}
-            <span onClick={() => setIsRegister(!isRegister)} style={styles.toggleBtn}>
-              {isRegister ? "Iniciar Sesión" : "Abrir Cuenta"}
-            </span>
-          </div>
+      <div style={styles.overlay}></div>
+      <div className="premium-card fade-in" style={styles.loginCard}>
+        <div style={styles.brandBox}>
+          <div style={styles.logo}>A</div>
+          <h1 style={styles.brandName}>ARCBANK</h1>
+          <p style={styles.tagline}>PRIVATE & PRESTIGE BANKING</p>
         </div>
 
-        <div style={styles.rightPane}>
-          <div style={styles.overlay}></div>
-          <div style={styles.quoteCard} className="glass">
-            <h3 style={{ fontSize: '24px', marginBottom: '16px' }}>"La excelencia financiera no es un acto, sino un hábito."</h3>
-            <p style={{ fontSize: '14px', color: 'var(--primary-light)', fontWeight: '700' }}>— ARCBANK STRATEGY</p>
+        <h2 style={styles.title}>{isRegister ? "SOLICITUD DE MEMBRESÍA" : "ACCESO PRIVADO"}</h2>
+
+        <form onSubmit={handleSubmit} style={styles.form}>
+          {isRegister && (
+            <div style={styles.inputGroup}>
+              <label style={styles.label}>IDENTIDAD COMPLETA</label>
+              <input
+                className="modern-input"
+                value={name}
+                onChange={e => setName(e.target.value)}
+                placeholder="EJ. JULIO CÉSAR"
+              />
+            </div>
+          )}
+          <div style={styles.inputGroup}>
+            <label style={styles.label}>NÚMERO DE IDENTIFICACIÓN</label>
+            <input
+              className="modern-input"
+              value={identificacion}
+              onChange={e => setIdentificacion(e.target.value)}
+              placeholder="DNI / CÉDULA"
+            />
           </div>
+          <div style={styles.inputGroup}>
+            <label style={styles.label}>CLAVE SECRETA</label>
+            <input
+              type="password"
+              className="modern-input"
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              placeholder="••••••••"
+            />
+          </div>
+
+          {error && <div style={styles.error}>{error}</div>}
+
+          <button className="modern-btn" style={{ width: '100%', marginTop: '10px' }} disabled={loading}>
+            {loading ? "VERIFICANDO..." : isRegister ? "ENVIAR SOLICITUD" : "INGRESAR AL SISTEMA"}
+          </button>
+        </form>
+
+        <div style={styles.footer}>
+          <p style={{ color: 'var(--text-dim)', fontSize: '12px' }}>
+            {isRegister ? "¿YA DISPONE DE ACCESO?" : "¿NO ES MIEMBRO TODAVÍA?"}{" "}
+            <span onClick={() => setIsRegister(!isRegister)} style={styles.toggle}>
+              {isRegister ? "CONECTARSE" : "SOLICITAR ACCESO"}
+            </span>
+          </p>
         </div>
       </div>
     </div>
@@ -136,136 +101,89 @@ export default function Login() {
 
 const styles = {
   container: {
-    minHeight: "100vh",
+    height: "100vh",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    background: "var(--bg)",
-    padding: "20px",
-  },
-  loginCard: {
-    display: "flex",
-    width: "1000px",
-    maxWidth: "100%",
-    minHeight: "650px",
-    background: "#fff",
-    borderRadius: "24px",
-    overflow: "hidden",
-    boxShadow: "0 30px 60px rgba(0,0,0,0.12)",
-  },
-  leftPane: {
-    flex: 1.2,
-    padding: "60px",
-    display: "flex",
-    flexDirection: "column",
-  },
-  rightPane: {
-    flex: 1,
-    background: "url('https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?q=80&w=2070&auto=format&fit=crop') center/cover",
+    background: "url('https://images.unsplash.com/photo-1554118811-1e0d58224f24?q=80&w=2047&auto=format&fit=crop') center/cover",
     position: "relative",
-    display: "flex",
-    alignItems: "flex-end",
-    padding: "40px",
   },
   overlay: {
     position: "absolute",
     top: 0, left: 0, right: 0, bottom: 0,
-    background: "linear-gradient(to bottom, transparent 0%, var(--secondary) 100%)",
-    opacity: 0.8,
+    background: "radial-gradient(circle, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.95) 100%)",
   },
-  quoteCard: {
-    position: "relative",
-    zIndex: 2,
-    padding: "32px",
-    borderRadius: "16px",
-    color: "#fff",
+  loginCard: {
+    width: "450px",
+    padding: "60px 50px",
+    zIndex: 10,
+    textAlign: "center",
   },
   brandBox: {
-    display: "flex",
-    alignItems: "center",
-    gap: "12px",
-    marginBottom: "48px",
+    marginBottom: "50px",
   },
-  logoIcon: {
-    width: "40px",
-    height: "40px",
-    background: "var(--primary-gradient)",
-    borderRadius: "10px",
+  logo: {
+    width: "60px",
+    height: "60px",
+    background: "var(--gold-primary)",
+    color: "#000",
+    fontSize: "32px",
+    fontWeight: "900",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    color: "#fff",
+    margin: "0 auto 15px",
+    borderRadius: "2px",
+    boxShadow: "0 0 30px rgba(212, 175, 55, 0.4)",
+  },
+  brandName: {
+    fontSize: "28px",
+    letterSpacing: "6px",
     fontWeight: "900",
-    fontSize: "20px",
   },
-  brandTitle: {
-    fontSize: "26px",
+  tagline: {
+    fontSize: "10px",
     letterSpacing: "4px",
-    color: "var(--primary)",
+    color: "var(--gold-primary)",
+    marginTop: "5px",
+    fontWeight: "700",
   },
-  contentHeader: {
+  title: {
+    fontSize: "14px",
+    letterSpacing: "3px",
     marginBottom: "40px",
-  },
-  formTitle: {
-    fontSize: "32px",
-    marginBottom: "12px",
-    fontWeight: '800',
-  },
-  formSubtitle: {
-    color: "var(--text-muted)",
-    fontSize: "15px",
-    maxWidth: "340px",
+    color: "var(--text-dim)",
   },
   form: {
     display: "flex",
     flexDirection: "column",
     gap: "20px",
+    textAlign: "left",
   },
-  inputGroup: {
-    display: "flex",
-    flexDirection: "column",
-  },
-  inputWrapper: {
-    position: "relative",
-  },
-  inputIcon: {
-    position: "absolute",
-    left: "14px",
-    top: "50%",
-    transform: "translateY(-50%)",
-    color: "var(--text-muted)",
-    fontSize: "18px",
-  },
-  modernInput: {
-    // Ya definido en index.css como .modern-input
-  },
-  eyeIcon: {
-    position: "absolute",
-    right: "14px",
-    top: "50%",
-    transform: "translateY(-50%)",
-    cursor: "pointer",
-    color: "var(--text-muted)",
-  },
-  errorMsg: {
-    padding: "12px",
-    background: "rgba(220, 38, 38, 0.05)",
-    color: "var(--error)",
-    borderRadius: "8px",
-    fontSize: "13px",
-    textAlign: "center",
-    border: "1px solid rgba(220, 38, 38, 0.1)",
-  },
-  toggleText: {
-    marginTop: "auto",
-    textAlign: "center",
-    fontSize: "14px",
-    color: "var(--text-muted)",
-  },
-  toggleBtn: {
-    color: "var(--primary)",
+  label: {
+    fontSize: "10px",
+    letterSpacing: "1px",
+    color: "var(--gold-primary)",
+    marginBottom: "8px",
+    display: "block",
     fontWeight: "700",
-    cursor: "pointer",
-    marginLeft: "6px",
   },
+  error: {
+    color: "var(--error-glow)",
+    fontSize: "11px",
+    textAlign: "center",
+    fontWeight: "800",
+    padding: "10px",
+    border: "1px solid var(--error-glow)",
+  },
+  footer: {
+    marginTop: "40px",
+  },
+  toggle: {
+    color: "var(--gold-primary)",
+    cursor: "pointer",
+    fontWeight: "900",
+    marginLeft: "5px",
+    textDecoration: "underline",
+  }
 };

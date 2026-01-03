@@ -1,108 +1,82 @@
-import React, { useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { Link } from 'react-router-dom'
 import { getConsolidada } from '../services/bancaApi'
 
 export default function Home() {
   const { state, setUserAccounts } = useAuth()
+  const [totalBalance, setTotalBalance] = useState(0)
 
   useEffect(() => {
-    const loadAccounts = async () => {
-      const id = state.user && state.user.identificacion
+    const load = async () => {
+      const id = state.user?.identificacion
       if (!id) return
-
       try {
-        const cuentasRaw = await getConsolidada(id)
-        const mapped = (cuentasRaw || []).map(c => ({
+        const raw = await getConsolidada(id)
+        const mapped = (raw || []).map(c => ({
           id: String(c.idCuenta),
           number: c.numeroCuenta,
-          type: c.idTipoCuenta === 1 ? "Ahorros" : "Corriente",
-          balance: Number(c.saldoDisponible || c.saldoActual || 0)
+          type: c.idTipoCuenta === 1 ? "ELITE SAVINGS" : "PRESTIGE CHECKING",
+          balance: Number(c.saldoDisponible || 0)
         }))
         setUserAccounts(mapped)
+        const total = mapped.reduce((acc, curr) => acc + curr.balance, 0)
+        setTotalBalance(total)
       } catch (e) {
-        console.error('❌ Error cargando cuentas:', e.message)
+        console.error(e)
       }
     }
-
-    if (state.user) loadAccounts()
+    if (state.user) load()
   }, [state.user?.identificacion, setUserAccounts])
 
   return (
-    <div className="main-content fade-in">
-      <header className="header-inline">
+    <div className="main-content" style={{ animation: 'slideIn 0.8s ease' }}>
+      <header style={styles.header}>
         <div>
-          <h1 className="text-gradient" style={{ fontSize: '38px', letterSpacing: '-1px' }}>Global Portfolio</h1>
-          <p style={{ color: 'var(--text-muted)', fontWeight: '500' }}>Resumen de sus activos en ARCBANK Premium</p>
+          <h2 style={{ fontSize: '14px', letterSpacing: '3px', color: 'var(--gold-primary)', marginBottom: '10px' }}>ESTADO PATRIMONIAL</h2>
+          <h1 className="title-xl">Binvenido, {state.user?.name || "Member"}</h1>
         </div>
-        <div style={styles.dateLabel}>
-          {new Date().toLocaleDateString('es-EC', { weekday: 'long', day: 'numeric', month: 'long' })}
+        <div style={styles.totalBox}>
+          <div style={styles.totalLabel}>PATRIMONIO TOTAL</div>
+          <div style={styles.totalValue}>${totalBalance.toLocaleString('en-US', { minimumFractionDigits: 2 })}</div>
         </div>
       </header>
 
-      <section style={{ marginTop: '48px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-          <h2 style={{ fontSize: '22px', fontWeight: '800' }}>Cuentas y Productos</h2>
-          <span style={{ fontSize: '14px', color: 'var(--primary)', fontWeight: '700' }}>{state.user?.accounts?.length || 0} Activos</span>
-        </div>
-
-        <div style={styles.cardGrid}>
-          {state.user?.accounts?.length > 0 ? (
-            state.user.accounts.map(a => (
-              <div key={a.id} className="premium-card" style={styles.metalCard}>
-                <div style={styles.metalOverlay}></div>
-                <div style={styles.cardInfo}>
-                  <div style={styles.cardHead}>
-                    <div style={styles.chip}></div>
-                    <div style={styles.cardBrand}>ARCBANK</div>
-                  </div>
-
-                  <div style={styles.cardMiddle}>
-                    <div style={styles.accTypeBadge}>{a.type}</div>
-                    <div style={styles.accNum}>{a.number.replace(/(.{4})/g, '$1 ')}</div>
-                  </div>
-
-                  <div style={styles.cardBottom}>
-                    <div style={styles.balContainer}>
-                      <div style={styles.balLabel}>Saldo Disponible</div>
-                      <div style={styles.balValue}>
-                        <span style={styles.currency}>$</span>
-                        {a.balance.toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                      </div>
-                    </div>
-                    <Link to="/movimientos" style={styles.miniBtn}>Detalles</Link>
-                  </div>
-                </div>
+      <section style={{ marginTop: '60px' }}>
+        <h3 style={styles.sectionTitle}>ACTIVOS DISPONIBLES</h3>
+        <div style={styles.accountGrid}>
+          {state.user?.accounts?.map(acc => (
+            <div key={acc.id} className="premium-card" style={styles.accCard}>
+              <div style={styles.accType}>{acc.type}</div>
+              <div style={styles.accNum}>{acc.number}</div>
+              <div style={styles.accDivider}></div>
+              <div style={styles.accBalance}>
+                <span style={{ fontSize: '18px', color: 'var(--gold-primary)' }}>VALOR: </span>
+                ${acc.balance.toLocaleString('en-US', { minimumFractionDigits: 2 })}
               </div>
-            ))
-          ) : (
-            <div className="premium-card" style={{ gridColumn: '1/-1', textAlign: 'center', padding: '60px' }}>
-              <p style={{ color: 'var(--text-muted)' }}>Cargando portafolio...</p>
+              <Link to="/movimientos" style={styles.accLink}>ANALIZAR OPERACIONES →</Link>
             </div>
-          )}
+          ))}
         </div>
       </section>
 
-      <section style={{ marginTop: '64px' }}>
-        <h2 style={{ fontSize: '20px', marginBottom: '24px', fontWeight: '800' }}>Atajos Ejecutivos</h2>
-        <div style={styles.shortcutGrid}>
-          <div className="premium-card" style={styles.shortcutCard}>
-            <div style={styles.iconCircle}>💳</div>
-            <div style={{ flex: 1 }}>
-              <h3 style={{ fontSize: '16px' }}>Transferencias Directas</h3>
-              <p style={{ fontSize: '13px', color: 'var(--text-muted)' }}>Mueva fondos entre cuentas Arcbank</p>
+      <section style={{ marginTop: '80px' }}>
+        <h3 style={styles.sectionTitle}>OPERACIONES RÁPIDAS</h3>
+        <div style={styles.actionGrid}>
+          <Link to="/transferir" style={styles.actionItem} className="premium-card">
+            <div style={styles.actionIcon}>⚡</div>
+            <div style={styles.actionText}>
+              <h4>TRANSFERENCIA INSTANTÁNEA</h4>
+              <p>Mueva capital entre cuentas Elite</p>
             </div>
-            <Link to="/transferir" className="modern-btn modern-btn-outline" style={{ padding: '8px 16px', fontSize: '12px' }}>Iniciar</Link>
-          </div>
-
-          <div className="premium-card" style={styles.shortcutCard}>
-            <div style={styles.iconCircle}>🌐</div>
-            <div style={{ flex: 1 }}>
-              <h3 style={{ fontSize: '16px' }}>Red Interbancaria</h3>
-              <p style={{ fontSize: '13px', color: 'var(--text-muted)' }}>Pagos a nivel nacional e internacional</p>
+          </Link>
+          <Link to="/interbancarias" style={styles.actionItem} className="premium-card">
+            <div style={styles.actionIcon}>🌐</div>
+            <div style={styles.actionText}>
+              <h4>RED GLOBAL</h4>
+              <p>Operaciones fuera del ecosistema ARCBANK</p>
             </div>
-            <Link to="/interbancarias" className="modern-btn modern-btn-outline" style={{ padding: '8px 16px', fontSize: '12px' }}>Operar</Link>
-          </div>
+          </Link>
         </div>
       </section>
     </div>
@@ -110,136 +84,108 @@ export default function Home() {
 }
 
 const styles = {
-  dateLabel: {
-    background: '#fff',
-    padding: '8px 20px',
-    borderRadius: '30px',
-    fontSize: '14px',
-    fontWeight: '600',
-    color: 'var(--text-muted)',
-    boxShadow: 'var(--shadow-premium)',
-    textTransform: 'capitalize',
-  },
-  cardGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(380px, 1fr))',
-    gap: '32px',
-  },
-  metalCard: {
-    padding: 0,
-    background: '#1a1c1e',
-    height: '240px',
-    color: '#fff',
-    position: 'relative',
-    overflow: 'hidden',
-    border: 'none',
-  },
-  metalOverlay: {
-    position: 'absolute',
-    top: 0, left: 0, right: 0, bottom: 0,
-    background: 'linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 50%, rgba(0,0,0,0.2) 100%)',
-    zIndex: 1,
-  },
-  cardInfo: {
-    position: 'relative',
-    zIndex: 2,
-    padding: '32px',
-    height: '100%',
-    display: 'flex',
-    flexDirection: 'column',
-    justifyContent: 'space-between',
-  },
-  cardHead: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  chip: {
-    width: '50px',
-    height: '38px',
-    background: 'linear-gradient(135deg, #dfc18d 0%, #8e6d2f 100%)',
-    borderRadius: '8px',
-    position: 'relative',
-    '&:after': {
-      content: '""',
-      position: 'absolute',
-      width: '30px', height: '1px', background: 'rgba(0,0,0,0.1)', top: '50%', left: '10%'
-    }
-  },
-  cardBrand: {
-    fontFamily: 'Outfit',
-    fontWeight: '800',
-    letterSpacing: '3px',
-    fontSize: '14px',
-    color: 'var(--primary)',
-  },
-  cardMiddle: {
-    marginTop: '20px',
-  },
-  accTypeBadge: {
-    fontSize: '10px',
-    textTransform: 'uppercase',
-    letterSpacing: '2px',
-    color: 'rgba(255,255,255,0.4)',
-    marginBottom: '8px',
-  },
-  accNum: {
-    fontSize: '22px',
-    fontFamily: 'monospace',
-    letterSpacing: '2px',
-    color: '#fff',
-  },
-  cardBottom: {
+  header: {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'flex-end',
+    marginBottom: '80px',
   },
-  balLabel: {
-    fontSize: '11px',
-    textTransform: 'uppercase',
-    color: 'rgba(255,255,255,0.4)',
-    letterSpacing: '1px',
-    marginBottom: '4px',
+  totalBox: {
+    textAlign: 'right',
+    padding: '20px 40px',
+    background: 'linear-gradient(135deg, #111 0%, #000 100%)',
+    border: '1px solid var(--gold-primary)',
+    borderRadius: '4px',
+    boxShadow: 'var(--glow-gold)',
   },
-  balValue: {
+  totalLabel: {
+    fontSize: '10px',
+    letterSpacing: '2px',
+    color: 'var(--gold-primary)',
+    marginBottom: '5px',
+  },
+  totalValue: {
     fontSize: '32px',
-    fontWeight: '700',
-    fontFamily: 'Outfit',
+    fontWeight: '900',
+    color: '#fff',
+    fontFamily: 'monospace',
   },
-  currency: {
-    fontSize: '18px',
-    marginRight: '6px',
-    color: 'var(--primary)',
+  sectionTitle: {
+    fontSize: '12px',
+    letterSpacing: '5px',
+    color: 'rgba(255,255,255,0.3)',
+    marginBottom: '30px',
+    fontWeight: '900',
   },
-  miniBtn: {
-    color: 'var(--primary)',
-    textDecoration: 'none',
-    fontSize: '13px',
-    fontWeight: '700',
-    padding: '6px 14px',
-    background: 'rgba(255,255,255,0.05)',
-    borderRadius: '8px',
-  },
-  shortcutGrid: {
+  accountGrid: {
     display: 'grid',
     gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))',
+    gap: '30px',
+  },
+  accCard: {
+    padding: '40px',
+  },
+  accType: {
+    fontSize: '10px',
+    letterSpacing: '2px',
+    color: 'var(--gold-primary)',
+    marginBottom: '10px',
+  },
+  accNum: {
+    fontSize: '24px',
+    fontWeight: '300',
+    letterSpacing: '4px',
+    color: '#fff',
+  },
+  accDivider: {
+    height: '1px',
+    background: 'linear-gradient(90deg, var(--gold-primary), transparent)',
+    margin: '25px 0',
+  },
+  accBalance: {
+    fontSize: '36px',
+    fontWeight: '900',
+    color: '#fff',
+    marginBottom: '20px',
+  },
+  accLink: {
+    color: 'var(--gold-primary)',
+    textDecoration: 'none',
+    fontSize: '11px',
+    fontWeight: '700',
+    letterSpacing: '1px',
+  },
+  actionGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))',
     gap: '24px',
   },
-  shortcutCard: {
+  actionItem: {
     display: 'flex',
     alignItems: 'center',
-    gap: '20px',
-    padding: '30px',
+    gap: '25px',
+    textDecoration: 'none',
+    color: 'inherit',
   },
-  iconCircle: {
-    width: '56px',
-    height: '56px',
-    borderRadius: '50%',
-    background: 'var(--bg)',
+  actionIcon: {
+    fontSize: '32px',
+    background: 'rgba(212, 175, 55, 0.1)',
+    width: '70px',
+    height: '70px',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    fontSize: '24px',
-    boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.05)',
+    borderRadius: '4px',
+  },
+  actionText: {
+    '& h4': {
+      fontSize: '14px',
+      letterSpacing: '1px',
+      marginBottom: '5px',
+    },
+    '& p': {
+      fontSize: '12px',
+      color: 'var(--text-dim)',
+    }
   }
 }
