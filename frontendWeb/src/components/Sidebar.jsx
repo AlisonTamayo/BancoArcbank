@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { FiHome, FiList, FiLogOut, FiUser, FiRepeat, FiGlobe } from "react-icons/fi";
@@ -20,21 +20,24 @@ export default function Sidebar({ isOpen, onRequestClose }) {
     { path: "/perfil", icon: <FiUser />, label: "Mi Perfil" },
   ];
 
+  // En pantallas grandes siempre visible, en móviles depende de isOpen
+  const sidebarDisplay = isOpen ? 'flex' : 'none';
+
   return (
-    <aside className="glass-panel d-flex flex-column" style={styles.sidebar}>
+    <aside className="glass-panel d-flex flex-column" style={{ display: sidebarDisplay }}>
       <div className="p-4 text-center border-bottom" style={{ borderColor: 'var(--glass-border) !important' }}>
         <h1 className="gold-text m-0" style={{ fontSize: '24px', letterSpacing: '4px' }}>ARCBANK</h1>
         <small className="text-muted" style={{ fontSize: '10px', letterSpacing: '2px' }}>EST. 2025</small>
       </div>
 
       <div className="p-4">
-        <div className="d-flex align-items-center p-3 glass-card" style={{ background: 'rgba(212, 175, 55, 0.05)' }}>
+        <div className="d-flex align-items-center p-3 glass-card" style={{ background: 'rgba(212, 175, 55, 0.05)', borderRadius: '15px' }}>
           <div className="rounded-circle d-flex align-items-center justify-content-center" style={styles.avatar}>
             {state?.user?.name ? state.user.name[0] : "A"}
           </div>
           <div className="ms-3 overflow-hidden">
-            <div className="fw-bold text-white text-truncate" style={{ fontSize: '0.9rem' }}>{state?.user?.name || "Cliente"}</div>
-            <div className="text-warning" style={{ fontSize: '0.7rem', letterSpacing: '1px' }}>PREMIUM MEMBER</div>
+            <div className="fw-bold text-white text-truncate" style={{ fontSize: '0.85rem' }}>{state?.user?.name || "Cliente"}</div>
+            <div className="text-warning" style={{ fontSize: '0.65rem', letterSpacing: '1px' }}>PREMIUM MEMBER</div>
           </div>
         </div>
       </div>
@@ -47,7 +50,7 @@ export default function Sidebar({ isOpen, onRequestClose }) {
                 to={item.path}
                 end={item.end}
                 className={({ isActive }) => `nav-link d-flex align-items-center gap-3 px-4 py-3 ${isActive ? 'active-luxury' : 'text-white-50'}`}
-                style={styles.link}
+                style={{ borderRadius: '12px', transition: '0.3s' }}
               >
                 <span style={{ fontSize: '1.2rem' }}>{item.icon}</span>
                 <span className="fw-semibold" style={{ fontSize: '0.9rem', letterSpacing: '0.5px' }}>{item.label}</span>
@@ -63,18 +66,15 @@ export default function Sidebar({ isOpen, onRequestClose }) {
         </button>
       </div>
 
-      {/* Estilos específicos para el sidebar */}
       <style>{`
         .active-luxury {
-          background: var(--gold-primary) !important;
+          background: var(--gold-gradient) !important;
           color: #000 !important;
           box-shadow: 0 4px 15px rgba(212, 175, 55, 0.3);
-          border-radius: 12px !important;
         }
         .nav-link:hover:not(.active-luxury) {
           background: rgba(255, 255, 255, 0.05);
           color: #fff !important;
-          border-radius: 12px;
         }
       `}</style>
     </aside>
@@ -82,24 +82,13 @@ export default function Sidebar({ isOpen, onRequestClose }) {
 }
 
 const styles = {
-  sidebar: {
-    width: '280px',
-    height: '100vh',
-    position: 'fixed',
-    top: 0,
-    left: 0,
-    zIndex: 1000,
-    borderRadius: '0 25px 25px 0 !important',
-  },
   avatar: {
-    width: '40px',
-    height: '40px',
+    width: '35px',
+    height: '35px',
     background: 'var(--gold-gradient)',
     color: '#000',
     fontWeight: '800',
-    fontSize: '20px',
-  },
-  link: {
-    transition: 'all 0.3s ease',
+    fontSize: '18px',
+    flexShrink: 0
   }
 };

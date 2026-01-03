@@ -64,7 +64,7 @@ export default function Transfer() {
     };
 
     return (
-        <div className="main-container animate-slide-up">
+        <div className="animate-slide-up">
             <header className="mb-5">
                 <h5 className="text-warning fw-bold mb-2" style={{ letterSpacing: '4px' }}>OPERACIONES DIRECTAS</h5>
                 <h1 className="display-5 fw-bold text-white">Transferencia <span className="gold-text">Inmediata</span></h1>

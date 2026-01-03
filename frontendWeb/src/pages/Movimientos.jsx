@@ -25,16 +25,25 @@ export default function Movimientos() {
       await refreshAccounts()
       const resp = await getMovimientos(selectedAccId)
       const list = Array.isArray(resp) ? resp : []
-      const mapped = list.map(m => ({
-        id: m.idTransaccion,
-        date: new Date(m.fechaCreacion),
-        desc: m.descripcion || 'Transacción Bancaria',
-        type: m.tipoOperacion,
-        amount: m.monto,
-        balance: m.saldoResultante,
-        isDebit: ['RETIRO', 'TRANSFERENCIA_SALIDA', 'TRANSFERENCIA_INTERNA'].includes(m.tipoOperacion)
+      const mapped = list.map(m => {
+        const isDebit = ['RETIRO', 'TRANSFERENCIA_SALIDA', 'TRANSFERENCIA_INTERNA', 'TRANSFERENCIA_INTERBANCARIA'].includes(m.tipoOperacion)
           && String(m.idCuentaOrigen) === String(selectedAccId)
-      })).sort((a, b) => b.date - a.date)
+
+        let displayType = m.tipoOperacion
+        if (m.tipoOperacion === 'TRANSFERENCIA_INTERBANCARIA') {
+          displayType = isDebit ? 'INTERBANCARIA SALIENTE' : 'INTERBANCARIA ENTRANTE'
+        }
+
+        return {
+          id: m.idTransaccion,
+          date: new Date(m.fechaCreacion),
+          desc: m.descripcion || 'Transacción Bancaria',
+          type: displayType,
+          amount: m.monto,
+          balance: m.saldoResultante,
+          isDebit
+        }
+      }).sort((a, b) => b.date - a.date)
       setTxs(mapped)
     } catch (e) {
       console.error(e)
@@ -46,7 +55,7 @@ export default function Movimientos() {
   const currentAcc = state.user.accounts.find(a => String(a.id) === String(selectedAccId))
 
   return (
-    <div className="main-container animate-slide-up">
+    <div className="animate-slide-up">
       <header className="d-flex justify-content-between align-items-center mb-5">
         <div>
           <h5 className="text-warning fw-bold mb-2" style={{ letterSpacing: '4px' }}>MOVIMIENTOS</h5>

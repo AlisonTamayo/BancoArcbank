@@ -97,7 +97,7 @@ public class TransaccionServiceImpl implements TransaccionService {
                     yield saldoOrigen;
                 }
 
-                case "TRANSFERENCIA_SALIDA" -> {
+                case "TRANSFERENCIA_SALIDA", "TRANSFERENCIA_INTERBANCARIA" -> {
                     if (request.getIdCuentaOrigen() == null)
                         throw new BusinessException("Falta cuenta origen para transferencia externa.");
                     if (request.getCuentaExterna() == null || request.getCuentaExterna().isBlank())
@@ -106,7 +106,7 @@ public class TransaccionServiceImpl implements TransaccionService {
                     trx.setIdCuentaOrigen(request.getIdCuentaOrigen());
                     trx.setIdCuentaDestino(null);
                     trx.setCuentaExterna(request.getCuentaExterna());
-                    trx.setIdBancoExterno(request.getIdBancoExterno()); // ASIGNACIÓN FALTIVA
+                    trx.setIdBancoExterno(request.getIdBancoExterno());
 
                     BigDecimal saldoOrigen = procesarSaldo(trx.getIdCuentaOrigen(), request.getMonto().negate());
 
@@ -131,7 +131,8 @@ public class TransaccionServiceImpl implements TransaccionService {
                                 .debtorAccount(numeroCuentaOrigen)
                                 .debtorName(nombreOrigen)
                                 .creditorAccount(request.getCuentaExterna())
-                                .creditorName("Beneficiario Externo")
+                                .creditorName(request.getNombreDestinatario() != null ? request.getNombreDestinatario()
+                                        : "Beneficiario Externo")
                                 .targetBankId(
                                         request.getIdBancoExterno() != null ? request.getIdBancoExterno() : "UNKNOWN")
                                 .amount(request.getMonto())

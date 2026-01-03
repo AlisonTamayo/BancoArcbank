@@ -30,7 +30,7 @@ export default function Home() {
   }, [state.user?.identificacion, setUserAccounts])
 
   return (
-    <div className="main-container animate-slide-up">
+    <div className="animate-slide-up">
       <header className="d-flex justify-content-between align-items-end mb-5">
         <div>
           <h5 className="text-warning fw-bold mb-2" style={{ letterSpacing: '4px' }}>RESUMEN FINANCIERO</h5>

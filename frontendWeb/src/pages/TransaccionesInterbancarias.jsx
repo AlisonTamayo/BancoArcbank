@@ -11,6 +11,7 @@ export default function Interbank() {
     const accounts = state?.user?.accounts || [];
     const [step, setStep] = useState(1);
     const [toInfo, setToInfo] = useState({ account: "", bank: "", name: "" });
+    const [toAccType, setToAccType] = useState("SAVINGS");
     const [fromAccId, setFromAccId] = useState(accounts[0]?.id || "");
     const [amount, setAmount] = useState("");
     const [banks, setBanks] = useState([]);
@@ -33,21 +34,33 @@ export default function Interbank() {
         setLoading(true);
         try {
             const selectedBank = banks.find(b => b.codigo === toInfo.bank);
+            const sourceAccount = accounts.find(a => String(a.id) === String(fromAccId));
+
+            // ISO 20022-like JSON Contract
             const req = {
-                tipoOperacion: "TRANSFERENCIA_INTERBANCARIA",
-                idCuentaOrigen: Number(fromAccId),
-                idCuentaDestino: 0,
-                monto: Number(amount),
-                canal: "WEB_LUXURY",
-                descripcion: `RED INT: ${selectedBank?.nombre || toInfo.bank}`,
-                idSucursal: 1,
-                cuentaDestinoExterno: toInfo.account,
-                nombreDestinatario: toInfo.name,
-                detalles: {
-                    bancoDestino: selectedBank?.nombre || toInfo.bank,
-                    cuentaDestinoExterno: toInfo.account,
-                    nombreDestinatario: toInfo.name,
-                    binBancoDestino: selectedBank?.bin || ""
+                header: {
+                    messageId: `MSG-${Date.now()}`,
+                    creationDateTime: new Date().toISOString(),
+                    originatingBankId: "ARCBANK"
+                },
+                body: {
+                    instructionId: crypto.randomUUID(),
+                    endToEndId: `REF-${Math.floor(Math.random() * 1000000)}`,
+                    amount: {
+                        currency: "USD",
+                        value: Number(amount)
+                    },
+                    debtor: {
+                        name: state.user.name || "Cliente Arcbank",
+                        accountId: sourceAccount?.number || fromAccId,
+                        accountType: sourceAccount?.type === "Ahorros" ? "SAVINGS" : "CHECKING"
+                    },
+                    creditor: {
+                        name: toInfo.name,
+                        accountId: toInfo.account,
+                        accountType: toAccType,
+                        targetBankId: selectedBank?.codigo || toInfo.bank
+                    }
                 }
             };
             const res = await realizarTransferenciaInterbancaria(req);
@@ -62,7 +75,7 @@ export default function Interbank() {
     };
 
     return (
-        <div className="main-container animate-slide-up">
+        <div className="animate-slide-up">
             <header className="mb-5">
                 <h5 className="text-warning fw-bold mb-2" style={{ letterSpacing: '4px' }}>RED BANCARIA</h5>
                 <h1 className="display-5 fw-bold text-white">Transferencia <span className="gold-text">Interbancaria</span></h1>
@@ -108,6 +121,13 @@ export default function Interbank() {
                                 <div className="mb-4">
                                     <label className="label-text">NÚMERO DE CUENTA</label>
                                     <input className="form-control form-control-luxury" value={toInfo.account} onChange={e => setToInfo({ ...toInfo, account: e.target.value })} placeholder="X-XXXX-XXXXX" />
+                                </div>
+                                <div className="mb-4">
+                                    <label className="label-text">TIPO DE CUENTA DESTINO</label>
+                                    <select className="form-control form-control-luxury" value={toAccType} onChange={e => setToAccType(e.target.value)}>
+                                        <option value="SAVINGS">AHORROS (SAVINGS)</option>
+                                        <option value="CHECKING">CORRIENTE (CHECKING)</option>
+                                    </select>
                                 </div>
                                 <div className="mb-4">
                                     <label className="label-text">BENEFICIARIO (NOMBRES)</label>
