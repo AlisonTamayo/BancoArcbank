@@ -36,9 +36,6 @@ services:
       context: ./api-gateway
       dockerfile: Dockerfile
     container_name: api-gateway-arcbank2
-    # Puerto expuesto para:
-    # - Comunicación interna de frontends (via Nginx)
-    # - Webhooks del Switch DIGICONECU (transferencias entrantes)
     ports:
       - "4080:8080"
     depends_on:
@@ -175,16 +172,14 @@ services:
       DB_PASS: admin
       SERVER_PORT: 8080
       CUENTAS_URL: http://micro-cuentas-arcbank:8081
-      # USAMOS LA IP ESTATICA QUE DEFINIMOS
       APP_SWITCH_URL: ${SWITCH_URL:-https://switch-interbank.ddns.net/api/v1/transacciones}
       APP_SWITCH_NETWORK_URL: ${APP_SWITCH_NETWORK_URL:-https://switch-interbank.ddns.net}
       BANCO_CODIGO: ARCBANK
-      # API Key para autenticación con Kong
       APP_SWITCH_APIKEY: ${APP_SWITCH_APIKEY:-ARCBANK_SECRET_KEY_2025_XYZ}
     ports:
       - "4082:8080"
     networks:
-      - arcbank2-net # Solo necesita su red interna local
+      - arcbank2-net
 
   # ==========================================
   # 4. FRONTEND WEB ARCBANK (Accesible solo via Nginx)
@@ -194,10 +189,8 @@ services:
       context: ./frontendWeb
       dockerfile: Dockerfile
       args:
-        # API relativa - Nginx hace el proxy a /api
         REACT_APP_API_BASE_URL: /api
     container_name: frontend-web-arcbank2
-    # Puerto interno solo, acceso externo via Nginx HTTPS
     expose:
       - "80"
     depends_on:
@@ -213,10 +206,8 @@ services:
       context: ./frontendCajero
       dockerfile: Dockerfile
       args:
-        # API relativa - Nginx hace el proxy a /api
         VITE_API_BASE_URL: /api
     container_name: frontend-cajero-arcbank2
-    # Puerto interno solo, acceso externo via Nginx HTTPS
     expose:
       - "80"
     depends_on:
@@ -251,6 +242,19 @@ services:
       - SERVER_PORT=8080
     depends_on:
       - db-sucursales-arcbank
+    networks:
+      - arcbank2-net
+
+  # ==========================================
+  # 8. CERTBOT (Let's Encrypt)
+  # ==========================================
+  certbot:
+    image: certbot/certbot
+    container_name: certbot-arcbank
+    volumes:
+      - ./nginx/certs:/etc/letsencrypt
+      - ./nginx/certbot:/var/www/certbot
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done'"
     networks:
       - arcbank2-net
 

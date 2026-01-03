@@ -25,7 +25,8 @@ spring:
               - "http://frontend-web-arcbank:80"
               - "http://frontend-cajero-arcbank:80"
 
-              # HTTPS sslip.io domains
+              - "https://arcbank-bank.duckdns.org"
+              - "https://arcbank-bank.duckdns.org:8443"
               # - "https://arcbank.35-209-79-193.sslip.io"
               # - "https://arcbank.35-209-79-193.sslip.io:8443"
               # - "https://bantec.35-208-155-21.sslip.io"

@@ -60,14 +60,34 @@ jobs:
               ~/BancoArcbank/generate-mtls-certs.sh
             fi
 
-            # Certificados SSL para Nginx
-            mkdir -p ~/BancoArcbank/nginx/certs
-            if [ ! -f ~/BancoArcbank/nginx/certs/fullchain.pem ]; then
-              echo "📝 Generando certificados SSL autofirmados para Nginx..."
-              openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
-                -keyout ~/BancoArcbank/nginx/certs/privkey.pem \
-                -out ~/BancoArcbank/nginx/certs/fullchain.pem \
-                -subj "/C=EC/ST=Pichincha/L=Quito/O=Arcbank/CN=35.208.155.21"
+            # Certificados SSL para Nginx (DuckDNS)
+            echo "🌐 Verificando certificados SSL para arcbank-bank.duckdns.org..."
+            CERT_DIR="~/BancoArcbank/nginx/certs/live/arcbank-bank.duckdns.org"
+            if [ ! -f $CERT_DIR/fullchain.pem ]; then
+              echo "🛡️ Certificado real no encontrado. Intentando obtener de Let's Encrypt..."
+              
+              # Detener Nginx si está corriendo para liberar el puerto 80
+              sudo docker stop nginx-proxy-arcbank || true
+              
+              # Ejecutar Certbot Standalone
+              sudo docker run --rm --name certbot \
+                -p 80:80 \
+                -v "$(pwd)/nginx/certs:/etc/letsencrypt" \
+                -v "$(pwd)/nginx/certbot:/var/www/certbot" \
+                certbot/certbot certonly --standalone \
+                -d arcbank-bank.duckdns.org \
+                --email alison.tamayo@gmail.com \
+                --agree-tos --non-interactive --no-eff-email || echo "⚠️ Falló la obtención automática."
+
+              # Fallback: Si no se obtuvo el certificado real, crear uno temporal para que Nginx arranque
+              if [ ! -f $CERT_DIR/fullchain.pem ]; then
+                echo "📝 Creando certificado temporal (self-signed) para evitar errores de Nginx..."
+                sudo mkdir -p $CERT_DIR
+                sudo openssl req -x509 -nodes -days 7 -newkey rsa:2048 \
+                  -keyout $CERT_DIR/privkey.pem \
+                  -out $CERT_DIR/fullchain.pem \
+                  -subj "/C=EC/ST=Pichincha/L=Quito/O=Arcbank/CN=arcbank-bank.duckdns.org"
+              fi
             fi
 
             # Limpiar Docker antes del build

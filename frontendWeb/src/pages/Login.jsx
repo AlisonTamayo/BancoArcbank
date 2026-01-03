@@ -81,105 +81,107 @@ export default function Login() {
 
 
   return (
-    <div className="login-page" style={styles.page}>
-      <div className="left" style={styles.left}>
-        <h1 className="login-logo" style={styles.logo}>ARCBANK</h1>
+    <div className="login-container" style={styles.container}>
+      <div style={styles.loginSplit}>
+        <div style={styles.formArea}>
+          <div style={styles.logoContainer}>
+            <span style={styles.diamond}>◆</span>
+            <span style={styles.brandText}>ARCBANK</span>
+          </div>
 
-        <div className="login-box" style={styles.loginBox}>
-          <h2 style={styles.title}>Bienvenidos</h2>
-          <h3 style={styles.subtitle}>Ingresa a tu Banca Web</h3>
+          <div style={styles.welcomeText}>
+            <h1 style={styles.title}>Banca Digital</h1>
+            <p style={styles.subtitle}>Accede a tu plataforma financiera de forma segura</p>
+          </div>
 
-          {err && <div style={styles.error}>{err}</div>}
+          {err && <div className="premium-card" style={styles.errorCard}>{err}</div>}
+          {regMsg && <div className="premium-card" style={{ ...styles.errorCard, background: '#ecfdf5', color: '#059669', borderColor: '#10b981' }}>{regMsg}</div>}
 
-          <form onSubmit={submit}>
-            <div className="step-group">
-              <div style={styles.inputGroup}>
-                <FaUser style={styles.icon} />
-                <input
-                  style={styles.input}
-                  placeholder="Usuario"
-                  value={user}
-                  onChange={(e) => setUser(e.target.value)}
-                />
-              </div>
-              <div style={styles.forgot}>¿Olvidaste tu usuario?</div>
-
-              <div style={styles.inputGroup}>
-                <FaLock style={styles.icon} />
-                <input
-                  type={showPass ? "text" : "password"}
-                  style={styles.input}
-                  placeholder="Contraseña"
-                  value={pass}
-                  onChange={(e) => setPass(e.target.value)}
-                />
-                <div
-                  style={styles.eyeIcon}
-                  onClick={() => setShowPass(!showPass)}
-                >
-                  {showPass ? <FaEyeSlash /> : <FaEye />}
+          <form onSubmit={submit} style={styles.form}>
+            {!showRegister ? (
+              <>
+                <div style={styles.inputWrapper}>
+                  <label style={styles.label}>Usuario</label>
+                  <div style={styles.iconInput}>
+                    <FaUser style={styles.fieldIcon} />
+                    <input
+                      className="modern-input"
+                      style={{ paddingLeft: '44px' }}
+                      placeholder="Ingrese su usuario"
+                      value={user}
+                      onChange={(e) => setUser(e.target.value)}
+                    />
+                  </div>
                 </div>
-              </div>
-              <div style={styles.forgot}>¿Olvidaste tu contraseña?</div>
-            </div>
 
-            <button type="submit" style={styles.button}>
-              Ingresar
-            </button>
-            <button
-              type="button"
-              style={{ ...styles.button, marginTop: 10, background: 'transparent', color: '#315eb3', border: '2px solid #315eb3' }}
-              onClick={() => { setShowRegister(s => !s); setRegMsg('') }}
-            >
-              {showRegister ? 'Cancelar' : 'Registrar'}
-            </button>
+                <div style={styles.inputWrapper}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <label style={styles.label}>Contraseña</label>
+                    <span style={styles.forgotPass}>¿Olvidó su contraseña?</span>
+                  </div>
+                  <div style={styles.iconInput}>
+                    <FaLock style={styles.fieldIcon} />
+                    <input
+                      className="modern-input"
+                      style={{ paddingLeft: '44px' }}
+                      type={showPass ? "text" : "password"}
+                      placeholder="••••••••"
+                      value={pass}
+                      onChange={(e) => setPass(e.target.value)}
+                    />
+                    <div style={styles.eyeBtn} onClick={() => setShowPass(!showPass)}>
+                      {showPass ? <FaEyeSlash /> : <FaEye />}
+                    </div>
+                  </div>
+                </div>
+
+                <button type="submit" className="modern-btn modern-btn-primary" style={{ width: '100%', marginTop: '12px' }}>
+                  Iniciar Sesión
+                </button>
+              </>
+            ) : (
+              <div style={styles.registerScroll}>
+                <h3 style={{ marginBottom: '16px', fontSize: '18px' }}>Registro de Nuevo Cliente</h3>
+                <input className="modern-input" placeholder="Nombre de Usuario" value={regUser} onChange={e => setRegUser(e.target.value)} style={{ marginBottom: '12px' }} />
+                <input className="modern-input" type="password" placeholder="Contraseña Segura" value={regPass} onChange={e => setRegPass(e.target.value)} style={{ marginBottom: '12px' }} />
+                <select className="modern-input" value={regTipoId} onChange={e => setRegTipoId(e.target.value)} style={{ marginBottom: '12px' }}>
+                  <option value="CEDULA">Cédula de Identidad</option>
+                  <option value="PASAPORTE">Pasaporte</option>
+                </select>
+                <input className="modern-input" placeholder="Número de Documento" value={regId} onChange={e => setRegId(e.target.value)} style={{ marginBottom: '12px' }} />
+                <input className="modern-input" type="number" placeholder="ID Sucursal" value={regSucursal} onChange={e => setRegSucursal(e.target.value)} style={{ marginBottom: '20px' }} />
+
+                <button type="button" className="modern-btn modern-btn-primary" style={{ width: '100%' }} onClick={submitRegister}>
+                  Completar Registro
+                </button>
+              </div>
+            )}
+
+            <div style={{ marginTop: '24px', textAlign: 'center' }}>
+              <p style={{ fontSize: '14px', color: 'var(--text-muted)' }}>
+                {showRegister ? '¿Ya tienes una cuenta?' : '¿No tienes una cuenta aún?'}
+                <button
+                  type="button"
+                  onClick={() => setShowRegister(!showRegister)}
+                  style={styles.textBtn}
+                >
+                  {showRegister ? ' Inicia sesión aquí' : ' Regístrate ahora'}
+                </button>
+              </p>
+            </div>
           </form>
 
-          {showRegister && (
-            <div style={{ marginTop: 20, borderTop: '1px solid #eee', paddingTop: 20 }}>
-              <h3 style={{ marginBottom: 8 }}>Registro de Usuario</h3>
-              {regMsg && <div style={{ color: regMsg.includes('exitoso') ? 'green' : 'red', marginBottom: 8 }}>{regMsg}</div>}
-              <form onSubmit={submitRegister}>
-                <div style={styles.inputGroup}>
-                  <input style={styles.input} placeholder="Usuario" value={regUser} onChange={e => setRegUser(e.target.value)} />
-                </div>
-                <div style={styles.inputGroup}>
-                  <input type="password" style={styles.input} placeholder="Contraseña" value={regPass} onChange={e => setRegPass(e.target.value)} />
-                </div>
-                <div style={styles.inputGroup}>
-                  <select style={styles.input} value={regTipoId} onChange={e => setRegTipoId(e.target.value)}>
-                    <option value="CEDULA">CÉDULA</option>
-                    <option value="PASAPORTE">PASAPORTE</option>
-                  </select>
-                </div>
-                <div style={styles.inputGroup}>
-                  <input style={styles.input} placeholder="Número de identificación" value={regId} onChange={e => setRegId(e.target.value)} />
-                </div>
-                <div style={styles.inputGroup}>
-                  <input type="number" style={styles.input} placeholder="Sucursal (id)" value={regSucursal} onChange={e => setRegSucursal(e.target.value)} />
-                </div>
-                <button type="submit" style={{ ...styles.button, background: 'linear-gradient(to right, #2e8b57, #3cb371)' }}>Crear cuenta</button>
-              </form>
-            </div>
-          )}
+          <div style={styles.footer}>
+            © 2026 ARCBANK | Protocolo de Seguridad Bancaria Activo
+          </div>
         </div>
-      </div>
 
-      <div className="right" style={styles.right}>
-        <div className="right-card">
-          <h2 className="reco-title">Recomendaciones</h2>
-          <ol className="reco-list">
-            <li>Cuida bien tu usuario y contraseña</li>
-            <li>Verifica todo antes de ingresar</li>
-            <li>No compartas tus claves</li>
-          </ol>
-
-          <div className="reco-avatar">
-            <img
-              src="https://cdn-icons-png.flaticon.com/512/706/706830.png"
-              alt="persona"
-              className="reco-icon"
-            />
+        <div style={styles.visualArea}>
+          <div style={styles.visualOverlay}></div>
+          <div style={styles.quoteCard}>
+            <div style={styles.quoteIcon}>"</div>
+            <p style={styles.quoteText}>La excelencia en banca digital no es una opción, es nuestro estándar de seguridad para tu patrimonio.</p>
+            <div style={styles.quoteAuthor}>— Dirección Ejecutiva Arcbank</div>
           </div>
         </div>
       </div>
@@ -188,116 +190,174 @@ export default function Login() {
 }
 
 const styles = {
-  page: {
-    display: "flex",
+  container: {
     minHeight: "100vh",
-    background: "linear-gradient(to right, #f5f5f5, #e8e8e8)",
-  },
-  left: {
-    flex: 1,
-    padding: "20px",
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center", // Centrado en móviles
-    justifyContent: "center",
-  },
-  right: {
-    flex: 1,
-    padding: "24px",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    // Ocultar en móviles si se desea con media queries
+    background: "#f0f2f5",
+    fontFamily: "'Inter', sans-serif",
   },
-  logo: {
-    fontSize: 40,
-    fontWeight: "bold",
-    color: "#b8860b",
-    marginBottom: 20,
-    alignSelf: 'flex-start',
-    marginLeft: '10%'
-  },
-  loginBox: {
-    background: "white",
-    padding: 32,
-    borderRadius: 20,
+  loginSplit: {
+    display: "flex",
     width: "100%",
-    maxWidth: 460,
-    boxShadow: "0 6px 15px rgba(0,0,0,0.1)",
+    maxWidth: "1100px",
+    height: "720px",
+    background: "#fff",
+    borderRadius: "24px",
+    overflow: "hidden",
+    boxShadow: "0 20px 60px rgba(0,0,0,0.1)",
+    margin: "20px",
+  },
+  formArea: {
+    flex: "1",
+    padding: "60px",
+    display: "flex",
+    flexDirection: "column",
+    position: "relative",
+  },
+  visualArea: {
+    flex: "1.1",
+    background: "url('https://images.unsplash.com/photo-1554469384-e58fac16e23a?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80')",
+    backgroundSize: "cover",
+    backgroundPosition: "center",
+    position: "relative",
+    display: "flex",
+    alignItems: "flex-end",
+    padding: "40px",
+  },
+  visualOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    background: "linear-gradient(to bottom, rgba(26,28,30,0.1) 0%, rgba(26,28,30,0.8) 100%)",
+  },
+  logoContainer: {
+    display: "flex",
+    alignItems: "center",
+    gap: "10px",
+    marginBottom: "50px",
+  },
+  diamond: {
+    width: "28px",
+    height: "28px",
+    background: "var(--primary-gradient)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    color: "#fff",
+    borderRadius: "6px",
+    fontSize: "18px",
+  },
+  brandText: {
+    fontSize: "22px",
+    fontWeight: "800",
+    color: "var(--primary)",
+    letterSpacing: "2px",
+  },
+  welcomeText: {
+    marginBottom: "32px",
   },
   title: {
-    fontSize: 32,
-    fontWeight: 700,
-    marginBottom: 5,
+    fontSize: "32px",
+    fontWeight: "800",
+    color: "var(--secondary)",
+    fontFamily: "'Outfit', sans-serif",
   },
   subtitle: {
-    fontSize: 18,
-    marginBottom: 25,
-    color: '#666'
+    fontSize: "16px",
+    color: "var(--text-muted)",
+    marginTop: "8px",
   },
-  error: {
-    color: "red",
-    marginBottom: 15,
-    padding: 10,
-    background: '#ffebee',
-    borderRadius: 4
+  form: {
+    flex: 1,
   },
-  inputGroup: {
+  inputWrapper: {
+    marginBottom: "20px",
+  },
+  label: {
+    fontSize: "14px",
+    fontWeight: "600",
+    color: "var(--secondary)",
+    marginBottom: "8px",
+    display: "block",
+  },
+  iconInput: {
     position: "relative",
-    marginBottom: 15,
   },
-  input: {
-    width: "100%",
-    padding: "12px 40px",
-    borderRadius: 8,
-    border: "2px solid #e0e0e0",
-    fontSize: 16,
-    outline: "none",
-    transition: 'border-color 0.3s'
-  },
-  icon: {
+  fieldIcon: {
     position: "absolute",
+    left: "16px",
     top: "50%",
-    left: 12,
     transform: "translateY(-50%)",
-    color: "#999",
+    color: "#94a3b8",
   },
-  eyeIcon: {
+  eyeBtn: {
     position: "absolute",
+    right: "16px",
     top: "50%",
-    right: 12,
     transform: "translateY(-50%)",
     cursor: "pointer",
-    color: "#999"
+    color: "#94a3b8",
   },
-  forgot: {
-    fontSize: 13,
-    textAlign: "right",
-    marginBottom: 10,
-    color: "#666",
-    cursor: 'pointer'
+  forgotPass: {
+    fontSize: "13px",
+    color: "var(--primary)",
+    fontWeight: "600",
+    cursor: "pointer",
   },
-  button: {
-    marginTop: 10,
-    width: "100%",
-    padding: 14,
-    fontSize: 16,
-    fontWeight: 'bold',
-    background: "linear-gradient(to right, #ff9800, #ffc107)",
-    color: 'white',
-    borderRadius: 8,
+  textBtn: {
+    background: "none",
     border: "none",
+    color: "var(--primary)",
+    fontWeight: "700",
     cursor: "pointer",
-    transition: 'transform 0.1s'
+    fontSize: "14px",
   },
-  recoTitle: {
-    fontSize: 24,
-    fontWeight: 700,
-    marginBottom: 20,
+  errorCard: {
+    padding: "12px 16px",
+    background: "#fef2f2",
+    border: "1px solid #fee2e2",
+    color: "#b91c1c",
+    fontSize: "14px",
+    borderRadius: "8px",
+    marginBottom: "20px",
   },
-  recoList: {
-    fontSize: 16,
-    lineHeight: 1.8,
-    color: '#444'
+  footer: {
+    marginTop: "40px",
+    fontSize: "12px",
+    color: "#94a3b8",
+    textAlign: "center",
+  },
+  quoteCard: {
+    position: "relative",
+    zIndex: 2,
+    background: "rgba(255,255,255,0.1)",
+    backdropFilter: "blur(10px)",
+    padding: "32px",
+    borderRadius: "20px",
+    border: "1px solid rgba(255,255,255,0.2)",
+    color: "#fff",
+    maxWidth: "400px",
+  },
+  quoteIcon: {
+    fontSize: "60px",
+    lineHeight: "20px",
+    color: "var(--accent)",
+    fontFamily: "serif",
+    marginBottom: "10px",
+  },
+  quoteText: {
+    fontSize: "18px",
+    fontWeight: "500",
+    lineHeight: "1.6",
+    marginBottom: "20px",
+  },
+  quoteAuthor: {
+    fontSize: "14px",
+    color: "var(--accent)",
+    fontWeight: "700",
   }
 };

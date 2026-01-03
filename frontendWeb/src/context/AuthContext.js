@@ -162,16 +162,35 @@ export function AuthProvider({ children }) {
   }
 
   const addTransaction = (tx) => {
+    // tx: { accId, amount, description, type }
     setState(s => {
       const txs = [tx, ...(s.transactions || [])]
-      // Actualización optimista del saldo en el frontend
-      const accounts = s.user.accounts.map(a =>
-        a.id === tx.accId
-          ? { ...a, balance: Number((a.balance + tx.amount).toFixed(2)) }
-          : a
-      )
+
+      // Actualización optimista del saldo
+      const accounts = s.user.accounts.map(a => {
+        if (String(a.id) === String(tx.accId)) {
+          const newBalance = Number((a.balance + tx.amount).toFixed(2))
+          return { ...a, balance: newBalance }
+        }
+        return a
+      })
+
       return { ...s, transactions: txs, user: { ...s.user, accounts } }
     })
+  }
+
+  const updateAccountBalance = (accId, newBalance) => {
+    setState(s => ({
+      ...s,
+      user: {
+        ...s.user,
+        accounts: s.user.accounts.map(a =>
+          String(a.id) === String(accId)
+            ? { ...a, balance: Number(Number(newBalance).toFixed(2)) }
+            : a
+        )
+      }
+    }))
   }
 
   const refreshAccounts = async () => {
@@ -202,6 +221,7 @@ export function AuthProvider({ children }) {
       persistIdentification,
       setUserAccounts,
       addTransaction,
+      updateAccountBalance,
       refreshAccounts
     }}>
       {children}

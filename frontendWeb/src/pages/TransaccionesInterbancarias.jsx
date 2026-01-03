@@ -4,7 +4,7 @@ import { realizarTransferenciaInterbancaria, getBancos } from '../services/banca
 import { useNavigate } from "react-router-dom";
 
 export default function TransaccionesInterbancarias() {
-    const { state, refreshAccounts } = useAuth();
+    const { state, refreshAccounts, updateAccountBalance } = useAuth();
     const navigate = useNavigate();
 
     // Cuentas del usuario (Manejo defensivo si aún no cargan)
@@ -93,10 +93,15 @@ export default function TransaccionesInterbancarias() {
                 descripcion: `Transferencia a ${toName} - Banco ${bankName}`
             }
 
-            await realizarTransferenciaInterbancaria(request);
+            const response = await realizarTransferenciaInterbancaria(request);
 
-            // Refrescar saldos después de la operación exitosa
-            await refreshAccounts();
+            // Actualización inmediata con el saldo real retornado por el backend
+            if (response && response.saldoResultante !== undefined) {
+                updateAccountBalance(fromAccId, response.saldoResultante);
+            } else {
+                // Fallback a refresh completo si el DTO no trae el saldo
+                await refreshAccounts();
+            }
 
             // Éxito
             setStep(4);
@@ -134,173 +139,239 @@ export default function TransaccionesInterbancarias() {
     };
 
     return (
-        <div style={{ padding: 30 }}>
-            {step === 1 && (
-                <div style={styles.card}>
-                    <h2 style={styles.title}>Transferencia Interbancaria</h2>
-
-                    <label>N° de cuenta destino</label>
-                    <input
-                        style={styles.input}
-                        value={toAccount}
-                        onChange={(e) => setToAccount(e.target.value.replace(/\D/g, ''))}
-                        placeholder="Solo números"
-                    />
-
-                    <label>Banco Destino</label>
-                    {banks && banks.length > 0 ? (
-                        <select
-                            style={styles.input}
-                            value={bankName}
-                            onChange={e => setBankName(e.target.value)}
-                        >
-                            <option value="">-- Seleccione Banco Destino --</option>
-                            {banks.map((b, i) => (
-                                <option key={b.codigo || b.id || i} value={b.codigo || b.id}>
-                                    {b.nombre || b.name} ({b.codigo || b.id})
-                                </option>
-                            ))}
-                        </select>
-                    ) : (
-                        <input
-                            style={styles.input}
-                            value={bankName}
-                            onChange={e => setBankName(e.target.value)}
-                            placeholder="Ingrese código del banco (ej: ARCBANK)"
-                        />
-                    )}
-
-                    <label>Beneficiario (Nombres)</label>
-                    <input
-                        style={styles.input}
-                        value={toName}
-                        onChange={e => setToName(e.target.value)}
-                        placeholder="Nombre del titular destino"
-                    />
-
-                    {error && <p style={styles.error}>{error}</p>}
-
-                    <button style={styles.btn} onClick={goToStep2}>
-                        Continuar
-                    </button>
+        <div className="inter-page">
+            <header className="header-inline">
+                <div>
+                    <h1 className="text-gradient" style={{ fontSize: '32px', fontWeight: '800' }}>Transferencia Interbancaria</h1>
+                    <p style={{ color: 'var(--text-muted)' }}>Envía dinero a otros bancos de la red de forma segura</p>
                 </div>
-            )}
+            </header>
 
-            {step === 2 && (
-                <div style={styles.card}>
-                    <h2 style={styles.title}>Transferir</h2>
+            <div style={styles.stepperContainer}>
+                {[1, 2, 3].map(s => (
+                    <React.Fragment key={s}>
+                        <div style={{
+                            ...styles.step,
+                            background: step >= s ? 'var(--primary-gradient)' : '#e2e8f0',
+                            color: step >= s ? '#fff' : 'var(--text-muted)'
+                        }}>{s}</div>
+                        {s < 3 && <div style={{ ...styles.stepLine, background: step > s ? 'var(--primary)' : '#e2e8f0' }}></div>}
+                    </React.Fragment>
+                ))}
+            </div>
 
-                    <div style={styles.balanceCircle}>
-                        <div style={styles.circleLetter}>
-                            {(fromAccount.type || 'C')[0]}
+            <div className="premium-card" style={styles.formCard}>
+                {step === 1 && (
+                    <div className="fade-in">
+                        <h2 style={styles.stepTitle}>Datos del Beneficiario</h2>
+
+                        <div style={styles.field}>
+                            <label style={styles.label}>Banco de Destino</label>
+                            <select
+                                className="modern-input"
+                                value={bankName}
+                                onChange={e => setBankName(e.target.value)}
+                            >
+                                <option value="">Seleccione una entidad bancaria</option>
+                                {banks.map((b, i) => (
+                                    <option key={b.codigo || b.id || i} value={b.codigo || b.id}>
+                                        {b.nombre || b.name}
+                                    </option>
+                                ))}
+                            </select>
                         </div>
-                        <div style={{ fontSize: 20, fontWeight: 700 }}>
-                            {fromAccount.number || '---'}
+
+                        <div style={styles.field}>
+                            <label style={styles.label}>Número de Cuenta</label>
+                            <input
+                                className="modern-input"
+                                value={toAccount}
+                                onChange={(e) => setToAccount(e.target.value.replace(/\D/g, ''))}
+                                placeholder="Ej: 2200123456"
+                            />
                         </div>
-                        <div style={{ fontSize: 26, marginTop: 5 }}>
-                            ${Number(fromAccount.balance || 0).toFixed(2)}
+
+                        <div style={styles.field}>
+                            <label style={styles.label}>Nombre del Beneficiario</label>
+                            <input
+                                className="modern-input"
+                                value={toName}
+                                onChange={e => setToName(e.target.value)}
+                                placeholder="Nombre completo"
+                            />
                         </div>
-                    </div>
 
-                    <label style={{ fontWeight: 600 }}>Desde la cuenta</label>
-                    <select
-                        style={styles.input}
-                        value={fromAccId}
-                        onChange={(e) => setFromAccId(e.target.value)}
-                    >
-                        {accounts.map(acc => (
-                            <option key={acc.id} value={acc.id}>
-                                {acc.number} — Saldo ${acc.balance.toFixed(2)}
-                            </option>
-                        ))}
-                    </select>
+                        {error && <div style={styles.errorMsg}>{error}</div>}
 
-                    <label>Monto a transferir</label>
-                    <input
-                        style={styles.input}
-                        value={amount}
-                        onChange={e => {
-                            const val = e.target.value;
-                            if (/^\d*\.?\d{0,2}$/.test(val)) setAmount(val);
-                        }}
-                        placeholder="0.00"
-                    />
-
-                    <div style={styles.infoBar}>
-                        💡 Esta transacción puede tardar hasta 24 horas laborables.
-                    </div>
-
-                    {error && <p style={styles.error}>{error}</p>}
-
-                    <button style={styles.btn} onClick={goToStep3}>
-                        Continuar
-                    </button>
-                </div>
-            )}
-
-            {step === 3 && (
-                <div style={styles.card}>
-                    <h2 style={styles.title}>Confirmación</h2>
-                    <h3 style={{ textAlign: "center", marginBottom: 15 }}>Transferencia Interbancaria</h3>
-
-                    <table style={styles.table}>
-                        <tbody>
-                            <tr>
-                                <td>Monto:</td>
-                                <td><b>${Number(amount).toFixed(2)}</b></td>
-                            </tr>
-                            <tr>
-                                <td>Costo:</td>
-                                <td>$0.40 (Aprox)</td>
-                            </tr>
-                            <tr><td colSpan={2} style={styles.sectionTitle}>Origen</td></tr>
-                            <tr><td>Cuenta:</td><td>{fromAccount.number}</td></tr>
-
-                            <tr><td colSpan={2} style={styles.sectionTitle}>Destino</td></tr>
-                            <tr><td>Banco:</td><td>{bankName}</td></tr>
-                            <tr><td>Beneficiario:</td><td>{toName}</td></tr>
-                            <tr><td>Cuenta:</td><td>{toAccount}</td></tr>
-                        </tbody>
-                    </table>
-
-                    {error && <p style={styles.error}>{error}</p>}
-
-                    <div style={styles.buttonRow}>
-                        <button style={styles.btnCancel} onClick={() => setStep(2)} disabled={loading}>
-                            Atrás
-                        </button>
-                        <button style={styles.btn} onClick={confirmTransfer} disabled={loading}>
-                            {loading ? 'Procesando...' : 'Confirmar'}
+                        <button className="modern-btn modern-btn-primary" style={{ width: '100%', marginTop: '20px' }} onClick={goToStep2}>
+                            Continuar a Monto
                         </button>
                     </div>
-                </div>
-            )}
+                )}
 
-            {step === 4 && (
-                <div style={styles.card}>
-                    <h2 style={styles.title}>Transacción Exitosa</h2>
-                    <p style={{ textAlign: 'center' }}>La transferencia ha sido enviada a procesamiento.</p>
-                    <div style={styles.buttonRow}>
-                        <button style={styles.btn} onClick={() => navigate('/movimientos')}>Ir a Movimientos</button>
-                        <button style={styles.btn} onClick={downloadReceipt}>📄 Descargar</button>
+                {step === 2 && (
+                    <div className="fade-in">
+                        <h2 style={styles.stepTitle}>Detalles de la Transferencia</h2>
+
+                        <div style={styles.accSelector}>
+                            <label style={styles.label}>Cuenta de Origen</label>
+                            <select
+                                className="modern-input"
+                                value={fromAccId}
+                                onChange={(e) => setFromAccId(e.target.value)}
+                            >
+                                {accounts.map(acc => (
+                                    <option key={acc.id} value={acc.id}>
+                                        {acc.number} — Saldo Disponible: ${acc.balance.toFixed(2)}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+
+                        <div style={styles.field}>
+                            <label style={styles.label}>Monto a Enviar ($)</label>
+                            <input
+                                className="modern-input"
+                                style={{ fontSize: '28px', fontWeight: '800', textAlign: 'center', color: 'var(--primary)' }}
+                                value={amount}
+                                onChange={e => {
+                                    const val = e.target.value;
+                                    if (/^\d*\.?\d{0,2}$/.test(val)) setAmount(val);
+                                }}
+                                placeholder="0.00"
+                            />
+                        </div>
+
+                        <div className="premium-card" style={{ background: 'rgba(59, 130, 246, 0.05)', border: '1px dashed #3b82f6', marginBottom: '24px' }}>
+                            <p style={{ fontSize: '13px', color: '#1d4ed8', textAlign: 'center' }}>
+                                💡 Nota: Las transferencias interbancarias pueden incurrir en una comisión de red de $0.40.
+                            </p>
+                        </div>
+
+                        {error && <div style={styles.errorMsg}>{error}</div>}
+
+                        <div style={{ display: 'flex', gap: '12px' }}>
+                            <button className="modern-btn modern-btn-outline" style={{ flex: 1 }} onClick={() => setStep(1)}>Atrás</button>
+                            <button className="modern-btn modern-btn-primary" style={{ flex: 2 }} onClick={goToStep3}>Revisar Detalles</button>
+                        </div>
                     </div>
-                </div>
-            )}
+                )}
+
+                {step === 3 && (
+                    <div className="fade-in">
+                        <h2 style={styles.stepTitle}>Confirmar Transferencia</h2>
+
+                        <div className="premium-card" style={{ background: 'var(--bg)', marginBottom: '24px' }}>
+                            <div style={styles.confirmRow}>
+                                <span>Beneficiario</span>
+                                <strong>{toName}</strong>
+                            </div>
+                            <div style={styles.confirmRow}>
+                                <span>Banco</span>
+                                <strong>{bankName}</strong>
+                            </div>
+                            <div style={styles.confirmRow}>
+                                <span>Cuenta Destino</span>
+                                <strong>{toAccount}</strong>
+                            </div>
+                            <div style={{ ...styles.confirmRow, borderTop: '1px solid var(--border)', marginTop: '12px', paddingTop: '12px' }}>
+                                <span style={{ fontSize: '16px' }}>Monto a Debitar</span>
+                                <strong style={{ fontSize: '22px', color: 'var(--primary)' }}>${Number(amount).toFixed(2)}</strong>
+                            </div>
+                        </div>
+
+                        {error && <div style={styles.errorMsg}>{error}</div>}
+
+                        <div style={{ display: 'flex', gap: '12px' }}>
+                            <button className="modern-btn modern-btn-outline" style={{ flex: 1 }} onClick={() => setStep(2)} disabled={loading}>Atrás</button>
+                            <button className="modern-btn modern-btn-primary" style={{ flex: 2 }} onClick={confirmTransfer} disabled={loading}>
+                                {loading ? 'Enviando...' : 'Confirmar y Enviar'}
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {step === 4 && (
+                    <div className="fade-in" style={{ textAlign: 'center', padding: '20px 0' }}>
+                        <div style={{ fontSize: '64px', marginBottom: '16px' }}>✅</div>
+                        <h2 style={{ fontSize: '24px', fontWeight: '800', marginBottom: '12px' }}>¡Transferencia Exitosa!</h2>
+                        <p style={{ color: 'var(--text-muted)', marginBottom: '32px' }}>
+                            Tu dinero ha sido enviado correctamente. El comprobante estará disponible en tu historial.
+                        </p>
+
+                        <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
+                            <button className="modern-btn modern-btn-outline" onClick={downloadReceipt}>Descargar Recibo</button>
+                            <button className="modern-btn modern-btn-primary" onClick={() => navigate('/movimientos')}>Ver Movimientos</button>
+                        </div>
+                    </div>
+                )}
+            </div>
         </div>
     );
 }
 
 const styles = {
-    card: { background: "#fff", padding: 30, borderRadius: 10, width: "100%", maxWidth: "500px", margin: "0 auto", boxShadow: "0 2px 10px rgba(0,0,0,0.05)" },
-    title: { fontSize: 22, marginBottom: 20, fontWeight: 700, textAlign: 'center' },
-    input: { width: "100%", padding: 12, borderRadius: 6, border: "1px solid #ddd", marginBottom: 15, fontSize: 16 },
-    btn: { background: "#cc8c00", color: "white", padding: "12px 20px", borderRadius: 6, border: "none", cursor: "pointer", marginTop: 10, fontWeight: 600, width: '100%' },
-    btnCancel: { background: "#eee", color: "#333", padding: "12px 20px", borderRadius: 6, border: "none", cursor: "pointer", marginTop: 10, fontWeight: 600, width: '100%' },
-    error: { color: "red", marginBottom: 10, fontSize: 14, background: '#ffebee', padding: 8, borderRadius: 4 },
-    balanceCircle: { textAlign: "center", marginBottom: 20, padding: 10, background: '#f9f9f9', borderRadius: 8 },
-    circleLetter: { width: 50, height: 50, borderRadius: "50%", background: "#e3f2fd", color: '#1565c0', margin: "0 auto 10px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, fontWeight: "bold" },
-    infoBar: { background: "#e3f2fd", padding: 12, borderRadius: 6, marginBottom: 15, fontSize: 13, color: '#0d47a1' },
-    table: { width: "100%", fontSize: 14, margin: "0 auto 20px", textAlign: "left" },
-    sectionTitle: { fontWeight: 700, paddingTop: 10, color: '#666', fontSize: 12, textTransform: 'uppercase' },
-    buttonRow: { display: "flex", gap: 10, marginTop: 20 },
+    stepperContainer: {
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginTop: '40px',
+        marginBottom: '40px',
+    },
+    step: {
+        width: '36px',
+        height: '36px',
+        borderRadius: '50%',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontWeight: '700',
+        fontSize: '14px',
+        transition: 'all 0.3s ease',
+    },
+    stepLine: {
+        width: '80px',
+        height: '2px',
+        margin: '0 10px',
+    },
+    formCard: {
+        maxWidth: '600px',
+        margin: '0 auto',
+        padding: '40px',
+    },
+    stepTitle: {
+        fontSize: '22px',
+        fontWeight: '800',
+        marginBottom: '32px',
+        textAlign: 'center',
+    },
+    field: {
+        marginBottom: '20px',
+    },
+    label: {
+        display: 'block',
+        fontSize: '14px',
+        fontWeight: '600',
+        color: 'var(--text-muted)',
+        marginBottom: '8px',
+    },
+    errorMsg: {
+        background: 'rgba(239, 68, 68, 0.05)',
+        color: 'var(--error)',
+        padding: '12px',
+        borderRadius: '8px',
+        fontSize: '13px',
+        marginBottom: '20px',
+        border: '1px solid rgba(239, 68, 68, 0.1)',
+        textAlign: 'center',
+    },
+    accSelector: {
+        marginBottom: '32px',
+    },
+    confirmRow: {
+        display: 'flex',
+        justifyContent: 'space-between',
+        padding: '8px 0',
+        fontSize: '14px',
+    }
 };

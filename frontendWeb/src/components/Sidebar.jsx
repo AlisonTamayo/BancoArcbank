@@ -28,106 +28,61 @@ export default function Sidebar({ isOpen = true, onRequestClose }) {
   };
 
   // Estilos dinámicos
-  const hiddenStyle = isOpen ? {} : { display: "none" };
-  const mobileOverlayStyle = isMobile && isOpen
-    ? {
-      position: "fixed",
-      left: 0,
-      top: 0,
-      height: "100%",
-      zIndex: 1500,
-      boxShadow: "0 10px 30px rgba(0,0,0,0.15)",
-      background: "#fff",
-    }
-    : {};
-
-  const sidebarStyle = { ...styles.sidebar, ...mobileOverlayStyle, ...hiddenStyle };
-
-  const handleNavClick = () => {
-    if (isMobile && typeof onRequestClose === "function") onRequestClose();
+  const sidebarStyle = {
+    ...styles.sidebar,
+    ...(isMobile && isOpen ? styles.mobileOverlay : {}),
+    ...(isOpen ? {} : styles.hidden)
   };
 
   return (
     <aside className="sidebar" style={sidebarStyle}>
-      <div className="brand" style={styles.brand}>ARCBANK</div>
+      <div className="brand" style={styles.brand}>
+        <span style={styles.brandDiamond}>◆</span> ARCBANK
+      </div>
 
-      <div className="profile-mini" style={styles.profileMini}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <div style={styles.circleIcon}>👤</div>
-          <div style={{ display: "flex", flexDirection: "column", lineHeight: "18px" }}>
-            <span style={{ fontWeight: 700 }}>
-              {state?.user?.name || "Usuario"}
-            </span>
-            <NavLink
-              to="/perfil"
-              className="small"
-              style={styles.profileLink}
-              onClick={handleNavClick}
-            >
-              Mi perfil
-            </NavLink>
-          </div>
+      <div style={styles.userSection}>
+        <div style={styles.avatar}>
+          {state?.user?.name ? state.user.name[0].toUpperCase() : "U"}
+        </div>
+        <div style={styles.userInfo}>
+          <span style={styles.userName}>{state?.user?.name || "Premium User"}</span>
+          <span style={styles.userStatus}>Cliente Verificado</span>
         </div>
       </div>
 
-      <nav style={styles.menuContainer}>
-        <ul className="nav-list" style={styles.navList}>
+      <nav style={styles.nav}>
+        <ul style={styles.navList}>
           <li>
-            <NavLink
-              to="/"
-              end
-              className={({ isActive }) => (isActive ? "active-link" : "")}
-              style={({ isActive }) => isActive ? { ...styles.navItem, ...styles.activeItem } : styles.navItem}
-              onClick={handleNavClick}
-            >
-              <FiHome size={18} /> Inicio
+            <NavLink to="/" end style={({ isActive }) => isActive ? { ...styles.link, ...styles.activeLink } : styles.link} onClick={handleNavClick}>
+              <FiHome size={20} /> <span>Inicio</span>
             </NavLink>
           </li>
-
           <li>
-            <NavLink
-              to="/movimientos"
-              className={({ isActive }) => (isActive ? "active-link" : "")}
-              style={({ isActive }) => isActive ? { ...styles.navItem, ...styles.activeItem } : styles.navItem}
-              onClick={handleNavClick}
-            >
-              <FiList size={18} /> Movimientos
+            <NavLink to="/movimientos" style={({ isActive }) => isActive ? { ...styles.link, ...styles.activeLink } : styles.link} onClick={handleNavClick}>
+              <FiList size={20} /> <span>Movimientos</span>
             </NavLink>
           </li>
-
           <li>
-            <NavLink
-              to={transferirPath}
-              className={({ isActive }) => (isActive ? "active-link" : "")}
-              style={({ isActive }) => isActive ? { ...styles.navItem, ...styles.activeItem } : styles.navItem}
-              onClick={handleNavClick}
-            >
-              <TbArrowsExchange size={20} /> Transferir
+            <NavLink to={transferirPath} style={({ isActive }) => isActive ? { ...styles.link, ...styles.activeLink } : styles.link} onClick={handleNavClick}>
+              <TbArrowsExchange size={22} /> <span>Transferencias</span>
             </NavLink>
           </li>
-
           <li>
-            <NavLink
-              to={interbancariasPath}
-              className={({ isActive }) => (isActive ? "active-link" : "")}
-              style={({ isActive }) => isActive ? { ...styles.navItem, ...styles.activeItem } : styles.navItem}
-              onClick={handleNavClick}
-            >
-              <TbArrowsExchange size={20} /> Interbancarias
+            <NavLink to={interbancariasPath} style={({ isActive }) => isActive ? { ...styles.link, ...styles.activeLink } : styles.link} onClick={handleNavClick}>
+              <TbArrowsExchange size={22} /> <span>Interbancarias</span>
+            </NavLink>
+          </li>
+          <li>
+            <NavLink to="/perfil" style={({ isActive }) => isActive ? { ...styles.link, ...styles.activeLink } : styles.link} onClick={handleNavClick}>
+              <span style={{ fontSize: 20 }}>👤</span> <span>Mi Perfil</span>
             </NavLink>
           </li>
         </ul>
       </nav>
 
-      <div style={styles.logoutContainer}>
-        <button
-          onClick={() => {
-            handleLogout();
-            if (isMobile && typeof onRequestClose === "function") onRequestClose();
-          }}
-          style={styles.logoutButton}
-        >
-          <FiLogOut size={18} /> Cerrar sesión
+      <div style={styles.footer}>
+        <button onClick={handleLogout} style={styles.logoutBtn}>
+          <FiLogOut size={18} /> <span>Cerrar Sesión</span>
         </button>
       </div>
     </aside>
@@ -136,80 +91,126 @@ export default function Sidebar({ isOpen = true, onRequestClose }) {
 
 const styles = {
   sidebar: {
-    width: "260px",
-    background: "#fff",
-    borderRight: "1px solid #e5e5e5",
+    width: "var(--sidebar-width)",
+    background: "var(--secondary)",
+    color: "#fff",
+    height: "100vh",
     display: "flex",
     flexDirection: "column",
-    padding: "25px 20px",
-    height: "100vh",
-    transition: "transform 0.3s ease",
+    padding: "32px 16px",
+    position: "sticky",
+    top: 0,
+    zIndex: 1000,
+    transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+  },
+  hidden: {
+    width: "0",
+    padding: "0",
+    overflow: "hidden",
+    transform: "translateX(-100%)",
+  },
+  mobileOverlay: {
+    position: "fixed",
+    left: 0,
+    top: 0,
+    height: "100%",
+    transform: "translateX(0)",
   },
   brand: {
-    fontSize: 28,
-    fontWeight: 800,
-    color: "#b8860b",
-    marginBottom: 25,
-  },
-  profileMini: { marginBottom: 40 },
-  circleIcon: {
-    width: 38,
-    height: 38,
-    background: "#ffd54f",
-    borderRadius: "50%",
+    fontSize: "26px",
+    fontWeight: "800",
+    color: "var(--accent)",
+    letterSpacing: "2px",
+    marginBottom: "48px",
     display: "flex",
-    justifyContent: "center",
     alignItems: "center",
-    fontSize: 20,
+    gap: "10px",
+    paddingLeft: "12px",
   },
-  profileLink: {
-    fontSize: 14,
-    color: "#666",
-    marginTop: 4,
-    textDecoration: "none",
-    cursor: "pointer"
+  brandDiamond: {
+    fontSize: "20px",
+    color: "#fff",
   },
-  menuContainer: { flexGrow: 1 },
-  navList: {
-    listStyle: "none",
-    padding: 0,
+  userSection: {
+    display: "flex",
+    alignItems: "center",
+    gap: "12px",
+    padding: "16px",
+    background: "rgba(255,255,255,0.05)",
+    borderRadius: "16px",
+    marginBottom: "32px",
+  },
+  avatar: {
+    width: "44px",
+    height: "44px",
+    borderRadius: "12px",
+    background: "var(--primary-gradient)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontWeight: "700",
+    fontSize: "18px",
+    boxShadow: "0 4px 12px rgba(0,0,0,0.2)",
+  },
+  userInfo: {
     display: "flex",
     flexDirection: "column",
-    gap: 8,
   },
-  navItem: {
+  userName: {
+    fontSize: "15px",
+    fontWeight: "600",
+    color: "#fff",
+  },
+  userStatus: {
+    fontSize: "11px",
+    color: "rgba(255,255,255,0.5)",
+    textTransform: "uppercase",
+    letterSpacing: "1px",
+  },
+  nav: {
+    flex: 1,
+  },
+  navList: {
+    listStyle: "none",
+    display: "flex",
+    flexDirection: "column",
+    gap: "8px",
+  },
+  link: {
     display: "flex",
     alignItems: "center",
-    gap: 12,
+    gap: "12px",
+    padding: "12px 16px",
+    borderRadius: "12px",
+    color: "rgba(255,255,255,0.7)",
     textDecoration: "none",
-    color: "#555",
-    fontSize: 16,
-    padding: "10px 12px",
-    borderRadius: "8px",
-    transition: "background 0.2s"
+    fontSize: "15px",
+    fontWeight: "500",
+    transition: "all 0.2s ease",
   },
-  activeItem: {
-    background: "#fff8e1", // Un fondo suave para el activo
-    color: "#b8860b",
-    fontWeight: "600"
+  activeLink: {
+    background: "var(--primary-gradient)",
+    color: "#fff",
+    boxShadow: "0 4px 12px rgba(184, 134, 11, 0.25)",
   },
-  logoutContainer: {
+  footer: {
     marginTop: "auto",
-    paddingTop: 20,
-    borderTop: '1px solid #eee',
+    paddingTop: "20px",
+    borderTop: "1px solid rgba(255,255,255,0.1)",
   },
-  logoutButton: {
-    padding: "10px 12px",
-    fontSize: 16,
+  logoutBtn: {
+    width: "100%",
     display: "flex",
     alignItems: "center",
-    gap: 10,
-    width: "100%",
-    justifyContent: "flex-start",
+    gap: "12px",
+    padding: "12px 16px",
+    borderRadius: "12px",
     background: "transparent",
     border: "none",
+    color: "#ff6b6b",
+    fontSize: "15px",
+    fontWeight: "600",
     cursor: "pointer",
-    color: "#d32f2f", // Rojo suave para logout
-    fontWeight: "500"
+    transition: "all 0.2s ease",
   },
 };

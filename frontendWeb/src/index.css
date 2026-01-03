@@ -1,65 +1,157 @@
-:root{
-  --bg: #fffef5;
-  --sidebar-bg: #ffffff;
-  --accent: #cc9900;
-  --accent-dark: #a67c00;
-  --accent-light: #ffcc00;
-  --muted: #6b7280;
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap');
+
+:root {
+  /* ARCBANK Brand Palette */
+  --primary: #b8860b;
+  /* Dark Goldenrod */
+  --primary-light: #daa520;
+  /* Goldenrod */
+  --primary-gradient: linear-gradient(135deg, #b8860b 0%, #daa520 100%);
+  --secondary: #1a1c1e;
+  /* Deep Charcoal */
+  --accent: #ffd700;
+  /* Gold */
+
+  /* Neutral Palette */
+  --bg: #f8fafc;
+  --surface: #ffffff;
+  --text: #1e293b;
+  --text-muted: #64748b;
+  --border: #e2e8f0;
+
+  /* Semantic Colors */
+  --success: #10b981;
+  --error: #ef4444;
+  --info: #3b82f6;
+
+  /* Shadows & Radius */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --radius: 12px;
+  --radius-lg: 20px;
+
+  /* Spacing */
+  --sidebar-width: 280px;
 }
 
-@import './styles/responsive.css';
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
 
-* { box-sizing: border-box; }
-body { margin: 0; font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial; background: var(--bg); color: #111827; }
+body {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background-color: var(--bg);
+  color: var(--text);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
 
-.app-shell { display: flex; min-height: 100vh; }
-.sidebar { width: 260px; background: var(--sidebar-bg); border-right: 1px solid #e6e6e6; padding: 24px; }
-.main { flex: 1; padding: 24px; }
+h1,
+h2,
+h3,
+h4,
+.brand {
+  font-family: 'Outfit', sans-serif;
+}
 
-.brand { font-weight: 700; font-size: 18px; margin-bottom: 18px; }
-.profile-mini { font-size: 14px; color: var(--muted); margin-bottom: 18px; }
-.nav-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 10px; }
-.nav-list a { text-decoration: none; color: inherit; padding: 8px 10px; border-radius: 6px; display: block; }
-.nav-list a.active, .nav-list a:hover { background: #f1f5f9; color: var(--accent); }
+/* Layout */
+.app-shell {
+  display: flex;
+  min-height: 100vh;
+}
 
-.header-inline { display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; }
+.main {
+  flex: 1;
+  padding: 40px;
+  transition: all 0.3s ease;
+  max-width: 1400px;
+  margin: 0 auto;
+}
 
-.card { background: white; padding: 16px; border-radius: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.04); }
+/* Typography Utilities */
+.text-gradient {
+  background: var(--primary-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
 
-input, select, textarea, button { font: inherit; }
-.input { width:100%; padding:8px; border:1px solid #e5e7eb; border-radius:6px; margin-top:6px; margin-bottom:12px; }
-.btn { background: var(--accent); color: #fff; padding:8px 12px; border-radius:6px; border:none; cursor:pointer; }
-.btn.ghost { background: transparent; color: var(--accent); border: 1px solid #e6e6e6; }
+/* Premium Card Design */
+.premium-card {
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 24px;
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--border);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
 
-.small { font-size: 13px; color: var(--muted); }
+.premium-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
 
-/* Responsive adjustments */
+/* Inputs & Form Elements */
+.modern-input {
+  width: 100%;
+  padding: 12px 16px;
+  border-radius: var(--radius);
+  border: 2px solid var(--border);
+  background: var(--bg);
+  transition: all 0.2s ease;
+  font-size: 16px;
+  outline: none;
+}
+
+.modern-input:focus {
+  border-color: var(--primary);
+  background: var(--surface);
+  box-shadow: 0 0 0 4px rgba(184, 134, 11, 0.1);
+}
+
+/* Buttons */
+.modern-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 24px;
+  border-radius: var(--radius);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+  font-size: 16px;
+}
+
+.modern-btn-primary {
+  background: var(--primary-gradient);
+  color: white;
+  box-shadow: 0 4px 12px rgba(184, 134, 11, 0.2);
+}
+
+.modern-btn-primary:hover {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(184, 134, 11, 0.3);
+}
+
+.modern-btn-outline {
+  background: transparent;
+  border: 2px solid var(--primary);
+  color: var(--primary);
+}
+
+.modern-btn-outline:hover {
+  background: rgba(184, 134, 11, 0.05);
+}
+
+/* Responsive */
 @media (max-width: 900px) {
-  .app-shell { flex-direction: column; }
-  .sidebar { width: 100%; border-right: none; border-bottom: 1px solid #e6e6e6; padding: 12px; }
-  .nav-list { flex-direction: row; gap: 6px; overflow-x: auto; }
-  .nav-list a { padding: 8px 10px; white-space: nowrap; }
-  .main { padding: 12px; }
-  .card { padding: 12px; }
-}
-
-@media (max-width: 480px) {
-  .sidebar { padding: 8px; }
-  .brand { font-size: 16px; }
-  .header-inline { flex-direction: column; align-items: flex-start; gap: 8px; }
-}
-
-/* Make form elements full width on small screens */
-input, select, textarea { max-width: 100%; }
-@media (max-width: 640px) {
-  .table { width: 100% !important; font-size: 13px; }
-}
-
-/* Movimientos page controls responsiveness */
-.mov-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
-.mov-controls .input { max-width: 100%; }
-@media (max-width: 640px) {
-  .mov-controls select { width: 100% !important; }
-  .mov-controls input[type="date"] { width: 100%; }
-  .mov-controls .small { width: 100%; }
+  .main {
+    padding: 20px;
+  }
 }

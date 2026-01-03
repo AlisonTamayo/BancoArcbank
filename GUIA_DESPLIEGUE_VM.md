@@ -6,38 +6,38 @@ Este documento detalla los pasos para desplegar el ecosistema de **ArcBank** en 
 
 | Componente | VM Name | IP Pública | Rol |
 | :--- | :--- | :--- | :--- |
-| **ArcBank** | `vmarcbank` | `35.209.79.193` | Banco Originador |
+| **ArcBank** | `vmarcbank` | `IP_DE_TU_VM` | Banco Originador |
 | **Digiconecu** | `vmdigiconecu` | `35.208.155.21` | Switch Transaccional |
 
 ---
 
 ## 🛠️ PASO 1: Preparación de la VM
 
-1. **Conectarse a la VM**:
+1. **Configurar DuckDNS**:
+   - Ve a [duckdns.org](https://www.duckdns.org).
+   - Crea el dominio `arcbank-bank`.
+   - Asocia la IP pública de tu VM (`IP_DE_TU_VM`) al dominio.
+
+2. **Conectarse a la VM**:
    ```bash
-   gcloud compute ssh vmarcbank --zone=us-central1-c
+   gcloud compute ssh vmarcbank --zone=TU_ZONA
    ```
 
-2. **Instalar Docker y Docker Compose**:
+3. **Instalar Docker y Docker Compose**:
    ```bash
-   # Actualizar sistema
-   sudo apt-get update
-   sudo apt-get upgrade -y
-
-   # Instalar Docker
-   curl -fsSL https://get.docker.com -o get-docker.sh
-   sudo sh get-docker.sh
-
-   # Agregar usuario al grupo docker
+   sudo apt-get update && sudo apt-get upgrade -y
+   curl -fsSL https://get.docker.com -o get-docker.sh && sudo sh get-docker.sh
    sudo usermod -aG docker $USER
-
-   # Instalar Docker Compose
    sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
    sudo chmod +x /usr/local/bin/docker-compose
    ```
 
-3. **Configurar Firewall en Google Cloud**:
-   Asegúrate de permitir el tráfico en los puertos `80`, `443`, `8443` y `4080`.
+4. **Configurar Firewall en Google Cloud / VM**:
+   Asegúrate de abrir los puertos:
+   - `80` (HTTP - Reto Certbot)
+   - `443` (HTTPS - Banca Web)
+   - `8443` (HTTPS - Cajero ATM)
+   - `4080` (Webhooks Switch)
 
 ---
 
@@ -51,69 +51,48 @@ cd BancoArcbank
 
 ---
 
-## 🔐 PASO 3: Configurar Certificados SSL (Nginx)
+## 🔐 PASO 3: Configurar Certificados SSL (HTTPS Público)
 
-Para que el servidor Nginx funcione correctamente, debe mapear los certificados de la VM al contenedor.
+Usaremos **Certbot** vía Docker para obtener certificados de Let's Encrypt para tu dominio de DuckDNS.
 
-### 3.1 Generar Certificados con Let's Encrypt
+### 3.1 Generar Certificados (Primera vez)
+Asegúrate de que nada esté usando el puerto 80 antes de correr este comando:
 ```bash
-# Instalar Certbot
-sudo apt-get install certbot -y
-
-# Generar certificados para el dominio sslip.io
-sudo certbot certonly --standalone \
-  -d arcbank.35-209-79-193.sslip.io \
-  --email arcbank2@gmail.com \
-  --agree-tos \
-  --non-interactive
-
-# Copiar certificados al directorio del proyecto para que Nginx los vea
-mkdir -p nginx/certs
-sudo cp /etc/letsencrypt/live/arcbank.35-209-79-193.sslip.io/fullchain.pem nginx/certs/
-sudo cp /etc/letsencrypt/live/arcbank.35-209-79-193.sslip.io/privkey.pem nginx/certs/
-sudo chown -R $USER:$USER nginx/certs
+docker run -it --rm --name certbot \
+  -v "$(pwd)/nginx/certs:/etc/letsencrypt" \
+  -v "$(pwd)/nginx/certbot:/var/www/certbot" \
+  certbot/certbot certonly --standalone \
+  -d arcbank-bank.duckdns.org \
+  --email tu-email@gmail.com \
+  --agree-tos --no-eff-email
 ```
 
-### 3.2 Verificación en Docker Compose
-El archivo `docker-compose.prod.yml` ya está configurado para leer estos archivos:
-```yaml
-  nginx-proxy:
-    volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./nginx/certs:/etc/nginx/certs:ro  # <--- Aquí se mapean fullchain.pem y privkey.pem
-```
+### 3.2 Verificar Archivos
+Deberías ver los archivos en:
+`./nginx/certs/live/arcbank-bank.duckdns.org/`
 
 ---
 
 ## 🔑 PASO 4: Configurar mTLS para el Switch
 
-Como ya tienes los certificados `arcbank.crt` y `arcbank.key` en la carpeta `~/seguridad`, sigue estos pasos:
-
 1. **Ejecutar script de configuración**:
    ```bash
    cd ~/BancoArcbank
-   chmod +x setup-mtls.sh
-   ./setup-mtls.sh
+   chmod +x generate-mtls-certs.sh
+   ./generate-mtls-certs.sh
    ```
-   *Este script toma los certificados de `~/seguridad`, crea los almacenes `.p12` y los coloca en `ms-transaccion/certs`.*
 
 2. **Enviar certificado al Switch**:
-   Entrega el archivo `~/seguridad/arcbank.crt` al administrador del Switch DIGICONECU para que lo registre.
+   Entrega el archivo generado `arcbank.crt` al administrador del Switch.
 
 ---
 
 ## 🚀 PASO 5: Despliegue con Docker
 
-Levanta todos los servicios, incluyendo el nuevo microservicio de **sucursales**:
+Levanta todos los servicios en modo producción:
 
 ```bash
 docker-compose -f docker-compose.prod.yml up --build -d
-```
-
-### Verificar Estado:
-```bash
-docker ps
-docker logs -f ms-transaccion-arcbank
 ```
 
 ---
@@ -122,9 +101,9 @@ docker logs -f ms-transaccion-arcbank
 
 | Servicio | URL |
 | :--- | :--- |
-| **Banca Web** | [https://arcbank.35-209-79-193.sslip.io](https://arcbank.35-209-79-193.sslip.io) |
-| **Cajero ATM** | [https://arcbank.35-209-79-193.sslip.io:8443](https://arcbank.35-209-79-193.sslip.io:8443) |
-| **API Gateway / Swagger** | [http://35.209.79.193:4080/swagger-ui.html](http://35.209.79.193:4080/swagger-ui.html) |
+| **Banca Web** | [https://arcbank-bank.duckdns.org](https://arcbank-bank.duckdns.org) |
+| **Cajero ATM** | [https://arcbank-bank.duckdns.org:8443](https://arcbank-bank.duckdns.org:8443) |
+| **API Gateway / Swagger** | [http://IP_DE_TU_VM:4080/swagger-ui.html](http://IP_DE_TU_VM:4080/swagger-ui.html) |
 
 ---
 
