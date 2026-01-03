@@ -11,7 +11,6 @@ export default function Interbank() {
     const accounts = state?.user?.accounts || [];
     const [step, setStep] = useState(1);
     const [toInfo, setToInfo] = useState({ account: "", bank: "", name: "" });
-    const [toAccType, setToAccType] = useState("SAVINGS");
     const [fromAccId, setFromAccId] = useState(accounts[0]?.id || "");
     const [amount, setAmount] = useState("");
     const [banks, setBanks] = useState([]);
@@ -32,36 +31,27 @@ export default function Interbank() {
 
     const handleConfirm = async () => {
         setLoading(true);
+        setError("");
+        if (!amount || Number(amount) <= 0) {
+            setError("El monto debe ser mayor a 0.");
+            setLoading(false);
+            return;
+        }
         try {
             const selectedBank = banks.find(b => b.codigo === toInfo.bank);
-            const sourceAccount = accounts.find(a => String(a.id) === String(fromAccId));
 
-            // ISO 20022-like JSON Contract
+            // Reverted to Flat Structure as required by backend API Contract
             const req = {
-                header: {
-                    messageId: `MSG-${Date.now()}`,
-                    creationDateTime: new Date().toISOString(),
-                    originatingBankId: "ARCBANK"
-                },
-                body: {
-                    instructionId: crypto.randomUUID(),
-                    endToEndId: `REF-${Math.floor(Math.random() * 1000000)}`,
-                    amount: {
-                        currency: "USD",
-                        value: Number(amount)
-                    },
-                    debtor: {
-                        name: state.user.name || "Cliente Arcbank",
-                        accountId: sourceAccount?.number || fromAccId,
-                        accountType: sourceAccount?.type === "Ahorros" ? "SAVINGS" : "CHECKING"
-                    },
-                    creditor: {
-                        name: toInfo.name,
-                        accountId: toInfo.account,
-                        accountType: toAccType,
-                        targetBankId: selectedBank?.codigo || toInfo.bank
-                    }
-                }
+                tipoOperacion: "TRANSFERENCIA_INTERBANCARIA",
+                idCuentaOrigen: Number(fromAccId),
+                idCuentaDestino: null,
+                monto: Number(amount),
+                canal: "WEB_LUXURY",
+                descripcion: `RED INT: ${selectedBank?.nombre || toInfo.bank} - REF: ${toInfo.name}`,
+                idSucursal: 1,
+                cuentaExterna: toInfo.account,
+                idBancoExterno: selectedBank?.codigo || toInfo.bank,
+                nombreDestinatario: toInfo.name
             };
             const res = await realizarTransferenciaInterbancaria(req);
             if (res?.saldoResultante !== undefined) updateAccountBalance(fromAccId, res.saldoResultante);
@@ -121,13 +111,6 @@ export default function Interbank() {
                                 <div className="mb-4">
                                     <label className="label-text">NÚMERO DE CUENTA</label>
                                     <input className="form-control form-control-luxury" value={toInfo.account} onChange={e => setToInfo({ ...toInfo, account: e.target.value })} placeholder="X-XXXX-XXXXX" />
-                                </div>
-                                <div className="mb-4">
-                                    <label className="label-text">TIPO DE CUENTA DESTINO</label>
-                                    <select className="form-control form-control-luxury" value={toAccType} onChange={e => setToAccType(e.target.value)}>
-                                        <option value="SAVINGS">AHORROS (SAVINGS)</option>
-                                        <option value="CHECKING">CORRIENTE (CHECKING)</option>
-                                    </select>
                                 </div>
                                 <div className="mb-4">
                                     <label className="label-text">BENEFICIARIO (NOMBRES)</label>

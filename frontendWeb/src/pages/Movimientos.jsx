@@ -31,7 +31,9 @@ export default function Movimientos() {
 
         let displayType = m.tipoOperacion
         if (m.tipoOperacion === 'TRANSFERENCIA_INTERBANCARIA') {
-          displayType = isDebit ? 'INTERBANCARIA SALIENTE' : 'INTERBANCARIA ENTRANTE'
+          displayType = 'INTERBANCARIA SALIENTE'
+        } else if (m.tipoOperacion === 'TRANSFERENCIA_ENTRADA') {
+          displayType = 'INTERBANCARIA ENTRANTE'
         }
 
         return {
