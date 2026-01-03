@@ -102,16 +102,20 @@ h4,
 
 .main-container {
   flex: 1;
-  padding: 40px;
+  padding: 4vw 8vw;
+  /* Fluid spacing for elegance */
   margin-left: 280px;
-  /* Ensure space for sidebar */
+  width: calc(100% - 280px);
   transition: var(--transition);
   min-height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
 
 @media (max-width: 992px) {
   .main-container {
     margin-left: 0;
+    width: 100%;
     padding: 20px;
   }
 }
@@ -125,33 +129,45 @@ h4,
   display: inline-block;
 }
 
-/* MODERN TABLES - REFINED CONTRAST */
+/* UNIVERSAL TABLE RESET - VOIDS BOOTSTRAP WHITE THEMES */
+.table {
+  background-color: #0a0a0a !important;
+  --bs-table-bg: #0a0a0a !important;
+  color: #fff !important;
+}
+
 .table-luxury {
-  color: var(--text-primary) !important;
-  background: rgba(0, 0, 0, 0.4) !important;
-  /* Darker background for visibility */
+  border: 1px solid var(--glass-border) !important;
+  border-radius: 15px !important;
+  overflow: hidden !important;
 }
 
 .table-luxury th {
-  background: rgba(212, 175, 55, 0.15) !important;
+  background: #111 !important;
   color: var(--gold-primary) !important;
   border-bottom: 2px solid var(--gold-primary) !important;
-  text-transform: uppercase;
-  font-size: 0.8rem;
-  letter-spacing: 2px;
-  padding: 20px !important;
+  text-transform: uppercase !important;
+  font-size: 0.85rem !important;
+  letter-spacing: 2px !important;
+  padding: 25px 20px !important;
 }
 
+.table-luxury tr,
 .table-luxury td {
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
-  vertical-align: middle;
-  padding: 18px 20px !important;
+  background-color: #0a0a0a !important;
   color: #fff !important;
-  /* Force white text */
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+  padding: 20px !important;
+  vertical-align: middle !important;
+}
+
+.table-luxury small.text-muted {
+  color: #aaa !important;
+  /* Lighter for visibility on dark */
 }
 
 .table-luxury tr:hover td {
-  background: rgba(255, 255, 255, 0.03);
+  background: rgba(212, 175, 55, 0.08) !important;
 }
 
 /* INPUTS */

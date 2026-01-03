@@ -99,14 +99,9 @@ export async function realizarTransferencia(payload) {
 }
 
 export async function realizarTransferenciaInterbancaria(payload) {
-  const body = {
-    ...payload,
-    tipoOperacion: "TRANSFERENCIA_SALIDA",
-    canal: "WEB"
-  };
   return await request('/api/transacciones', {
     method: 'POST',
-    body: JSON.stringify(body)
+    body: JSON.stringify(payload)
   });
 }
 

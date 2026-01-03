@@ -41,6 +41,8 @@ export default function Interbank() {
                 canal: "WEB_LUXURY",
                 descripcion: `RED INT: ${selectedBank?.nombre || toInfo.bank}`,
                 idSucursal: 1,
+                cuentaDestinoExterno: toInfo.account,
+                nombreDestinatario: toInfo.name,
                 detalles: {
                     bancoDestino: selectedBank?.nombre || toInfo.bank,
                     cuentaDestinoExterno: toInfo.account,
