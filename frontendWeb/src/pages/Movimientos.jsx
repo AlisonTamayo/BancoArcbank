@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { getMovimientos } from '../services/bancaApi'
+import { FiFilter, FiDownload, FiSearch } from 'react-icons/fi'
 
 export default function Movimientos() {
   const { state, refreshAccounts } = useAuth()
@@ -27,7 +28,7 @@ export default function Movimientos() {
       const mapped = list.map(m => ({
         id: m.idTransaccion,
         date: new Date(m.fechaCreacion),
-        desc: m.descripcion || 'Servicio General',
+        desc: m.descripcion || 'Transacción Bancaria',
         type: m.tipoOperacion,
         amount: m.monto,
         balance: m.saldoResultante,
@@ -42,147 +43,103 @@ export default function Movimientos() {
     }
   }
 
-  return (
-    <div className="main-content fade-in">
-      <header style={styles.header}>
-        <div>
-          <h2 style={{ fontSize: '12px', letterSpacing: '4px', color: 'var(--gold-primary)', marginBottom: '10px' }}>REGISTRO HISTÓRICO</h2>
-          <h1 className="title-xl">Libro Mayor</h1>
-        </div>
+  const currentAcc = state.user.accounts.find(a => String(a.id) === String(selectedAccId))
 
-        <div style={styles.filterBox}>
-          <label style={styles.filterLabel}>SELECCIONAR INSTRUMENTO</label>
-          <select
-            value={selectedAccId}
-            onChange={e => setSelectedAccId(e.target.value)}
-            style={styles.select}
-          >
-            {state.user.accounts.map(a => (
-              <option key={a.id} value={a.id}>{a.number} — {a.type}</option>
-            ))}
-          </select>
+  return (
+    <div className="main-container animate-slide-up">
+      <header className="d-flex justify-content-between align-items-center mb-5">
+        <div>
+          <h5 className="text-warning fw-bold mb-2" style={{ letterSpacing: '4px' }}>EXTRACTOS BANCARIOS</h5>
+          <h1 className="display-5 fw-bold text-white">Libro de <span className="gold-text">Movimientos</span></h1>
+        </div>
+        <div className="d-flex gap-3">
+          <button className="btn btn-outline-gold d-flex align-items-center gap-2 fw-bold">
+            <FiDownload /> DESCARGAR PDF
+          </button>
         </div>
       </header>
 
-      <div style={styles.summaryGrid}>
-        <div className="premium-card" style={styles.summaryCard}>
-          <div style={styles.sumLabel}>LIQUIDEZ ACTUAL</div>
-          <div style={styles.sumVal}>
-            ${state.user.accounts.find(a => String(a.id) === String(selectedAccId))?.balance.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+      <div className="glass-panel p-4 mb-5">
+        <div className="row g-4 align-items-center">
+          <div className="col-md-5">
+            <label className="label-text small">INSTRUMENTO FINANCIERO</label>
+            <div className="input-group">
+              <span className="input-group-text bg-transparent border-end-0" style={{ borderColor: 'var(--glass-border)' }}>
+                <FiSearch className="text-warning" />
+              </span>
+              <select
+                className="form-control form-control-luxury border-start-0"
+                value={selectedAccId}
+                onChange={e => setSelectedAccId(e.target.value)}
+              >
+                {state.user.accounts.map(a => (
+                  <option key={a.id} value={a.id}>{a.number} — {a.type}</option>
+                ))}
+              </select>
+            </div>
           </div>
-        </div>
-        <div className="premium-card" style={styles.summaryCard}>
-          <div style={styles.sumLabel}>OPERACIONES TOTALES</div>
-          <div style={styles.sumVal}>{txs.length}</div>
+          <div className="col-md-4 offset-md-3 text-end">
+            <div className="glass-card py-2 px-4 d-inline-block" style={{ borderLeft: '4px solid var(--gold-primary)' }}>
+              <small className="text-muted fw-bold d-block" style={{ fontSize: '10px' }}>SALDO DISPONIBLE</small>
+              <span className="h4 m-0 fw-bold text-white">
+                $ {currentAcc?.balance?.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+              </span>
+            </div>
+          </div>
         </div>
       </div>
 
-      <div className="premium-card" style={{ padding: 0, marginTop: '40px' }}>
-        <table className="luxury-table">
-          <thead>
-            <tr>
-              <th>CRONOLOGÍA</th>
-              <th>CONCEPTO</th>
-              <th>MODALIDAD</th>
-              <th style={{ textAlign: 'right' }}>VALOR</th>
-              <th style={{ textAlign: 'right' }}>RESERVA FINAL</th>
-            </tr>
-          </thead>
-          <tbody>
-            {txs.map(tx => (
-              <tr key={tx.id}>
-                <td style={{ color: 'var(--text-dim)', fontSize: '13px' }}>
-                  {tx.date.toLocaleDateString()} <br />
-                  <span style={{ fontSize: '10px' }}>{tx.date.toLocaleTimeString()}</span>
-                </td>
-                <td style={{ fontWeight: '600', letterSpacing: '0.5px' }}>{tx.desc}</td>
-                <td>
-                  <span style={{
-                    color: tx.isDebit ? 'var(--error-glow)' : 'var(--success-glow)',
-                    fontSize: '10px',
-                    fontWeight: '800',
-                    border: `1px solid ${tx.isDebit ? 'var(--error-glow)' : 'var(--success-glow)'}`,
-                    padding: '4px 8px',
-                    borderRadius: '2px'
-                  }}>
-                    {tx.type}
-                  </span>
-                </td>
-                <td style={{
-                  textAlign: 'right',
-                  fontWeight: '900',
-                  fontSize: '18px',
-                  color: tx.isDebit ? 'var(--error-glow)' : 'var(--success-glow)'
-                }}>
-                  {tx.isDebit ? '-' : '+'}${tx.amount.toFixed(2)}
-                </td>
-                <td style={{ textAlign: 'right', fontWeight: '800', fontFamily: 'monospace' }}>
-                  ${(tx.balance || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                </td>
+      <div className="glass-panel p-0 overflow-hidden">
+        <div className="p-4 border-bottom d-flex justify-content-between align-items-center" style={{ borderColor: 'var(--glass-border) !important' }}>
+          <h5 className="m-0 fw-bold d-flex align-items-center gap-2">
+            <FiFilter className="text-warning" /> REGISTRO CRONOLÓGICO
+          </h5>
+          <div className="small text-muted fw-bold">{txs.length} OPERACIONES DETECTADAS</div>
+        </div>
+        <div className="table-responsive">
+          <table className="table table-luxury m-0">
+            <thead>
+              <tr>
+                <th className="ps-4">FECHA / HORA</th>
+                <th>CONCEPTO DE OPERACIÓN</th>
+                <th>TIPO</th>
+                <th className="text-end">MONTO</th>
+                <th className="text-end pe-4">BALANCE RESULTANTE</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-        {txs.length === 0 && !loading && (
-          <div style={{ padding: '60px', textAlign: 'center', color: 'var(--text-dim)' }}>
-            SIN ACTIVIDAD REGISTRADA EN ESTE INSTRUMENTO.
-          </div>
-        )}
+            </thead>
+            <tbody>
+              {txs.map(tx => (
+                <tr key={tx.id}>
+                  <td className="ps-4 py-3">
+                    <div className="fw-bold text-white">{tx.date.toLocaleDateString()}</div>
+                    <div className="small text-muted">{tx.date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                  </td>
+                  <td className="py-3">
+                    <div className="fw-bold text-white">{tx.desc}</div>
+                    <code className="x-small text-warning" style={{ fontSize: '10px' }}>ID: {tx.id}</code>
+                  </td>
+                  <td className="py-3">
+                    <span className={`badge ${tx.isDebit ? 'bg-danger-subtle text-danger' : 'bg-success-subtle text-success'} border px-3 py-2`} style={{ fontSize: '10px', letterSpacing: '1px' }}>
+                      {tx.type}
+                    </span>
+                  </td>
+                  <td className={`text-end py-3 fw-bold h5 mb-0 ${tx.isDebit ? 'text-danger' : 'text-success'}`}>
+                    {tx.isDebit ? '-' : '+'}$ {tx.amount.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                  </td>
+                  <td className="text-end pe-4 py-3 fw-bold text-white h5 mb-0" style={{ fontFamily: 'monospace' }}>
+                    $ {tx.balance.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {txs.length === 0 && !loading && (
+            <div className="text-center p-5 text-muted fw-bold">
+              NO HAY MOVIMIENTOS REGISTRADOS PARA ESTA CUENTA
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )
-}
-
-const styles = {
-  header: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: '60px',
-  },
-  filterBox: {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'flex-end',
-    gap: '10px',
-  },
-  filterLabel: {
-    fontSize: '9px',
-    letterSpacing: '2px',
-    color: 'rgba(255,255,255,0.4)',
-  },
-  select: {
-    background: '#000',
-    color: 'var(--gold-primary)',
-    border: '1px solid var(--gold-primary)',
-    padding: '12px 20px',
-    fontSize: '12px',
-    fontWeight: '800',
-    letterSpacing: '1px',
-    outline: 'none',
-    cursor: 'pointer',
-    borderRadius: '4px',
-  },
-  summaryGrid: {
-    display: 'grid',
-    gridTemplateColumns: '1fr 1fr',
-    gap: '24px',
-  },
-  summaryCard: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: '30px 40px',
-  },
-  sumLabel: {
-    fontSize: '11px',
-    letterSpacing: '2px',
-    color: 'var(--text-dim)',
-  },
-  sumVal: {
-    fontSize: '28px',
-    fontWeight: '900',
-    color: '#fff',
-    fontFamily: 'monospace',
-  }
 }

@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { loginExitoso, crearCuentaWeb } from "../services/bancaApi";
 import { useNavigate } from "react-router-dom";
+import { FiLock, FiUser, FiArrowRight, FiShield } from "react-icons/fi";
 
 export default function Login() {
   const [isRegister, setIsRegister] = useState(false);
@@ -22,77 +23,106 @@ export default function Login() {
       if (isRegister) {
         await crearCuentaWeb({ identificacion, password, name, tipoIdentificacion: "CEDULA" });
         setIsRegister(false);
-        setError("REGISTRO EXITOSO. PROCEDA A IDENTIFICARSE.");
+        setError("Cuenta verificada. Proceda con su acceso.");
       } else {
         const user = await loginExitoso(identificacion, password);
         authLogin(user);
         navigate("/");
       }
     } catch (err) {
-      setError(err.message || "FALLO EN LA AUTENTICACIÓN");
+      setError(err.message || "Credenciales no autorizadas");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div style={styles.container}>
-      <div style={styles.overlay}></div>
-      <div className="premium-card fade-in" style={styles.loginCard}>
-        <div style={styles.brandBox}>
-          <div style={styles.logo}>A</div>
-          <h1 style={styles.brandName}>ARCBANK</h1>
-          <p style={styles.tagline}>PRIVATE & PRESTIGE BANKING</p>
+    <div className="container-fluid min-vh-100 d-flex align-items-center justify-content-center" style={styles.pageBg}>
+      <div className="glass-panel p-5 animate-slide-up" style={styles.loginCard}>
+        <div className="text-center mb-5">
+          <div className="d-inline-flex p-3 rounded-circle mb-3" style={{ background: 'var(--gold-gradient)' }}>
+            <FiShield size={32} color="#000" />
+          </div>
+          <h1 className="gold-text display-5 fw-bold mb-0" style={{ letterSpacing: '6px' }}>ARCBANK</h1>
+          <p className="text-muted small fw-bold" style={{ letterSpacing: '3px' }}>LUXURY DIGITAL BANKING</p>
         </div>
 
-        <h2 style={styles.title}>{isRegister ? "SOLICITUD DE MEMBRESÍA" : "ACCESO PRIVADO"}</h2>
+        <h3 className="text-center mb-4 fw-light text-white-50" style={{ letterSpacing: '1px' }}>
+          {isRegister ? "SOLICITAR ACCESO" : "SISTEMA DE ACCESO"}
+        </h3>
 
-        <form onSubmit={handleSubmit} style={styles.form}>
+        <form onSubmit={handleSubmit}>
           {isRegister && (
-            <div style={styles.inputGroup}>
-              <label style={styles.label}>IDENTIDAD COMPLETA</label>
-              <input
-                className="modern-input"
-                value={name}
-                onChange={e => setName(e.target.value)}
-                placeholder="EJ. JULIO CÉSAR"
-              />
+            <div className="mb-4">
+              <label className="label-text">NOMBRE COMPLETO</label>
+              <div className="input-group">
+                <span className="input-group-text bg-transparent border-end-0" style={{ borderColor: 'var(--glass-border)' }}>
+                  <FiUser className="text-warning" />
+                </span>
+                <input
+                  className="form-control form-control-luxury border-start-0"
+                  value={name}
+                  onChange={e => setName(e.target.value)}
+                  placeholder="Titular de la cuenta"
+                  required
+                />
+              </div>
             </div>
           )}
-          <div style={styles.inputGroup}>
-            <label style={styles.label}>NÚMERO DE IDENTIFICACIÓN</label>
-            <input
-              className="modern-input"
-              value={identificacion}
-              onChange={e => setIdentificacion(e.target.value)}
-              placeholder="DNI / CÉDULA"
-            />
-          </div>
-          <div style={styles.inputGroup}>
-            <label style={styles.label}>CLAVE SECRETA</label>
-            <input
-              type="password"
-              className="modern-input"
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-              placeholder="••••••••"
-            />
+
+          <div className="mb-4">
+            <label className="label-text">IDENTIFICACIÓN (DNI)</label>
+            <div className="input-group">
+              <span className="input-group-text bg-transparent border-end-0" style={{ borderColor: 'var(--glass-border)' }}>
+                <FiUser className="text-warning" />
+              </span>
+              <input
+                className="form-control form-control-luxury border-start-0"
+                value={identificacion}
+                onChange={e => setIdentificacion(e.target.value)}
+                placeholder="Número de cédula"
+                required
+              />
+            </div>
           </div>
 
-          {error && <div style={styles.error}>{error}</div>}
+          <div className="mb-4">
+            <label className="label-text">CÓDIGO DE ACCESO</label>
+            <div className="input-group">
+              <span className="input-group-text bg-transparent border-end-0" style={{ borderColor: 'var(--glass-border)' }}>
+                <FiLock className="text-warning" />
+              </span>
+              <input
+                type="password"
+                className="form-control form-control-luxury border-start-0"
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                placeholder="••••••••"
+                required
+              />
+            </div>
+          </div>
 
-          <button className="modern-btn" style={{ width: '100%', marginTop: '10px' }} disabled={loading}>
-            {loading ? "VERIFICANDO..." : isRegister ? "ENVIAR SOLICITUD" : "INGRESAR AL SISTEMA"}
+          {error && (
+            <div className="alert alert-danger glass-panel border-danger text-danger py-2 px-3 mb-4 text-center small fw-bold">
+              {error}
+            </div>
+          )}
+
+          <button className="btn btn-primary w-100 d-flex align-items-center justify-content-center gap-2" disabled={loading}>
+            {loading ? "VERIFICANDO..." : isRegister ? "ENVIAR SOLICITUD" : "AUTENTICAR ACCESO"}
+            <FiArrowRight />
           </button>
         </form>
 
-        <div style={styles.footer}>
-          <p style={{ color: 'var(--text-dim)', fontSize: '12px' }}>
-            {isRegister ? "¿YA DISPONE DE ACCESO?" : "¿NO ES MIEMBRO TODAVÍA?"}{" "}
-            <span onClick={() => setIsRegister(!isRegister)} style={styles.toggle}>
-              {isRegister ? "CONECTARSE" : "SOLICITAR ACCESO"}
-            </span>
-          </p>
+        <div className="text-center mt-5">
+          <button
+            className="btn btn-link text-warning text-decoration-none small fw-bold"
+            onClick={() => setIsRegister(!isRegister)}
+            style={{ letterSpacing: '1px' }}
+          >
+            {isRegister ? "VOLVER AL ACCESO PRIVADO" : "ABRIR CUENTA PRESTIGE"}
+          </button>
         </div>
       </div>
     </div>
@@ -100,90 +130,14 @@ export default function Login() {
 }
 
 const styles = {
-  container: {
-    height: "100vh",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    background: "url('https://images.unsplash.com/photo-1554118811-1e0d58224f24?q=80&w=2047&auto=format&fit=crop') center/cover",
-    position: "relative",
-  },
-  overlay: {
-    position: "absolute",
-    top: 0, left: 0, right: 0, bottom: 0,
-    background: "radial-gradient(circle, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.95) 100%)",
+  pageBg: {
+    background: 'radial-gradient(circle at center, #1a1a1a 0%, #000 100%)',
+    position: 'relative',
+    overflow: 'hidden'
   },
   loginCard: {
-    width: "450px",
-    padding: "60px 50px",
-    zIndex: 10,
-    textAlign: "center",
-  },
-  brandBox: {
-    marginBottom: "50px",
-  },
-  logo: {
-    width: "60px",
-    height: "60px",
-    background: "var(--gold-primary)",
-    color: "#000",
-    fontSize: "32px",
-    fontWeight: "900",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    margin: "0 auto 15px",
-    borderRadius: "2px",
-    boxShadow: "0 0 30px rgba(212, 175, 55, 0.4)",
-  },
-  brandName: {
-    fontSize: "28px",
-    letterSpacing: "6px",
-    fontWeight: "900",
-  },
-  tagline: {
-    fontSize: "10px",
-    letterSpacing: "4px",
-    color: "var(--gold-primary)",
-    marginTop: "5px",
-    fontWeight: "700",
-  },
-  title: {
-    fontSize: "14px",
-    letterSpacing: "3px",
-    marginBottom: "40px",
-    color: "var(--text-dim)",
-  },
-  form: {
-    display: "flex",
-    flexDirection: "column",
-    gap: "20px",
-    textAlign: "left",
-  },
-  label: {
-    fontSize: "10px",
-    letterSpacing: "1px",
-    color: "var(--gold-primary)",
-    marginBottom: "8px",
-    display: "block",
-    fontWeight: "700",
-  },
-  error: {
-    color: "var(--error-glow)",
-    fontSize: "11px",
-    textAlign: "center",
-    fontWeight: "800",
-    padding: "10px",
-    border: "1px solid var(--error-glow)",
-  },
-  footer: {
-    marginTop: "40px",
-  },
-  toggle: {
-    color: "var(--gold-primary)",
-    cursor: "pointer",
-    fontWeight: "900",
-    marginLeft: "5px",
-    textDecoration: "underline",
+    width: '100%',
+    maxWidth: '500px',
+    border: '1px solid rgba(212, 175, 55, 0.3) !important',
   }
 };

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import { realizarTransferenciaInterbancaria } from "../services/bancaApi";
 import { useNavigate } from "react-router-dom";
+import { FiArrowLeft, FiArrowRight, FiCheckCircle, FiGlobe } from "react-icons/fi";
 
 export default function Interbank() {
     const { state, refreshAccounts, updateAccountBalance } = useAuth();
@@ -16,7 +17,7 @@ export default function Interbank() {
     const [fromAccId, setFromAccId] = useState(accounts[0]?.id || "");
     const [amount, setAmount] = useState("");
 
-    const banks = ["BANCO PICHINCHA", "BANCO GUAYAQUIL", "BANCO DEL PACIFICO", "PRODUBANCO"];
+    const banks = ["BANCO PICHINCHA", "BANCO GUAYAQUIL", "BANCO DEL PACIFICO", "PRODUBANCO", "BANCO INTERNACIONAL"];
 
     useEffect(() => {
         if (accounts.length > 0 && !fromAccId) setFromAccId(accounts[0].id);
@@ -30,8 +31,8 @@ export default function Interbank() {
                 idCuentaOrigen: Number(fromAccId),
                 idCuentaDestino: 0,
                 monto: Number(amount),
-                canal: "WEB_PRESTIGE",
-                descripcion: `RED EXTERNA: ${toInfo.bank} - ${toInfo.name}`,
+                canal: "WEB_LUXURY",
+                descripcion: `RED EXT: ${toInfo.bank}`,
                 idSucursal: 1,
                 detalles: { bancoDestino: toInfo.bank, cuentaDestinoExterno: toInfo.account, nombreDestinatario: toInfo.name }
             };
@@ -47,84 +48,103 @@ export default function Interbank() {
     };
 
     return (
-        <div className="main-content fade-in">
-            <header style={{ marginBottom: '60px' }}>
-                <h2 style={{ fontSize: '12px', letterSpacing: '8px', color: 'var(--gold-primary)', marginBottom: '10px' }}>CONEXIÓN RED EXTERNA</h2>
-                <h1 className="title-xl">Interbancaria Elite</h1>
+        <div className="main-container animate-slide-up">
+            <header className="mb-5">
+                <h5 className="text-warning fw-bold mb-2" style={{ letterSpacing: '4px' }}>RED INTERBANCARIA</h5>
+                <h1 className="display-5 fw-bold text-white">Transferencia <span className="gold-text">Externa</span></h1>
             </header>
 
-            <div style={styles.stepper}>
-                {[1, 2, 3].map(s => (
-                    <div key={s} style={{
-                        ...styles.step,
-                        borderColor: step >= s ? 'var(--gold-primary)' : '#222',
-                        color: step >= s ? 'var(--gold-primary)' : '#222'
-                    }}>PASO 0{s}</div>
-                ))}
-            </div>
+            <div className="row justify-content-center">
+                <div className="col-12 col-md-8 col-xl-6">
+                    <div className="glass-panel p-5">
+                        {/* STEPPER */}
+                        <div className="d-flex justify-content-between mb-5 position-relative">
+                            <div className="position-absolute top-50 start-0 translate-middle-y w-100" style={{ height: '2px', background: 'rgba(212,175,55,0.2)', zIndex: 1 }}></div>
+                            {[1, 2, 3].map(s => (
+                                <div key={s} className="rounded-circle d-flex align-items-center justify-content-center fw-bold position-relative" style={{
+                                    width: '40px', height: '40px',
+                                    background: step >= s ? 'var(--gold-gradient)' : 'var(--dark-surface)',
+                                    color: step >= s ? '#000' : '#666',
+                                    border: '2px solid',
+                                    borderColor: step >= s ? 'var(--gold-primary)' : 'rgba(212,175,55,0.2)',
+                                    zIndex: 2
+                                }}>
+                                    {step > s ? <FiCheckCircle /> : s}
+                                </div>
+                            ))}
+                        </div>
 
-            <div className="premium-card" style={styles.formContainer}>
-                {step === 1 && (
-                    <div>
-                        <h3 style={styles.cardTitle}>DATOS DEL RECEPTOR</h3>
-                        <div style={styles.field}>
-                            <label className="label-text">BANCO DE DESTINO</label>
-                            <select className="modern-input" value={toInfo.bank} onChange={e => setToInfo({ ...toInfo, bank: e.target.value })}>
-                                <option value="">SELECCIONAR INSTITUCIÓN...</option>
-                                {banks.map(b => <option key={b} value={b}>{b}</option>)}
-                            </select>
-                        </div>
-                        <div style={styles.field}>
-                            <label className="label-text">CUENTA DESTINO</label>
-                            <input className="modern-input" value={toInfo.account} onChange={e => setToInfo({ ...toInfo, account: e.target.value })} placeholder="X-XXXX-XXXXX" />
-                        </div>
-                        <div style={styles.field}>
-                            <label className="label-text">NOMBRE DEL BENEFICIARIO</label>
-                            <input className="modern-input" value={toInfo.name} onChange={e => setToInfo({ ...toInfo, name: e.target.value })} placeholder="IDENTIDAD COMPLETA" />
-                        </div>
-                        <button className="modern-btn" style={{ width: '100%', marginTop: '20px' }} onClick={() => setStep(2)}>CONTINUAR</button>
-                    </div>
-                )}
+                        {step === 1 && (
+                            <div className="animate-slide-up">
+                                <div className="text-center mb-4">
+                                    <FiGlobe size={40} className="text-warning mb-3" />
+                                    <h4 className="fw-bold">DESTINO INTERBANCARIO</h4>
+                                </div>
+                                <div className="mb-4">
+                                    <label className="label-text">INSTITUCIÓN FINANCIERA</label>
+                                    <select className="form-control form-control-luxury" value={toInfo.bank} onChange={e => setToInfo({ ...toInfo, bank: e.target.value })}>
+                                        <option value="">Seleccione banco receptor...</option>
+                                        {banks.map(b => <option key={b} value={b}>{b}</option>)}
+                                    </select>
+                                </div>
+                                <div className="mb-4">
+                                    <label className="label-text">NÚMERO DE CUENTA</label>
+                                    <input className="form-control form-control-luxury" value={toInfo.account} onChange={e => setToInfo({ ...toInfo, account: e.target.value })} placeholder="X-XXXX-XXXXX" />
+                                </div>
+                                <div className="mb-4">
+                                    <label className="label-text">BENEFICIARIO (NOMBRES)</label>
+                                    <input className="form-control form-control-luxury" value={toInfo.name} onChange={e => setToInfo({ ...toInfo, name: e.target.value })} placeholder="Ej: Bruce Wayne" />
+                                </div>
+                                <button className="btn btn-primary w-100 py-3 d-flex align-items-center justify-content-center gap-2" onClick={() => setStep(2)}>
+                                    SIGUIENTE PASO <FiArrowRight />
+                                </button>
+                            </div>
+                        )}
 
-                {step === 2 && (
-                    <div>
-                        <h3 style={styles.cardTitle}>VERIFICACIÓN DE FONDOS</h3>
-                        <div style={styles.field}>
-                            <label className="label-text">INSTRUMENTO DE ORIGEN</label>
-                            <select className="modern-input" value={fromAccId} onChange={e => setFromAccId(e.target.value)}>
-                                {accounts.map(a => <option key={a.id} value={a.id}>{a.number} — ${a.balance.toFixed(2)}</option>)}
-                            </select>
-                        </div>
-                        <div style={styles.field}>
-                            <label className="label-text">VALOR A TRANSFERIR ($)</label>
-                            <input className="modern-input" style={{ fontSize: '32px', textAlign: 'center', fontWeight: '900', color: 'var(--gold-primary)' }} value={amount} onChange={e => setAmount(e.target.value)} placeholder="0.00" />
-                        </div>
-                        {error && <div style={styles.error}>{error}</div>}
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '15px' }}>
-                            <button className="modern-btn modern-btn-outline" onClick={() => setStep(1)}>VOLVER</button>
-                            <button className="modern-btn" onClick={handleConfirm} disabled={loading}>{loading ? 'TRANSMITIENDO...' : 'EJECUTAR ENVÍO'}</button>
-                        </div>
-                    </div>
-                )}
+                        {step === 2 && (
+                            <div className="animate-slide-up">
+                                <div className="text-center mb-4">
+                                    <h4 className="fw-bold">CONFIRMACIÓN DE FONDOS</h4>
+                                </div>
+                                <div className="mb-4">
+                                    <label className="label-text">CUENTA DE ORIGEN (ARCBANK)</label>
+                                    <select className="form-control form-control-luxury" value={fromAccId} onChange={e => setFromAccId(e.target.value)}>
+                                        {accounts.map(a => <option key={a.id} value={a.id}>{a.number} — SALDO: ${a.balance.toFixed(2)}</option>)}
+                                    </select>
+                                </div>
+                                <div className="mb-4 text-center">
+                                    <label className="label-text text-warning">VALOR DEL ENVÍO</label>
+                                    <div className="display-4 fw-bold text-white mb-2">
+                                        <span className="text-warning">$</span>
+                                        <input type="number" step="0.01" className="bg-transparent border-0 text-white text-center w-75 fw-bold" value={amount} onChange={e => setAmount(e.target.value)} placeholder="0.00" style={{ outline: 'none' }} />
+                                    </div>
+                                    <small className="text-muted small">Costo por servicio: $0.00 (Tarifa Premium)</small>
+                                </div>
+                                {error && <div className="alert alert-danger glass-panel border-danger text-danger py-2 mb-4 text-center small fw-bold">{error}</div>}
+                                <div className="row g-3">
+                                    <div className="col-4">
+                                        <button className="btn btn-outline-gold w-100 py-3" onClick={() => setStep(1)}><FiArrowLeft /></button>
+                                    </div>
+                                    <div className="col-8">
+                                        <button className="btn btn-primary w-100 py-3 fw-bold" onClick={handleConfirm} disabled={loading}>
+                                            {loading ? 'MODULANDO CAPITAL...' : 'EJECUTAR TRANSFERENCIA'}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
 
-                {step === 3 && (
-                    <div style={{ textAlign: 'center' }}>
-                        <div style={{ fontSize: '80px', marginBottom: '20px' }}>🌐</div>
-                        <h2 style={{ fontSize: '24px', letterSpacing: '4px', marginBottom: '15px' }}>SOLICITUD PROCESADA</h2>
-                        <p style={{ color: 'var(--text-dim)', marginBottom: '40px' }}>La transferencia interbancaria ha sido enviada a la cámara de compensación.</p>
-                        <button className="modern-btn" onClick={() => navigate('/movimientos')}>VOLVER AL PANEL</button>
+                        {step === 3 && (
+                            <div className="text-center animate-slide-up py-4">
+                                <div className="display-1 text-warning mb-4"><FiCheckCircle /></div>
+                                <h2 className="fw-bold mb-3">ENVÍO REGISTRADO</h2>
+                                <p className="text-muted mb-5">La solicitud ha sido enviada a la cámara de compensación satisfactoriamente.</p>
+                                <button className="btn btn-primary px-5 py-3" onClick={() => navigate('/movimientos')}>VOLVER AL PANEL CENTRAL</button>
+                            </div>
+                        )}
                     </div>
-                )}
+                </div>
             </div>
         </div>
     );
 }
-
-const styles = {
-    stepper: { display: 'flex', gap: '20px', marginBottom: '40px', justifyContent: 'center' },
-    step: { padding: '10px 30px', border: '1px solid', fontSize: '11px', fontWeight: '900', letterSpacing: '3px', borderRadius: '2px' },
-    formContainer: { maxWidth: '650px', margin: '0 auto', padding: '60px' },
-    cardTitle: { fontSize: '18px', letterSpacing: '2px', marginBottom: '40px', textAlign: 'center', fontWeight: '800' },
-    field: { marginBottom: '25px' },
-    error: { background: 'rgba(255, 77, 77, 0.1)', color: 'var(--error-glow)', padding: '15px', fontSize: '11px', fontWeight: '800', textAlign: 'center', border: '1px solid var(--error-glow)', marginTop: '20px' }
-};
