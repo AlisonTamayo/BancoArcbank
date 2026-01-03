@@ -103,8 +103,10 @@ h4,
 .main-container {
   flex: 1;
   padding: 40px;
-  margin-left: var(--sidebar-width);
+  margin-left: 280px;
+  /* Ensure space for sidebar */
   transition: var(--transition);
+  min-height: 100vh;
 }
 
 @media (max-width: 992px) {
@@ -123,24 +125,33 @@ h4,
   display: inline-block;
 }
 
-/* MODERN TABLES */
+/* MODERN TABLES - REFINED CONTRAST */
 .table-luxury {
   color: var(--text-primary) !important;
-  background: transparent !important;
+  background: rgba(0, 0, 0, 0.4) !important;
+  /* Darker background for visibility */
 }
 
 .table-luxury th {
-  background: rgba(212, 175, 55, 0.1) !important;
+  background: rgba(212, 175, 55, 0.15) !important;
   color: var(--gold-primary) !important;
   border-bottom: 2px solid var(--gold-primary) !important;
   text-transform: uppercase;
   font-size: 0.8rem;
   letter-spacing: 2px;
+  padding: 20px !important;
 }
 
 .table-luxury td {
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
   vertical-align: middle;
+  padding: 18px 20px !important;
+  color: #fff !important;
+  /* Force white text */
+}
+
+.table-luxury tr:hover td {
+  background: rgba(255, 255, 255, 0.03);
 }
 
 /* INPUTS */

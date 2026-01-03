@@ -10,31 +10,43 @@ export default function Interbank() {
 
     const accounts = state?.user?.accounts || [];
     const [step, setStep] = useState(1);
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState("");
-
     const [toInfo, setToInfo] = useState({ account: "", bank: "", name: "" });
     const [fromAccId, setFromAccId] = useState(accounts[0]?.id || "");
     const [amount, setAmount] = useState("");
-
-    const banks = ["BANCO PICHINCHA", "BANCO GUAYAQUIL", "BANCO DEL PACIFICO", "PRODUBANCO", "BANCO INTERNACIONAL"];
+    const [banks, setBanks] = useState([]);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState("");
 
     useEffect(() => {
+        // Bancos registrados en el Switch (Quemados por requerimiento)
+        const hardcodedBanks = [
+            { id: "NEXUS_BANK", codigo: "NEXUS_BANK", nombre: "Nexus Bank (270100)", bin: "270100" },
+            { id: "ECUSOL_BK", codigo: "ECUSOL_BK", nombre: "Ecusol Bank (370100)", bin: "370100" },
+            { id: "BANTEC", codigo: "BANTEC", nombre: "Bantec (100000)", bin: "100000" },
+        ];
+        setBanks(hardcodedBanks);
+
         if (accounts.length > 0 && !fromAccId) setFromAccId(accounts[0].id);
-    }, [accounts]);
+    }, [accounts.length, fromAccId]);
 
     const handleConfirm = async () => {
         setLoading(true);
         try {
+            const selectedBank = banks.find(b => b.codigo === toInfo.bank);
             const req = {
                 tipoOperacion: "TRANSFERENCIA_INTERBANCARIA",
                 idCuentaOrigen: Number(fromAccId),
                 idCuentaDestino: 0,
                 monto: Number(amount),
                 canal: "WEB_LUXURY",
-                descripcion: `RED EXT: ${toInfo.bank}`,
+                descripcion: `RED INT: ${selectedBank?.nombre || toInfo.bank}`,
                 idSucursal: 1,
-                detalles: { bancoDestino: toInfo.bank, cuentaDestinoExterno: toInfo.account, nombreDestinatario: toInfo.name }
+                detalles: {
+                    bancoDestino: selectedBank?.nombre || toInfo.bank,
+                    cuentaDestinoExterno: toInfo.account,
+                    nombreDestinatario: toInfo.name,
+                    binBancoDestino: selectedBank?.bin || ""
+                }
             };
             const res = await realizarTransferenciaInterbancaria(req);
             if (res?.saldoResultante !== undefined) updateAccountBalance(fromAccId, res.saldoResultante);
@@ -50,8 +62,8 @@ export default function Interbank() {
     return (
         <div className="main-container animate-slide-up">
             <header className="mb-5">
-                <h5 className="text-warning fw-bold mb-2" style={{ letterSpacing: '4px' }}>RED INTERBANCARIA</h5>
-                <h1 className="display-5 fw-bold text-white">Transferencia <span className="gold-text">Externa</span></h1>
+                <h5 className="text-warning fw-bold mb-2" style={{ letterSpacing: '4px' }}>RED BANCARIA</h5>
+                <h1 className="display-5 fw-bold text-white">Transferencia <span className="gold-text">Interbancaria</span></h1>
             </header>
 
             <div className="row justify-content-center">
@@ -84,7 +96,11 @@ export default function Interbank() {
                                     <label className="label-text">INSTITUCIÓN FINANCIERA</label>
                                     <select className="form-control form-control-luxury" value={toInfo.bank} onChange={e => setToInfo({ ...toInfo, bank: e.target.value })}>
                                         <option value="">Seleccione banco receptor...</option>
-                                        {banks.map(b => <option key={b} value={b}>{b}</option>)}
+                                        {banks.map(b => (
+                                            <option key={b.codigo} value={b.codigo}>
+                                                {b.nombre}
+                                            </option>
+                                        ))}
                                     </select>
                                 </div>
                                 <div className="mb-4">

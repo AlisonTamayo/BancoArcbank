@@ -95,9 +95,10 @@ jobs:
             sudo docker system prune -f
 
             # Construir y levantar con docker-compose (producción)
-            echo "🚀 Construyendo y desplegando Docker Compose..."
+            echo "🚀 Reiniciando servicios y limpiando basura..."
+            sudo docker-compose -f docker-compose.prod.yml down --remove-orphans
             sudo docker-compose -f docker-compose.prod.yml build --no-cache
-            sudo docker-compose -f docker-compose.prod.yml up -d --force-recreate --remove-orphans
+            sudo docker-compose -f docker-compose.prod.yml up -d --force-recreate
 
             # Reiniciar Nginx Proxy para aplicar certificados y configs
             echo "🔄 Reiniciando Proxy Nginx..."

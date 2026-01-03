@@ -14,9 +14,9 @@ export default function Sidebar({ isOpen, onRequestClose }) {
 
   const navItems = [
     { path: "/", icon: <FiHome />, label: "Dashboard", end: true },
-    { path: "/movimientos", icon: <FiList />, label: "Operaciones" },
+    { path: "/movimientos", icon: <FiList />, label: "Movimientos" },
     { path: "/transferir", icon: <FiRepeat />, label: "Transferir" },
-    { path: "/interbancarias", icon: <FiGlobe />, label: "Red Externa" },
+    { path: "/interbancarias", icon: <FiGlobe />, label: "Interbancarias" },
     { path: "/perfil", icon: <FiUser />, label: "Mi Perfil" },
   ];
 
@@ -83,7 +83,7 @@ export default function Sidebar({ isOpen, onRequestClose }) {
 
 const styles = {
   sidebar: {
-    width: 'var(--sidebar-width)',
+    width: '280px',
     height: '100vh',
     position: 'fixed',
     top: 0,

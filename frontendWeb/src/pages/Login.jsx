@@ -11,6 +11,7 @@ export default function Login() {
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
   const { login: authLogin } = useAuth();
   const navigate = useNavigate();
@@ -96,13 +97,21 @@ export default function Login() {
                 <FiLock className="text-warning" />
               </span>
               <input
-                type="password"
-                className="form-control form-control-luxury border-start-0"
+                type={showPassword ? "text" : "password"}
+                className="form-control form-control-luxury border-start-0 border-end-0"
                 value={password}
                 onChange={e => setPassword(e.target.value)}
                 placeholder="••••••••"
                 required
               />
+              <button
+                type="button"
+                className="input-group-text bg-transparent border-start-0"
+                style={{ borderColor: 'var(--glass-border)', cursor: 'pointer' }}
+                onClick={() => setShowPassword(!showPassword)}
+              >
+                <span className="text-warning small fw-bold">{showPassword ? "OCULTAR" : "MOSTRAR"}</span>
+              </button>
             </div>
           </div>
 

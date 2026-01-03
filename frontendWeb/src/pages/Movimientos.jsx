@@ -49,8 +49,8 @@ export default function Movimientos() {
     <div className="main-container animate-slide-up">
       <header className="d-flex justify-content-between align-items-center mb-5">
         <div>
-          <h5 className="text-warning fw-bold mb-2" style={{ letterSpacing: '4px' }}>EXTRACTOS BANCARIOS</h5>
-          <h1 className="display-5 fw-bold text-white">Libro de <span className="gold-text">Movimientos</span></h1>
+          <h5 className="text-warning fw-bold mb-2" style={{ letterSpacing: '4px' }}>MOVIMIENTOS</h5>
+          <h1 className="display-5 fw-bold text-white">Historial <span className="gold-text">Completo</span></h1>
         </div>
         <div className="d-flex gap-3">
           <button className="btn btn-outline-gold d-flex align-items-center gap-2 fw-bold">
@@ -92,7 +92,7 @@ export default function Movimientos() {
       <div className="glass-panel p-0 overflow-hidden">
         <div className="p-4 border-bottom d-flex justify-content-between align-items-center" style={{ borderColor: 'var(--glass-border) !important' }}>
           <h5 className="m-0 fw-bold d-flex align-items-center gap-2">
-            <FiFilter className="text-warning" /> REGISTRO CRONOLÓGICO
+            <FiFilter className="text-warning" /> DETALLE DE MOVIMIENTOS
           </h5>
           <div className="small text-muted fw-bold">{txs.length} OPERACIONES DETECTADAS</div>
         </div>
