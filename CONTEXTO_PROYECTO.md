@@ -1,134 +1,153 @@
-# Documentación del Proyecto BANTEC (Micros2P)
-**Fecha de Actualización**: 20 de Diciembre de 2025
-**Generado por**: AI (Antigravity) para continuidad de desarrollo.
+# Documentación Técnica del Proyecto ARCBANK (Banca 2da Generación)
+**Fecha de Actualización**: 20 de Enero de 2026
+**Versión**: 2.0 (Deep Analysis)
 
-## 1. Visión General
-Este es un sistema bancario distribuido basado en microservicios, diseñado para gestionar **Clientes**, **Cuentas de Ahorro**, y **Transacciones** (Depósitos, Retiros, Transferencias Internas e Interbancarias). Incluye dos aplicaciones frontend: una Web de Banca en Línea y un Cajero Automático (ATM).
+## 1. Visión General del Negocio
+Arcbank es una plataforma bancaria moderna diseñada bajo una arquitectura de microservicios. Su objetivo principal es ofrecer servicios financieros robustos (Depósitos, Retiros, Transferencias) con capacidad de interoperabilidad bancaria a través de un Switch Transaccional (DIGICONECU).
 
-**Integración Interbancaria**: El sistema se conecta al switch **DIGICONECU** para procesar transferencias entre diferentes bancos.
-
-## 2. Arquitectura del Sistema
-El sistema utiliza **Docker Compose** para orquestar los siguientes servicios:
-
-| Servicio | Nombre Contenedor | Puerto Interno | Puerto Externo (Host) | DB Asociada | Tecnologías | Descripción |
-| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **API Gateway** | `api-gateway-arcbank` | 8080 | **8080** | N/A | Spring Cloud Gateway | Punto de entrada único. Enruta `/api/v1/clientes` -> 8083, `/api/v1/cuentas` -> 8081, `/api/transacciones` -> 8082, `/api/bancos` -> 8082. |
-| **Micro Clientes** | `micro-clientes-arcbank` | 8080 | 8083 | `db-clientes-arcbank` | Spring Boot 3, PostgreSQL | Gestión de datos personales de clientes y login. |
-| **Micro Cuentas** | `micro-cuentas` | 8081 | 8081 | `db-cuentas-arcbank` | Spring Boot 3, PostgreSQL | Gestión de cuentas de ahorro y saldos. |
-| **MS Transacción** | `ms-transaccion-arcbank` | 8080 | 8082 | `db-transacciones-arcbank` | Spring Boot 3, PostgreSQL, Feign | Lógica de transacciones + Integración con Switch DIGICONECU. |
-| **Frontend Web** | `frontend-web-arcbank` | 80 | **3000** | N/A | React, Vite | Banca personas: Login, Saldo, Movimientos, Transferencias Internas e Interbancarias. |
-| **Frontend Cajero** | `frontend-cajero-arcbank` | 80 | **3001** | N/A | React, Vite, Tailwind | Interfaz ATM: Login Cajero, Buscar Cliente, Depósitos, Retiros. |
+El sistema separa claramente la gestión de usuarios (Información PII) de los saldos financieros (Ledger) y la lógica transaccional, garantizando desacoplamiento y escalabilidad.
 
 ---
 
-## 3. Microservicios y Endpoints Clave
+## 2. Arquitectura de Microservicios
 
-### A. Micro Clientes (`micro-clientes`)
-**Base de Datos**: `microcliente`
-**Entidad Principal**: `Cliente` (id, identificacion, nombreCompleto, etc.)
+El ecosistema se compone de 5 núcleos principales, orquestados mediante Docker Compose.
 
-*   `POST /api/v1/clientes`: Crear cliente.
-*   `GET /api/v1/clientes/{id}`: Obtener por ID. Retorna `ClienteResponseDTO` (contiene `nombreCompleto`).
-*   `GET /api/v1/clientes/identificacion/{cedula}`: Buscar por Cédula.
-*   `POST /api/v1/clientes/login`: Login clientes.
-
-### B. Micro Cuentas (`micro-cuentas`)
-**Base de Datos**: `db_cuentas`
-**Entidad Principal**: `CuentaAhorro`
-**Configuración Importante**: No tiene conexión FEIGN con clientes. Sus DTOs **NO** incluyen nombres de personas, solo `idCliente`.
-
-*   `GET /api/v1/cuentas/ahorros/buscar/{numeroCuenta}`: Buscar por número de cuenta exacto.
-*   `GET /api/v1/cuentas/ahorros/{id}`: Obtener detalles y saldo `disponible`.
-*   `PUT /api/v1/cuentas/ahorros/{id}/saldo`: Endpoint interno para actualizar saldo (usado por `ms-transaccion`).
-
-### C. MS Transacción (`ms-transaccion`)
-**Base de Datos**: `db_transacciones`
-**Entidad Principal**: `Transaccion`
-**Configuración**: `ddl-auto: create` (Resetea DB al inicio).
-
-*   `POST /api/transacciones`: Crear transacción.
-    *   **Tipos soportados**: `DEPOSITO`, `RETIRO`, `TRANSFERENCIA_INTERNA`, `TRANSFERENCIA_SALIDA`, `TRANSFERENCIA_ENTRADA`
-    *   **Payload Interbancaria**: `{ tipoOperacion: "TRANSFERENCIA_SALIDA", idCuentaOrigen, cuentaExterna, monto, descripcion }`
-*   `GET /api/transacciones/cuenta/{idCuenta}`: Historial de movimientos.
-*   `GET /api/bancos`: Lista de bancos conectados al switch (proxy al switch DIGICONECU).
-*   `POST /api/transacciones/webhook`: Webhook para recibir transferencias entrantes del switch.
-
-**Lógica Crítica (Balance Dual)**:
-Se implementó una columna `saldoResultanteDestino` en la tabla `Transaccion`.
-*   Cuando es `TRANSFERENCIA_INTERNA`:
-    *   `saldoResultante`: Guarda el saldo final del **Origen**.
-    *   `saldoResultanteDestino`: Guarda el saldo final del **Destino**.
-*   Al listar (GET), el DTO mapea el saldo correcto dependiendo de si quien consulta es el origen o el destino.
-
----
-
-## 4. Integración con Switch DIGICONECU
-
-### Arquitectura de Integración
-```
-┌─────────────────┐         ┌──────────────────────┐
-│   BANTEC        │ ─────►  │  Switch DIGICONECU   │
-│  (Micros2P)     │ ◄─────  │  (AWS)               │
-│  Puerto: 8082   │         │  Puerto: 8081        │
-└─────────────────┘         └──────────────────────┘
+### Diagrama de Comunicación
+```mermaid
+graph TD
+    Client[Cliente Web/ATM] --> Gateway[API Gateway :8080]
+    Switch[Switch Interbancario] --> Gateway
+    
+    Gateway -->|/api/v1/clientes| MS_Clientes[Micro Clientes :8083]
+    Gateway -->|/api/v1/cuentas| MS_Cuentas[Micro Cuentas :8081]
+    Gateway -->|/api/transacciones| MS_Transaccion[MS Transacción :8082]
+    
+    MS_Transaccion -->|Feign Client| MS_Cuentas
+    MS_Transaccion -->|REST| Switch
+    
+    MS_Clientes --> DB_Cli[(DB Clientes)]
+    MS_Cuentas --> DB_Ctas[(DB Cuentas)]
+    MS_Transaccion --> DB_Tx[(DB Transacciones)]
 ```
 
-### Configuración
-*   **Variable de entorno**: `APP_SWITCH_URL` (default: `http://host.docker.internal:8081`)
-*   **Código del banco**: `BANCO_CODIGO=BANTEC`
-*   **Rango BIN**: `220000-229999` (números de cuenta que empiezan con 22)
+### Inventario de Servicios
 
-### Flujo de Transferencia Saliente
-1. Usuario solicita `TRANSFERENCIA_SALIDA` con `cuentaExterna`
-2. `ms-transaccion` debita saldo local
-3. `SwitchClient` envía a `POST /api/v2/transfers` del switch
-4. Si el switch rechaza, se revierte el débito local
-5. Si aprueba, la transacción queda como COMPLETADA
-
-### Flujo de Transferencia Entrante
-1. Switch envía webhook a `POST /api/transacciones/webhook`
-2. `WebhookController` recibe y valida
-3. `TransaccionServiceImpl.procesarTransferenciaEntrante()` acredita saldo
-4. Se registra transacción tipo `TRANSFERENCIA_ENTRADA`
+| Servicio | Puerto Interno | Puerto Host (Docker) | Base de Datos | Responsabilidad Principal |
+| :--- | :--- | :--- | :--- | :--- |
+| **API Gateway** | 8080 | **4080** | N/A | Enrutamiento centralizado, manejo de CORS, seguridad perimetral. |
+| **Micro Clientes** | 8080 | **4083** | `microcliente` | "Know Your Customer" (KYC). Gestiona Personas, Empresas y Auth básico. |
+| **Micro Cuentas** | 8081 | **4081** | `db_cuentas` | Ledger bancario. Gestiona Saldos, Tipos de Cuenta y bloqueos. |
+| **MS Transacción** | 8080 | **4082** | `db_transacciones` | Orquestador de movimientos monetarios. Lógica de negocio core (Débito/Crédito). |
+| **Sucursales** | 8080 | N/A | N/A | *En desarrollo*. Código fuente presente pero no desplegado en Docker. |
 
 ---
 
-## 5. Frontends y Lógica de Negocio
+## 3. Análisis Profundo de Componentes
 
-### A. Frontend Cajero (`frontendCajero`)
-*   **Buscador Híbrido**: El componente `api.js` fuerza primero la búsqueda por **Número de Cuenta**. Si retorna 404, intenta buscar por **Cédula**.
-*   **Enriquecimiento de Datos**: `ValoresTransaccion.jsx` hace segunda llamada a `clientes.getById(id)` para obtener el `nombreCompleto`.
+### A. Micro Clientes (`com.arcbank.MicroCliente`)
+Este servicio es la autoridad única sobre la identidad del usuario.
+*   **Modelo de Datos**:
+    *   `Cliente`: Entidad raíz. Atributos: `identificacion` (Unique Index), `clave`, `estado`.
+    *   `Persona`: Datos naturales (Nombre, Apellido, Género).
+    *   `Empresa`: Datos jurídicos (Razón Social, RUC).
+*   **Autenticación**:
+    *   Implementa un login directo (`/login`) que valida `identificacion` + `clave`. No usa OAuth2/JWT por el momento (Auth básica stateful o stateless simple).
+*   **Curiosidad**: El servicio es autónomo y no se conecta con Cuentas. Es el Frontend quien orquesta la llamada: Primero Login -> Obtiene ID -> Busca Cuentas de ese ID.
 
-### B. Frontend Web (`frontendWeb`)
-*   `Movimientos.jsx`: Historial con colores según tipo.
-*   `Transferir.jsx`: Transferencias internas (mismo banco).
-*   `TransaccionesInterbancarias.jsx`: Transferencias a otros bancos vía switch.
+### B. Micro Cuentas (`com.arcbank.cuenta`)
+El corazón financiero. Es el único servicio con permiso de escritura sobre los saldos.
+*   **Modelo de Datos**:
+    *   `CuentaAhorro`: 
+        *   `numeroCuenta`: Unique String (20 chars).
+        *   `saldoActual` / `saldoDisponible`: BigDecimal.
+        *   `idCliente`: Referencia lógica (sin FK física) al Micro Clientes.
+*   **Endpoint Crítico**:
+    *   `PUT /api/v1/cuentas/ahorros/{id}/saldo`: Endpoint "protegido" (lógicamente) usado exclusivamente por `MS Transacción` para actualizar saldos. Recibe un delta y lo suma/resta.
+    *   **Validación**: Si el saldo resultante < 0, lanza `BusinessException("Fondos insuficientes")`.
+
+### C. MS Transacción (`com.arcbank.cbs.transaccion`)
+El cerebro de operaciones. No tiene saldo propio, sino que orquesta los movimientos en `Micro Cuentas`.
+*   **Patrón de Diseño**: Saga Orchestrator (simplificado).
+*   **Modelo de Datos (`Transaccion`)**:
+    *   `tipoOperacion`: DEPOSITO, RETIRO, TRANSFERENCIA_INTERNA, TRANSFERENCIA_SALIDA, TRANSFERENCIA_ENTRADA.
+    *   **Balance Dual (Feature Clave)**:
+        *   `saldoResultante`: Guarda el saldo post-operación de la cuenta ORIGEN.
+        *   `saldoResultanteDestino`: Guarda el saldo post-operación de la cuenta DESTINO (solo en transferencias internas).
+        *   *Lógica*: Permite que al consultar el historial, tanto el remitente como el destinatario vean SU propio saldo final en ese momento histórico.
+*   **Lógica de Transferencia Interna**:
+    1. Valida cuentas Origen y Destino.
+    2. Llama a Micro Cuentas -> Debitar Origen.
+    3. Llama a Micro Cuentas -> Acreditar Destino.
+    4. Guarda Transacción con ambos saldos resultantes.
+
+### D. Micro Sucursales (`com.arcbank.sucursales`)
+**Estado**: *Presente en código, despliegue separado.*
+Este servicio introduce **MongoDB** al ecosistema para manejar datos geoespaciales y jerárquicos.
+*   **Base de Datos**: `db_sucursales` (MongoDB).
+*   **Modelo de Datos (`Sucursal`)**:
+    *   Documento flexible con `ubicacion` (Provincia, Cantón, Parroquia) y coordenadas (`latitud`, `longitud`).
+    *   Maneja lógica de **Feriados Bancarios** según la localidad (Nacional vs Local).
+*   **Endpoints Clave**:
+    *   `GET /api/sucursales/v1/sucursales/provincia/{provincia}`
+    *   `GET /api/sucursales/v1/sucursales/{codigo}/feriados`: Retorna días no laborables específicos para esa sucursal.
+*   **Despliegue**:
+    *   Tiene su propio `docker-compose.yml` dentro de `/sucursales`.
+    *   No se levanta automáticamente con el comando principal del root. Requiere levantar MongoDB por separado o integrar el compose.
 
 ---
 
-## 6. Notas Técnicas y Deuda Técnica
-1.  **Validaciones Eliminadas**: Sin restricciones de longitud en Frontend Cajero.
-2.  **DDL Auto**: `ms-transaccion` tiene `create`. Cambiar a `update` cuando estable.
-3.  **Puertos**: 3000/3001/8080. Modificar `docker-compose.yml` si ocupados.
-4.  **Switch en Cloud**: Para producción, cambiar `APP_SWITCH_URL` a IP pública de AWS.
+## 4. Integración Switch Interbancario (ISO 20022)
 
-## 7. Comandos Útiles
-```bash
-# Levantar todo
-docker-compose up --build -d
+El sistema soporta interoperabilidad mediante el estándar simulado ISO 20022.
 
-# Ver logs Transacciones
-docker logs --tail 100 -f ms-transaccion-arcbank
+### Flujo Saliente (Outbound)
+1. **Inicio**: User solicita `TRANSFERENCIA_SALIDA`.
+2. **Débito Local**: `MS Transacción` debita la cuenta local en `Micro Cuentas`.
+3. **Llamada Switch**: Se construye un `TxRequest` y se envía a `POST /api/v2/transfers` del Switch.
+    *   *Datos*: Debtor (Origen), Creditor (Destino Externo), Amount, TargetBank.
+4. **Manejo de Error**: Si el Switch responde Error o TimeOut, se ejecuta un **Reverso Automático** (Compensación) devolviendo el dinero a la cuenta local.
 
-# Verificar conexión con switch
-curl http://localhost:8082/api/bancos
-
-# Prueba transferencia interbancaria
-curl -X POST http://localhost:8082/api/transacciones \
-  -H "Content-Type: application/json" \
-  -d '{"tipoOperacion":"TRANSFERENCIA_SALIDA","idCuentaOrigen":1,"cuentaExterna":"1001234567","monto":50.00}'
-```
+### Flujo Entrante (Inbound - Webhook)
+El sistema expone un endpoint para recibir dinero de otros bancos.
+*   **Endpoint**: `POST /api/core/transferencias/recepcion` (`WebhookController`).
+*   **Lógica de Procesamiento**:
+    1. **Validación**: Verifica `instructionId` (ID único del switch), cuenta destino y monto.
+    2. **Idempotencia**: Busca en DB si ya existe una transacción con ese `referencia = instructionId`. Si existe, retorna 200 OK (ACK) sin procesar de nuevo.
+    3. **Acreditación**: Llama a `Micro Cuentas` para sumar el saldo.
+    4. **Persistencia**: Guarda la transacción como `TRANSFERENCIA_ENTRADA` con estado `COMPLETADA`.
+    5. **Respuesta**: Retorna JSON con status `ACK` para confirmar recepción al Switch.
 
 ---
-*Este documento fue generado para asegurar la continuidad del desarrollo del proyecto.*
 
+## 5. Aplicaciones Frontend
+
+### A. Frontend Web (Banca Personas - Puerto 4000)
+*   **Tecnología**: React + Vite.
+*   **Funcionalidad**: Dashboard de usuario completo. Permite ver movimientos coloreados (Verde=Ingreso, Rojo=Egreso).
+*   **Navegación**: Utiliza `Sidebar.jsx` para acceso rápido a Transferencias Interbancarias.
+
+### B. Frontend Cajero (ATM - Puerto 4001)
+*   **Tecnología**: React + Vite + Tailwind.
+*   **Simulación**: Emula un cajero físico.
+*   **Búsqueda Híbrida**: Permite buscar usuarios por Cédula O Número de Cuenta para iniciar operaciones de ventanilla (Depósitos/Retiros en efectivo).
+
+---
+
+## 6. Bases de Datos y Persistencia
+Cada microservicio es dueño de su esquema (Database-per-service pattern).
+
+1.  **db_clientes** (`microcliente`):
+    *   Tablas: `cliente`, `persona`, `empresa`, `empresa_representante`.
+2.  **db_cuentas** (`db_cuentas`):
+    *   Tablas: `cuenta_ahorro`, `tipo_cuenta_ahorro`, `tasa_interes_historial`.
+3.  **db_transacciones** (`db_transacciones`):
+    *   Tablas: `Transaccion` (Nótese el uso de mayúsculas y comillas en queries para compatibilidad Postgres).
+
+## 7. Notas de Despliegue y Mantenimiento
+*   **Arranque**: `docker-compose up --build -d` inicia todo el ecosistema.
+*   **Healthchecks**: Los servicios dependen de que sus DBs estén "healthy" (`pg_isready`) antes de iniciar.
+*   **Puertos Expuestos**:
+    *   Web: http://localhost:4000
+    *   ATM: http://localhost:4001
+    *   Gateway (API pública): http://localhost:4080

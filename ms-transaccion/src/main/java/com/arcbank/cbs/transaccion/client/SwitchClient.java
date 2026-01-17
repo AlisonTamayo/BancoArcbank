@@ -23,4 +23,7 @@ public interface SwitchClient {
 
     @GetMapping("/api/v2/transfers/health")
     Map<String, String> healthCheck();
+
+    @PostMapping("/api/v1/devoluciones")
+    String enviarDevolucion(@RequestBody com.arcbank.cbs.transaccion.dto.SwitchDevolucionRequest request);
 }

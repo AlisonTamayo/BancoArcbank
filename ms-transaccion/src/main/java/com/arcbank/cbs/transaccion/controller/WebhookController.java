@@ -74,4 +74,17 @@ public class WebhookController {
                                         "error", e.getMessage()));
                 }
         }
+
+        @PostMapping("/devoluciones")
+        public ResponseEntity<?> recibirDevolucion(
+                        @RequestBody com.arcbank.cbs.transaccion.dto.SwitchDevolucionRequest request) {
+                log.info("🔄 Webhook Devolución recibido en Arcbank (pacs.004): {}", request);
+                try {
+                        transaccionService.procesarDevolucionEntrante(request);
+                        return ResponseEntity.ok(Map.of("status", "ACK", "message", "Devolución procesada"));
+                } catch (Exception e) {
+                        log.error("❌ Error procesando devolución: {}", e.getMessage());
+                        return ResponseEntity.badRequest().body(Map.of("status", "NACK", "error", e.getMessage()));
+                }
+        }
 }

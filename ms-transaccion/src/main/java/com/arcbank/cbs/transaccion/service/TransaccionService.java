@@ -16,4 +16,8 @@ public interface TransaccionService {
 
     void procesarTransferenciaEntrante(String instructionId, String cuentaDestino,
             BigDecimal monto, String bancoOrigen);
+
+    TransaccionResponseDTO solicitarDevolucion(Integer idTransaccion, String motivo);
+
+    void procesarDevolucionEntrante(com.arcbank.cbs.transaccion.dto.SwitchDevolucionRequest request);
 }

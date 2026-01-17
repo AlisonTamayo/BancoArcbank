@@ -137,6 +137,7 @@ public class TransaccionServiceImpl implements TransaccionService {
                                         request.getIdBancoExterno() != null ? request.getIdBancoExterno() : "UNKNOWN")
                                 .amount(request.getMonto())
                                 .description(request.getDescripcion())
+                                .referenceId(trx.getReferencia())
                                 .build();
 
                         String respuestaSwitch = switchClientService.enviarTransferencia(txRequest);
@@ -331,5 +332,150 @@ public class TransaccionServiceImpl implements TransaccionService {
         }
         log.info("✅ Transferencia entrante completada. ID: {}, Nuevo saldo: {}",
                 trx.getIdTransaccion(), nuevoSaldo);
+    }
+
+    @Override
+    @Transactional
+    public TransaccionResponseDTO solicitarDevolucion(Integer idTransaccion, String motivo) {
+        log.info("Solicitando devolución para Tx ID: {} | Motivo: {}", idTransaccion, motivo);
+
+        Transaccion trx = transaccionRepository.findById(idTransaccion)
+                .orElseThrow(() -> new BusinessException("Transacción no encontrada con ID: " + idTransaccion));
+
+        // 1. Validar 24 Horas
+        if (trx.getFechaCreacion().isBefore(java.time.LocalDateTime.now().minusHours(24))) {
+            throw new BusinessException("El tiempo límite de 24h para devoluciones ha expirado.");
+        }
+
+        // 2. Validar Estado
+        if ("REVERSADA".equals(trx.getEstado()) || "DEVUELTA".equals(trx.getEstado())) {
+            throw new BusinessException("Esta transacción ya fue reversada o devuelta.");
+        }
+
+        // 3. Manejar lógica según Tipo de Operación
+        if ("TRANSFERENCIA_SALIDA".equals(trx.getTipoOperacion())
+                || "TRANSFERENCIA_INTERBANCARIA".equals(trx.getTipoOperacion())) {
+
+            // CASO 1: Revertir Salida (Pedir reembolso)
+            return procesarReversoSalida(trx, motivo);
+
+        } else if ("TRANSFERENCIA_ENTRADA".equals(trx.getTipoOperacion())) {
+
+            // CASO 2: Iniciar Devolución de Entrada (Devolver dinero recibido)
+            return procesarDevolucionIniciada(trx, motivo);
+
+        } else {
+            throw new BusinessException(
+                    "Solo se pueden devolver transferencias interbancarias (Entrada o Salida). Tipo actual: "
+                            + trx.getTipoOperacion());
+        }
+    }
+
+    private TransaccionResponseDTO procesarReversoSalida(Transaccion trx, String motivo) {
+        // Obtener datos origen (Nosotros)
+        String numeroCuentaOrigen = obtenerNumeroCuenta(trx.getIdCuentaOrigen());
+        Map<String, Object> cuentaOrigenDetalles = obtenerDetallesCuenta(trx.getIdCuentaOrigen());
+        String nombreOrigen = "Cliente Arcbank";
+        if (cuentaOrigenDetalles != null && cuentaOrigenDetalles.get("nombreTitular") != null) {
+            nombreOrigen = cuentaOrigenDetalles.get("nombreTitular").toString();
+        }
+
+        // Llamar al Switch para pedir reverso
+        try {
+            switchClientService.enviarReverso(
+                    trx.getReferencia(),
+                    motivo,
+                    trx.getMonto(),
+                    nombreOrigen, // Debtor (Nosotros, quien pide)
+                    numeroCuentaOrigen,
+                    "Beneficiario Externo",
+                    trx.getCuentaExterna(), // Creditor (Ellos, quien tiene la plata)
+                    trx.getIdBancoExterno());
+        } catch (Exception e) {
+            throw new BusinessException("El Switch rechazó la solicitud de reverso: " + e.getMessage());
+        }
+
+        // Compensación Local (Devolver Dinero al Cliente)
+        procesarSaldo(trx.getIdCuentaOrigen(), trx.getMonto()); // Sumar
+
+        trx.setEstado("REVERSADA");
+        Transaccion guardada = transaccionRepository.save(trx);
+        return mapearADTO(guardada, null);
+    }
+
+    private TransaccionResponseDTO procesarDevolucionIniciada(Transaccion trx, String motivo) {
+        // Nosotros recibimos dinero y queremos devolverlo (Initiate Return)
+
+        // 1. Debitar la cuenta del cliente (quitarle el dinero erroneo)
+        // Nota: saldoActual.add(monto.negate())
+        try {
+            procesarSaldo(trx.getIdCuentaDestino(), trx.getMonto().negate());
+        } catch (Exception e) {
+            throw new BusinessException("No hay saldo suficiente para devolver la transacción.");
+        }
+
+        // 2. Obtener datos para la ISO (Debtor = Quien DEVOLVIÓ, en este caso
+        // Nosotros/Beneficiario Original)
+        String numeroCuentaNuestra = obtenerNumeroCuenta(trx.getIdCuentaDestino()); // Cuenta que tenía la plata
+
+        // 3. Enviar Devolución al Switch
+        try {
+            switchClientService.enviarReverso(
+                    trx.getReferencia(), // InstructionId Original
+                    motivo,
+                    trx.getMonto(),
+                    "Arcbank Initiate Return", // Debtor Name (Quien inicia el retorno)
+                    numeroCuentaNuestra, // Debtor Account (Cuenta origen del retorno)
+                    "Banco Origen Original", // Creditor Name (A quien se le devuelve)
+                    "UNKNOWN", // Creditor Account (No siempre la tenemos guardada en 'cuentaExterna' para
+                               // entradas? Si, 'cuentaExterna' tiene el dato)
+                    trx.getIdBancoExterno() // Target Bank
+            );
+        } catch (Exception e) {
+            // Rollback el débito si falla switch
+            procesarSaldo(trx.getIdCuentaDestino(), trx.getMonto());
+            throw new BusinessException("Falló la comunicación con el Switch para la devolución: " + e.getMessage());
+        }
+
+        trx.setEstado("DEVUELTA");
+        Transaccion guardada = transaccionRepository.save(trx);
+        return mapearADTO(guardada, null);
+    }
+
+    @Override
+    @Transactional
+    public void procesarDevolucionEntrante(com.arcbank.cbs.transaccion.dto.SwitchDevolucionRequest request) {
+        String originalInstructionId = request.getBody().getOriginalInstructionId();
+        BigDecimal amount = request.getBody().getAmount().getValue();
+        String motivo = request.getBody().getReturnReason();
+
+        log.info("🔄 Procesando devolución entrante (pacs.004) para InstructionId: {}", originalInstructionId);
+
+        // 1. Buscar transacción original (Saliente)
+        Transaccion trx = transaccionRepository.findByReferencia(originalInstructionId)
+                .orElseThrow(
+                        () -> new BusinessException("Transacción original no encontrada: " + originalInstructionId));
+
+        if (!"TRANSFERENCIA_SALIDA".equals(trx.getTipoOperacion()) &&
+                !"TRANSFERENCIA_INTERBANCARIA".equals(trx.getTipoOperacion())) {
+            log.warn("Se recibió devolución para una transacción que no es salida interbancaria: {}",
+                    trx.getTipoOperacion());
+            return;
+        }
+
+        if ("REVERSADA".equals(trx.getEstado()) || "DEVUELTA".equals(trx.getEstado())) {
+            log.warn("Transacción ya procesada como reversada: {}", trx.getIdTransaccion());
+            return;
+        }
+
+        // 2. Acreditar dinero de vuelta al cliente
+        procesarSaldo(trx.getIdCuentaOrigen(), amount);
+
+        // 3. Actualizar estado
+        trx.setEstado("REVERSADA");
+        trx.setDescripcion(trx.getDescripcion() + " [DEVUELTA: " + motivo + "]");
+        transaccionRepository.save(trx);
+
+        log.info("✅ Devolución procesada exitosamente. Cliente reembolsado.");
     }
 }

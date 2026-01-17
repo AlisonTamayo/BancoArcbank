@@ -143,7 +143,15 @@ const bancaApi = {
   realizarTransferencia,
   realizarTransferenciaInterbancaria,
   getBancos,
-  crearCuentaWeb
+  crearCuentaWeb,
+  solicitarReverso
+}
+
+export async function solicitarReverso(idTransaccion, motivo) {
+  return await request(`/api/transacciones/${idTransaccion}/devolucion`, {
+    method: 'POST',
+    body: JSON.stringify({ motivo })
+  });
 }
 
 export default bancaApi;

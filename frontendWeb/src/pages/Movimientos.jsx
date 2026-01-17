@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
-import { getMovimientos } from '../services/bancaApi'
+import { getMovimientos, solicitarReverso } from '../services/bancaApi'
 import { FiFilter, FiDownload, FiSearch } from 'react-icons/fi'
 
 export default function Movimientos() {
@@ -8,6 +8,22 @@ export default function Movimientos() {
   const [selectedAccId, setSelectedAccId] = useState('')
   const [txs, setTxs] = useState([])
   const [loading, setLoading] = useState(false)
+  const [refundModal, setRefundModal] = useState({ show: false, tx: null })
+  const [reason, setReason] = useState('FRAD')
+
+  const handleRefund = async () => {
+    if (!refundModal.tx) return;
+    if (!window.confirm(`¿Estás seguro de solicitar el reverso de $${refundModal.tx.amount}?`)) return;
+
+    try {
+      await solicitarReverso(refundModal.tx.id, reason);
+      alert('✅ Solicitud de devolución enviada exitosamente.');
+      setRefundModal({ show: false, tx: null });
+      load(); // Refresh
+    } catch (e) {
+      alert('❌ Error: ' + e.message);
+    }
+  }
 
   useEffect(() => {
     if (state.user.accounts?.length > 0 && !selectedAccId) {
@@ -43,7 +59,9 @@ export default function Movimientos() {
           type: displayType,
           amount: m.monto,
           balance: m.saldoResultante,
-          isDebit
+          isDebit,
+          isRefundable: isDebit && (new Date() - new Date(m.fechaCreacion) < 24 * 60 * 60 * 1000)
+            && (m.tipoOperacion === 'TRANSFERENCIA_SALIDA' || m.tipoOperacion === 'TRANSFERENCIA_INTERBANCARIA')
         }
       }).sort((a, b) => b.date - a.date)
       setTxs(mapped)
@@ -140,6 +158,17 @@ export default function Movimientos() {
                   <td className="text-end pe-4 py-3 fw-bold text-white h5 mb-0" style={{ fontFamily: 'monospace' }}>
                     $ {tx.balance.toLocaleString('en-US', { minimumFractionDigits: 2 })}
                   </td>
+                  <td className="text-end pe-4 py-3">
+                    {tx.isRefundable && (
+                      <button
+                        className="btn btn-sm btn-outline-secondary"
+                        style={{ fontSize: '0.7rem' }}
+                        onClick={() => setRefundModal({ show: true, tx })}
+                      >
+                        ↩️ Solicitar Devolución
+                      </button>
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -151,6 +180,39 @@ export default function Movimientos() {
           )}
         </div>
       </div>
-    </div>
+
+
+      {/* Modal Devolución */}
+      {
+        refundModal.show && (
+          <div className="modal-backdrop-glass d-flex justify-content-center align-items-center"
+            style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.7)', zIndex: 9999 }}>
+            <div className="glass-panel p-4" style={{ width: '400px', maxWidth: '90%' }}>
+              <h5 className="text-white fw-bold mb-3">↩️ Solicitar Devolución</h5>
+              <p className="text-muted small">
+                Estás a punto de revertir una transferencia de <strong className="text-white">${refundModal.tx.amount}</strong>.
+              </p>
+
+              <label className="label-text mb-2">MOTIVO DEL RECLAMO</label>
+              <select className="form-control form-control-luxury mb-4"
+                value={reason} onChange={e => setReason(e.target.value)}>
+                <option value="FRAD">🚨 Fraude (FRAD)</option>
+                <option value="TECH">🔁 Error Técnico (TECH)</option>
+                <option value="DUPL">👯‍♀️ Pago Duplicado (DUPL)</option>
+              </select>
+
+              <div className="d-flex gap-2 justify-content-end">
+                <button className="btn btn-outline-light" onClick={() => setRefundModal({ show: false, tx: null })}>
+                  Cancelar
+                </button>
+                <button className="btn btn-gold" onClick={handleRefund}>
+                  Confirmar y Enviar
+                </button>
+              </div>
+            </div>
+          </div>
+        )
+      }
+    </div >
   )
 }

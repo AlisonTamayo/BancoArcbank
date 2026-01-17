@@ -15,4 +15,5 @@ public class TxRequest {
     private String targetBankId;
     private BigDecimal amount;
     private String description;
+    private String referenceId;
 }

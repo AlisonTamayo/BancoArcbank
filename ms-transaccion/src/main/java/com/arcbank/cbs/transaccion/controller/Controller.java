@@ -32,4 +32,12 @@ public class Controller {
     public ResponseEntity<List<TransaccionResponseDTO>> listarPorCuenta(@PathVariable Integer idCuenta) {
         return ResponseEntity.ok(transaccionService.obtenerPorCuenta(idCuenta));
     }
+
+    @PostMapping("/{id}/devolucion")
+    @Operation(summary = "Solicitar devolución de transacción (Reverso)")
+    public ResponseEntity<TransaccionResponseDTO> solicitarDevolucion(
+            @PathVariable Integer id,
+            @RequestBody com.arcbank.cbs.transaccion.dto.DevolucionRequestDTO request) {
+        return ResponseEntity.ok(transaccionService.solicitarDevolucion(id, request.getMotivo()));
+    }
 }
