@@ -6,6 +6,9 @@ spring:
     name: api-gateway-arcbank
   cloud:
     gateway:
+      httpclient:
+        connect-timeout: 5000
+        response-timeout: 10s
       # Configuración CORS global
       globalcors:
         corsConfigurations:

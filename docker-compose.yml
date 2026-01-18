@@ -3,7 +3,7 @@ version: '3.8'
 networks:
   arcbank2-net:
     driver: bridge
-  switchcambios_default:
+  switch-network:
     external: true
 
 services:
@@ -19,9 +19,12 @@ services:
     ports:
       - "4080:8080" # Entrada principal ARCBANK
     depends_on:
-      - micro-clientes-arcbank
-      - micro-cuentas-arcbank
-      - ms-transaccion-arcbank
+      micro-clientes-arcbank:
+        condition: service_healthy
+      micro-cuentas-arcbank:
+        condition: service_started
+      ms-transaccion-arcbank:
+        condition: service_started
     networks:
       - arcbank2-net
 
@@ -157,7 +160,7 @@ services:
       - "4082:8080" # Acceso directo (backup)
     networks:
       - arcbank2-net
-      - switchcambios_default
+      - switch-network
 
   # ==========================================
   # 4. FRONTEND WEB ARCBANK (Puerto 4000)
