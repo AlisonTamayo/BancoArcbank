@@ -24,6 +24,9 @@ public class SwitchClientService {
         @Value("${app.banco.codigo:ARCBANK}")
         private String bancoCodigo;
 
+        @Value("${app.switch.apikey}")
+        private String apiKey;
+
         public String enviarTransferencia(TxRequest request) {
                 log.info("Iniciando envío de transferencia interbancaria via Feign: {} -> {}",
                                 request.getDebtorAccount(), request.getCreditorAccount());
@@ -64,7 +67,7 @@ public class SwitchClientService {
                 try {
                         log.info("JSON enviado al Switch: {}", new com.fasterxml.jackson.databind.ObjectMapper()
                                         .writeValueAsString(isoRequest));
-                        String response = switchClient.enviarTransferencia(isoRequest);
+                        String response = switchClient.enviarTransferencia(apiKey, isoRequest);
 
                         if (response == null || response.isBlank()) {
                                 response = "{\"status\": \"SUCCESS\", \"message\": \"Transferencia enviada correctamente\"}";
@@ -103,7 +106,7 @@ public class SwitchClientService {
                                 .build();
 
                 try {
-                        String response = switchClient.enviarDevolucion(isoRequest);
+                        String response = switchClient.enviarDevolucion(apiKey, isoRequest);
                         log.info("Respuesta de Devolución del Switch: {}", response);
                         return response;
                 } catch (Exception e) {

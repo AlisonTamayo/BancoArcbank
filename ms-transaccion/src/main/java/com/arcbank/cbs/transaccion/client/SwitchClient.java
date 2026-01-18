@@ -16,7 +16,8 @@ import com.arcbank.cbs.transaccion.dto.SwitchTransferResponse;
 public interface SwitchClient {
 
     @PostMapping("/api/v2/switch/transfers")
-    String enviarTransferencia(@RequestBody SwitchTransferRequest request);
+    String enviarTransferencia(@org.springframework.web.bind.annotation.RequestHeader("apikey") String apikey,
+            @RequestBody SwitchTransferRequest request);
 
     @GetMapping("/api/v1/red/bancos")
     List<Map<String, Object>> obtenerBancos();
@@ -25,5 +26,6 @@ public interface SwitchClient {
     Map<String, String> healthCheck();
 
     @PostMapping("/api/v2/switch/transfers/return")
-    String enviarDevolucion(@RequestBody com.arcbank.cbs.transaccion.dto.SwitchDevolucionRequest request);
+    String enviarDevolucion(@org.springframework.web.bind.annotation.RequestHeader("apikey") String apikey,
+            @RequestBody com.arcbank.cbs.transaccion.dto.SwitchDevolucionRequest request);
 }
