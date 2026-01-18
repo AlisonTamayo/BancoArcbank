@@ -24,9 +24,6 @@ public class SwitchClientService {
         @Value("${app.banco.codigo:ARCBANK}")
         private String bancoCodigo;
 
-        @Value("${app.switch.apikey}")
-        private String apiKey;
-
         public String enviarTransferencia(TxRequest request) {
                 log.info("Iniciando envío de transferencia interbancaria via Feign: {} -> {}",
                                 request.getDebtorAccount(), request.getCreditorAccount());
@@ -34,7 +31,9 @@ public class SwitchClientService {
                 SwitchTransferRequest isoRequest = SwitchTransferRequest.builder()
                                 .header(SwitchTransferRequest.Header.builder()
                                                 .messageId("MSG-" + UUID.randomUUID().toString().substring(0, 8))
-                                                .creationDateTime(java.time.Instant.now().toString()) // UTC format (Z)
+                                                .creationDateTime(java.time.Instant.now()
+                                                                .truncatedTo(java.time.temporal.ChronoUnit.SECONDS)
+                                                                .toString()) // UTC no nanos
                                                 .originatingBankId(bancoCodigo)
                                                 .build())
                                 .body(SwitchTransferRequest.Body.builder()
@@ -67,7 +66,7 @@ public class SwitchClientService {
                 try {
                         log.info("JSON enviado al Switch: {}", new com.fasterxml.jackson.databind.ObjectMapper()
                                         .writeValueAsString(isoRequest));
-                        String response = switchClient.enviarTransferencia(apiKey, isoRequest);
+                        String response = switchClient.enviarTransferencia(isoRequest);
 
                         if (response == null || response.isBlank()) {
                                 response = "{\"status\": \"SUCCESS\", \"message\": \"Transferencia enviada correctamente\"}";
@@ -90,7 +89,9 @@ public class SwitchClientService {
                 SwitchDevolucionRequest isoRequest = SwitchDevolucionRequest.builder()
                                 .header(SwitchDevolucionRequest.Header.builder()
                                                 .messageId("RET-" + UUID.randomUUID().toString().substring(0, 8))
-                                                .creationDateTime(java.time.Instant.now().toString()) // UTC
+                                                .creationDateTime(java.time.Instant.now()
+                                                                .truncatedTo(java.time.temporal.ChronoUnit.SECONDS)
+                                                                .toString()) // UTC no nanos
                                                 .originatingBankId(bancoCodigo)
                                                 .build())
                                 .body(SwitchDevolucionRequest.Body.builder()
@@ -106,7 +107,7 @@ public class SwitchClientService {
                                 .build();
 
                 try {
-                        String response = switchClient.enviarDevolucion(apiKey, isoRequest);
+                        String response = switchClient.enviarDevolucion(isoRequest);
                         log.info("Respuesta de Devolución del Switch: {}", response);
                         return response;
                 } catch (Exception e) {

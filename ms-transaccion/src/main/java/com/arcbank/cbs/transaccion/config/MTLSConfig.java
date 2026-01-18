@@ -45,7 +45,13 @@ public class MTLSConfig {
     public RequestInterceptor requestInterceptor() {
         return requestTemplate -> {
             if (apiKey != null && !apiKey.isBlank()) {
-                requestTemplate.header("apikey", apiKey);
+                // Ensure we don't add duplicate headers if already present
+                if (!requestTemplate.headers().containsKey("apikey")) {
+                    log.debug("Adding 'apikey' header to request: {}", apiKey.substring(0, 5) + "...");
+                    requestTemplate.header("apikey", apiKey);
+                }
+            } else {
+                log.warn("⚠️ API Key is missing or empty in MTLSConfig!");
             }
         };
     }
