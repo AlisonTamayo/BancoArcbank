@@ -8,7 +8,7 @@ spring:
     gateway:
       httpclient:
         connect-timeout: 5000
-        response-timeout: 10s
+        response-timeout: 45s
       # Configuración CORS global
       globalcors:
         corsConfigurations:

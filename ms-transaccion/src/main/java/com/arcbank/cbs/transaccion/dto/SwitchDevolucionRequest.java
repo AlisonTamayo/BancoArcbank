@@ -27,31 +27,18 @@ public class SwitchDevolucionRequest {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class Body {
-        private String originalInstructionId; // ID de la transacción original en el Switch
-        private String returnReason; // FRAD, TECH, DUPL
-        private Amount amount;
-        private Party debtor; // Quien pide la devolución (Banco Origen/Cliente)
-        private Party creditor; // Quien tiene el dinero (Banco Destino/Beneficiario)
-        private String remittanceInformation;
+        private String returnInstructionId; // ID de instrucción de devolución
+        private String originalInstructionId; // ID de la transacción original
+        private String returnReason; // Código motivo (DUPL, CUST, TECH...)
+        private ReturnAmount returnAmount; // Monto exacto a devolver
     }
 
     @Data
     @Builder
     @NoArgsConstructor
     @AllArgsConstructor
-    public static class Amount {
+    public static class ReturnAmount {
         private String currency;
         private BigDecimal value;
-    }
-
-    @Data
-    @Builder
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class Party {
-        private String name;
-        private String accountId;
-        private String accountType;
-        private String targetBankId;
     }
 }

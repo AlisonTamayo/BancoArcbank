@@ -446,7 +446,7 @@ public class TransaccionServiceImpl implements TransaccionService {
     @Transactional
     public void procesarDevolucionEntrante(com.arcbank.cbs.transaccion.dto.SwitchDevolucionRequest request) {
         String originalInstructionId = request.getBody().getOriginalInstructionId();
-        BigDecimal amount = request.getBody().getAmount().getValue();
+        BigDecimal amount = request.getBody().getReturnAmount().getValue();
         String motivo = request.getBody().getReturnReason();
 
         log.info("🔄 Procesando devolución entrante (pacs.004) para InstructionId: {}", originalInstructionId);
