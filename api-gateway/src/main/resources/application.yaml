@@ -40,7 +40,8 @@ spring:
               - PUT
               - DELETE
               - OPTIONS
-            allowedHeaders: "*"
+            allowedHeaders:
+              - "*"
             allowCredentials: true
       routes:
         # RUTA 1: CLIENTES
