@@ -9,7 +9,7 @@ spring:
       # Configuración CORS global
       globalcors:
         corsConfigurations:
-          '[/**]':
+          '/**':
             allowedOrigins:
               - "http://localhost:4000"
               - "http://localhost:4001"
