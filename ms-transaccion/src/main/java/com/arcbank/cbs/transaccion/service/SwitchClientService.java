@@ -31,8 +31,7 @@ public class SwitchClientService {
                 SwitchTransferRequest isoRequest = SwitchTransferRequest.builder()
                                 .header(SwitchTransferRequest.Header.builder()
                                                 .messageId("MSG-" + UUID.randomUUID().toString().substring(0, 8))
-                                                .creationDateTime(OffsetDateTime.now()
-                                                                .format(DateTimeFormatter.ISO_OFFSET_DATE_TIME))
+                                                .creationDateTime(java.time.Instant.now().toString()) // UTC format (Z)
                                                 .originatingBankId(bancoCodigo)
                                                 .build())
                                 .body(SwitchTransferRequest.Body.builder()
@@ -53,13 +52,17 @@ public class SwitchClientService {
                                                                 .name(request.getCreditorName())
                                                                 .accountId(request.getCreditorAccount())
                                                                 .accountType("SAVINGS")
-                                                                .targetBankId(request.getTargetBankId())
+                                                                .targetBankId(request.getTargetBankId() != null
+                                                                                ? request.getTargetBankId()
+                                                                                : "BANTEC")
                                                                 .build())
                                                 .remittanceInformation(request.getDescription())
                                                 .build())
                                 .build();
 
                 try {
+                        log.info("JSON enviado al Switch: {}", new com.fasterxml.jackson.databind.ObjectMapper()
+                                        .writeValueAsString(isoRequest));
                         String response = switchClient.enviarTransferencia(isoRequest);
 
                         if (response == null || response.isBlank()) {
