@@ -15,7 +15,7 @@ import com.arcbank.cbs.transaccion.dto.SwitchTransferResponse;
 @FeignClient(name = "digiconecu-switch", url = "${app.switch.network-url:https://switch-digiconecu.duckdns.org}", configuration = com.arcbank.cbs.transaccion.config.MTLSConfig.class)
 public interface SwitchClient {
 
-    @PostMapping("/api/v1/transacciones")
+    @PostMapping("/api/v2/switch/transfers")
     String enviarTransferencia(@RequestBody SwitchTransferRequest request);
 
     @GetMapping("/api/v1/red/bancos")
@@ -24,6 +24,6 @@ public interface SwitchClient {
     @GetMapping("/api/v2/transfers/health")
     Map<String, String> healthCheck();
 
-    @PostMapping("/api/v1/transacciones/devoluciones")
+    @PostMapping("/api/v2/switch/transfers/return")
     String enviarDevolucion(@RequestBody com.arcbank.cbs.transaccion.dto.SwitchDevolucionRequest request);
 }
