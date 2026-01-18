@@ -35,7 +35,7 @@ public class MTLSConfig {
     @Value("${app.mtls.truststore.password:arcbank123}")
     private String truststorePassword;
 
-    @Value("${app.mtls.enabled:false}")
+    @Value("${app.mtls.enabled:true}")
     private boolean mtlsEnabled;
 
     @Value("${app.switch.apikey:}")

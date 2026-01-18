@@ -3,6 +3,8 @@ version: '3.8'
 networks:
   arcbank2-net:
     driver: bridge
+  switch-network:
+    external: true
 
 services:
 
@@ -39,11 +41,15 @@ services:
     ports:
       - "4080:8080"
     depends_on:
-      - micro-clientes-arcbank
-      - micro-cuentas-arcbank
-      - ms-transaccion-arcbank
+      micro-clientes-arcbank:
+        condition: service_healthy
+      micro-cuentas-arcbank:
+        condition: service_started
+      ms-transaccion-arcbank:
+        condition: service_started
     networks:
       - arcbank2-net
+      - switch-network
     environment:
       - PAYMENT_HOST=ms-transaccion-arcbank
       - CLIENT_HOST=micro-clientes-arcbank
@@ -172,14 +178,15 @@ services:
       DB_PASS: admin
       SERVER_PORT: 8080
       CUENTAS_URL: http://micro-cuentas-arcbank:8081
-      APP_SWITCH_URL: ${SWITCH_URL:-https://switch-digiconecu.duckdns.org/transacciones}
-      APP_SWITCH_NETWORK_URL: ${APP_SWITCH_NETWORK_URL:-https://switch-digiconecu.duckdns.org}
+      APP_SWITCH_URL: ${SWITCH_URL:-http://34.16.106.7:8000/api/v1/transacciones}
+      APP_SWITCH_NETWORK_URL: ${APP_SWITCH_NETWORK_URL:-http://34.16.106.7:8000}
       BANCO_CODIGO: ARCBANK
       APP_SWITCH_APIKEY: ${APP_SWITCH_APIKEY:-ARCBANK_SECRET_KEY_2025_XYZ}
     ports:
       - "4082:8080"
     networks:
       - arcbank2-net
+      - switch-network
 
   # ==========================================
   # 4. FRONTEND WEB ARCBANK (Accesible solo via Nginx)
