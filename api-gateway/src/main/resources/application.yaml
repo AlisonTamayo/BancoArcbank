@@ -94,10 +94,7 @@ spring:
           predicates:
             - Path=/api/v1/sucursales/**
 
-        # RUTA 10: CORE (Nuevo endpoint para webhooks interbancarios)
-        - id: core-service
-          uri: http://ms-transaccion-arcbank:8080
-          predicates:
+
         # RUTA 10: CORE (Transacciones / Webhooks Legados)
         - id: core-service
           uri: http://ms-transaccion-arcbank:8080
