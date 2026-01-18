@@ -17,21 +17,68 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @RestController
-@RequestMapping("/api/core/transferencias/recepcion")
 @RequiredArgsConstructor
 public class WebhookController {
 
         private final TransaccionService transaccionService;
+        private final com.fasterxml.jackson.databind.ObjectMapper objectMapper;
 
-        @PostMapping
+        // ENDPOINT ÚNICO (UNIFICADO) PARA EL SWITCH
+        // Una sola URL que detecta si es Transferencia o Devolución
+        @PostMapping("/api/core/webhook")
+        public ResponseEntity<?> recibirWebhookUnificado(@RequestBody Map<String, Object> payload) {
+                try {
+                        Map<String, Object> body = (Map<String, Object>) payload.get("body");
+
+                        // Si tiene 'originalInstructionId' o 'returnReason', es una DEVOLUCIÓN
+                        // (pacs.004)
+                        if (body != null && (body.containsKey("originalInstructionId")
+                                        || body.containsKey("returnReason"))) {
+                                com.arcbank.cbs.transaccion.dto.SwitchDevolucionRequest req = objectMapper.convertValue(
+                                                payload, com.arcbank.cbs.transaccion.dto.SwitchDevolucionRequest.class);
+                                return recibirDevolucion(req);
+                        }
+                        // Si no, asumimos que es una TRANSFERENCIA ENTRE CUENTAS - ABONO (pacs.008)
+                        else {
+                                SwitchTransferRequest req = objectMapper.convertValue(payload,
+                                                SwitchTransferRequest.class);
+                                return recibirTransferenciaEntrante(req);
+                        }
+                } catch (Exception e) {
+                        log.error("❌ Error en webhook unificado: {}", e.getMessage());
+                        return ResponseEntity.status(422).body(Map.of("status", "NACK", "error",
+                                        "Error procesando payload unificado: " + e.getMessage()));
+                }
+        }
+
+        // Endpoint original (Legacy/Core)
+        @PostMapping("/api/core/transferencias/recepcion")
         public ResponseEntity<?> recibirTransferenciaEntrante(@RequestBody SwitchTransferRequest request) {
-                log.info("📥 Webhook recibido en Arcbank (ISO 20022): {}", request);
+                log.info("📥 Webhook Trasnsferencia recibida (Legacy): {}", request.getBody().getInstructionId());
+                return procesarTransferencia(request);
+        }
 
+        // Endpoint V3.0 Standard para devoluciones
+        @PostMapping("/api/incoming/return")
+        public ResponseEntity<?> recibirDevolucion(
+                        @RequestBody com.arcbank.cbs.transaccion.dto.SwitchDevolucionRequest request) {
+                log.info("🔄 Webhook Devolución V3.0 recibido (pacs.004): {}",
+                                request.getBody().getOriginalInstructionId());
+                try {
+                        transaccionService.procesarDevolucionEntrante(request);
+                        return ResponseEntity.ok(Map.of("status", "ACK", "message", "Devolución procesada"));
+                } catch (Exception e) {
+                        log.error("❌ Error procesando devolución: {}", e.getMessage());
+                        return ResponseEntity.badRequest().body(Map.of("status", "NACK", "error", e.getMessage()));
+                }
+        }
+
+        // Método auxiliar para lógica de transferencia
+        private ResponseEntity<?> procesarTransferencia(SwitchTransferRequest request) {
                 try {
                         if (request.getHeader() == null || request.getBody() == null) {
-                                return ResponseEntity.badRequest().body(Map.of(
-                                                "status", "NACK",
-                                                "error", "Formato inválido"));
+                                return ResponseEntity.badRequest()
+                                                .body(Map.of("status", "NACK", "error", "Formato inválido"));
                         }
 
                         String instructionId = request.getBody().getInstructionId();
@@ -48,17 +95,10 @@ public class WebhookController {
                         }
 
                         if (instructionId == null || cuentaDestino == null || monto.compareTo(BigDecimal.ZERO) <= 0) {
-                                log.warn("⚠️ Datos incompletos en el webhook: id={}, cuenta={}, monto={}",
-                                                instructionId, cuentaDestino, monto);
-                                return ResponseEntity.badRequest().body(Map.of(
-                                                "status", "NACK",
-                                                "error", "Datos incompletos"));
+                                return ResponseEntity.badRequest()
+                                                .body(Map.of("status", "NACK", "error", "Datos incompletos"));
                         }
 
-                        log.info("💰 Solicitud de abono en Arcbank: Cta {} | Monto {} | Desde {}", cuentaDestino, monto,
-                                        bancoOrigen);
-
-                        // Ejecutar acreditación
                         transaccionService.procesarTransferenciaEntrante(instructionId, cuentaDestino, monto,
                                         bancoOrigen);
 
@@ -68,23 +108,8 @@ public class WebhookController {
                                         "instructionId", instructionId));
 
                 } catch (Exception e) {
-                        log.error("❌ Error procesando abono en Arcbank: {}", e.getMessage());
-                        return ResponseEntity.status(422).body(Map.of(
-                                        "status", "NACK",
-                                        "error", e.getMessage()));
-                }
-        }
-
-        @PostMapping("/devoluciones")
-        public ResponseEntity<?> recibirDevolucion(
-                        @RequestBody com.arcbank.cbs.transaccion.dto.SwitchDevolucionRequest request) {
-                log.info("🔄 Webhook Devolución recibido en Arcbank (pacs.004): {}", request);
-                try {
-                        transaccionService.procesarDevolucionEntrante(request);
-                        return ResponseEntity.ok(Map.of("status", "ACK", "message", "Devolución procesada"));
-                } catch (Exception e) {
-                        log.error("❌ Error procesando devolución: {}", e.getMessage());
-                        return ResponseEntity.badRequest().body(Map.of("status", "NACK", "error", e.getMessage()));
+                        log.error("❌ Error procesando abono: {}", e.getMessage());
+                        return ResponseEntity.status(422).body(Map.of("status", "NACK", "error", e.getMessage()));
                 }
         }
 }

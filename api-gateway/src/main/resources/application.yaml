@@ -98,7 +98,17 @@ spring:
         - id: core-service
           uri: http://ms-transaccion-arcbank:8080
           predicates:
+        # RUTA 10: CORE (Transacciones / Webhooks Legados)
+        - id: core-service
+          uri: http://ms-transaccion-arcbank:8080
+          predicates:
             - Path=/api/core/**
+        
+        # RUTA 11: WEBHOOKS V3.0 (Switch Standard)
+        - id: webhook-incoming
+          uri: http://ms-transaccion-arcbank:8080
+          predicates:
+            - Path=/api/incoming/**
 
         # RUTAS DE DOCUMENTACIÓN (Discovery for API Manager)
         - id: clientes-docs
