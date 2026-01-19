@@ -116,4 +116,13 @@ public class SwitchClientService {
                         throw new RuntimeException("Error comunicando con Switch para reverso: " + e.getMessage());
                 }
         }
+
+        public java.util.List<java.util.Map<String, String>> obtenerMotivosDevolucion() {
+                try {
+                        return switchClient.obtenerMotivosDevolucion();
+                } catch (Exception e) {
+                        log.error("Error al obtener motivos del Switch: {}", e.getMessage());
+                        return java.util.Collections.emptyList();
+                }
+        }
 }

@@ -40,4 +40,10 @@ public class Controller {
             @RequestBody com.arcbank.cbs.transaccion.dto.DevolucionRequestDTO request) {
         return ResponseEntity.ok(transaccionService.solicitarDevolucion(id, request.getMotivo()));
     }
+
+    @GetMapping("/motivos-devolucion")
+    @Operation(summary = "Obtener catálogo de motivos de devolución desde el Switch")
+    public ResponseEntity<List<java.util.Map<String, String>>> obtenerMotivosDevolucion() {
+        return ResponseEntity.ok(transaccionService.obtenerMotivosDevolucion());
+    }
 }

@@ -478,4 +478,9 @@ public class TransaccionServiceImpl implements TransaccionService {
 
         log.info("✅ Devolución procesada exitosamente. Cliente reembolsado.");
     }
+
+    @Override
+    public List<Map<String, String>> obtenerMotivosDevolucion() {
+        return switchClientService.obtenerMotivosDevolucion();
+    }
 }

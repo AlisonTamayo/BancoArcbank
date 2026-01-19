@@ -135,6 +135,19 @@ export async function crearCuentaWeb(data) {
   });
 }
 
+// bancaApi declaration removed from here as it is redefined at bottom
+
+export async function solicitarReverso(idTransaccion, motivo) {
+  return await request(`/api/transacciones/${idTransaccion}/devolucion`, {
+    method: 'POST',
+    body: JSON.stringify({ motivo })
+  });
+}
+
+export async function getMotivosDevolucion() {
+  return await request('/api/transacciones/motivos-devolucion');
+}
+
 const bancaApi = {
   getClientePorIdentificacion,
   getCuentaPorNumero,
@@ -144,14 +157,8 @@ const bancaApi = {
   realizarTransferenciaInterbancaria,
   getBancos,
   crearCuentaWeb,
-  solicitarReverso
-}
-
-export async function solicitarReverso(idTransaccion, motivo) {
-  return await request(`/api/transacciones/${idTransaccion}/devolucion`, {
-    method: 'POST',
-    body: JSON.stringify({ motivo })
-  });
+  solicitarReverso,
+  getMotivosDevolucion
 }
 
 export default bancaApi;

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
-import { getMovimientos, solicitarReverso } from '../services/bancaApi'
+import { getMovimientos, solicitarReverso, getMotivosDevolucion } from '../services/bancaApi'
 import { FiFilter, FiDownload, FiSearch } from 'react-icons/fi'
 
 export default function Movimientos() {
@@ -10,8 +10,23 @@ export default function Movimientos() {
   const [loading, setLoading] = useState(false)
   const [refundModal, setRefundModal] = useState({ show: false, tx: null })
   const [reason, setReason] = useState('FRAD')
+  const [reasonsList, setReasonsList] = useState([])
+
+  useEffect(() => {
+    // Cargar catálogo dinámico de motivos al iniciar
+    getMotivosDevolucion()
+      .then(data => {
+        if (data && Array.isArray(data)) {
+          setReasonsList(data);
+          if (data.length > 0) setReason(data[0].code); // Seleccionar el primero por defecto
+        }
+      })
+      .catch(e => console.warn("No se pudo cargar catálogo de motivos:", e));
+  }, []);
 
   const handleRefund = async () => {
+    /* ... (unchanged code) ... */
+
     if (!refundModal.tx) return;
     if (!window.confirm(`¿Estás seguro de solicitar el reverso de $${refundModal.tx.amount}?`)) return;
 
@@ -196,9 +211,19 @@ export default function Movimientos() {
               <label className="label-text mb-2">MOTIVO DEL RECLAMO</label>
               <select className="form-control form-control-luxury mb-4"
                 value={reason} onChange={e => setReason(e.target.value)}>
-                <option value="FRAD">🚨 Fraude (FRAD)</option>
-                <option value="TECH">🔁 Error Técnico (TECH)</option>
-                <option value="DUPL">👯‍♀️ Pago Duplicado (DUPL)</option>
+                {reasonsList.length > 0 ? (
+                  reasonsList.map(r => (
+                    <option key={r.code} value={r.code}>
+                      {r.description} ({r.code})
+                    </option>
+                  ))
+                ) : (
+                  <>
+                    <option value="FRAD">🚨 Fraude (FRAD)</option>
+                    <option value="TECH">🔁 Error Técnico (TECH)</option>
+                    <option value="DUPL">👯‍♀️ Pago Duplicado (DUPL)</option>
+                  </>
+                )}
               </select>
 
               <div className="d-flex gap-2 justify-content-end">

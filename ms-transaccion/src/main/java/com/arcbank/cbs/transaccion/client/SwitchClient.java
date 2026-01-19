@@ -26,4 +26,7 @@ public interface SwitchClient {
 
         @PostMapping("/api/v2/switch/transfers/return")
         String enviarDevolucion(@RequestBody com.arcbank.cbs.transaccion.dto.SwitchDevolucionRequest request);
+
+        @GetMapping("/api/v1/reference/iso20022/errors")
+        List<Map<String, String>> obtenerMotivosDevolucion();
 }
