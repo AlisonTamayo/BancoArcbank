@@ -22,7 +22,7 @@ export default function Interbank() {
         const hardcodedBanks = [
             { id: "NEXUS_BANK", codigo: "NEXUS_BANK", nombre: "Nexus Bank (270100)", bin: "270100" },
             { id: "ECUSOL_BK", codigo: "ECUSOL_BK", nombre: "Ecusol Bank (370100)", bin: "370100" },
-            { id: "BANTEC", codigo: "BANTEC", nombre: "Bantec (100000)", bin: "100000" },
+            { id: "BANTEC", codigo: "BANTEC", nombre: "Bantec (100050)", bin: "100050" },
         ];
         setBanks(hardcodedBanks);
 

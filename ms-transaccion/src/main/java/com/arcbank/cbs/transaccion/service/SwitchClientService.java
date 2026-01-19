@@ -55,7 +55,8 @@ public class SwitchClientService {
                                                                 .name(request.getCreditorName())
                                                                 .accountId(request.getCreditorAccount())
                                                                 .accountType("AHORROS")
-                                                                .bankId(request.getTargetBankId() != null
+                                                                // EL CREDITOR REQUIERE targetBankId, NO bankId
+                                                                .targetBankId(request.getTargetBankId() != null
                                                                                 ? request.getTargetBankId()
                                                                                 : "BANTEC")
                                                                 .build())

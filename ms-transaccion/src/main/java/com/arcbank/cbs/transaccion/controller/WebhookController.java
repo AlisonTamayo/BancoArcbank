@@ -24,7 +24,10 @@ public class WebhookController {
 
         // ENDPOINT ÚNICO (UNIFICADO) PARA EL SWITCH
         // Una sola URL que detecta si es Transferencia o Devolución
-        @PostMapping("/api/core/webhook")
+        // ENDPOINT ÚNICO (UNIFICADO) PARA EL SWITCH - Usando la URL Legacy que ya
+        // funciona
+        // http://35.208.155.21:4080/api/core/transferencias/recepcion
+        @PostMapping("/api/core/transferencias/recepcion")
         public ResponseEntity<?> recibirWebhookUnificado(@RequestBody Map<String, Object> payload) {
                 try {
                         Map<String, Object> body = (Map<String, Object>) payload.get("body");
@@ -33,28 +36,24 @@ public class WebhookController {
                         // (pacs.004)
                         if (body != null && (body.containsKey("originalInstructionId")
                                         || body.containsKey("returnReason"))) {
+                                log.info("🔄 Webhook detectado como DEVOLUCIÓN (pacs.004)");
                                 com.arcbank.cbs.transaccion.dto.SwitchDevolucionRequest req = objectMapper.convertValue(
                                                 payload, com.arcbank.cbs.transaccion.dto.SwitchDevolucionRequest.class);
                                 return recibirDevolucion(req);
                         }
                         // Si no, asumimos que es una TRANSFERENCIA ENTRE CUENTAS - ABONO (pacs.008)
                         else {
+                                log.info("📥 Webhook detectado como TRANSFERENCIA (pacs.008)");
                                 SwitchTransferRequest req = objectMapper.convertValue(payload,
                                                 SwitchTransferRequest.class);
-                                return recibirTransferenciaEntrante(req);
+                                log.info("Processing transfer ID: {}", req.getBody().getInstructionId());
+                                return procesarTransferencia(req);
                         }
                 } catch (Exception e) {
                         log.error("❌ Error en webhook unificado: {}", e.getMessage());
                         return ResponseEntity.status(422).body(Map.of("status", "NACK", "error",
                                         "Error procesando payload unificado: " + e.getMessage()));
                 }
-        }
-
-        // Endpoint original (Legacy/Core)
-        @PostMapping("/api/core/transferencias/recepcion")
-        public ResponseEntity<?> recibirTransferenciaEntrante(@RequestBody SwitchTransferRequest request) {
-                log.info("📥 Webhook Trasnsferencia recibida (Legacy): {}", request.getBody().getInstructionId());
-                return procesarTransferencia(request);
         }
 
         // Endpoint V3.0 Standard para devoluciones
