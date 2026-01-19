@@ -218,10 +218,12 @@ export default function Movimientos() {
                     </option>
                   ))
                 ) : (
+                  // Fallback por si falla la carga dinámica (Códigos ISO 20022)
                   <>
-                    <option value="FRAD">🚨 Fraude (FRAD)</option>
-                    <option value="TECH">🔁 Error Técnico (TECH)</option>
-                    <option value="DUPL">👯‍♀️ Pago Duplicado (DUPL)</option>
+                    <option value="FR01">🚨 Fraude Confirmado (FR01)</option>
+                    <option value="MS03">🔁 Error Técnico / Procesamiento (MS03)</option>
+                    <option value="MD01">👯‍♀️ Pago Duplicado (MD01)</option>
+                    <option value="AC03">🚫 Cuenta Inválida / Cerrada (AC03)</option>
                   </>
                 )}
               </select>

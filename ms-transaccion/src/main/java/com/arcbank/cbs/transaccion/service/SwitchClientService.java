@@ -10,8 +10,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
-import java.time.OffsetDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.UUID;
 
 @Slf4j
@@ -99,7 +97,7 @@ public class SwitchClientService {
                                                 .returnInstructionId("RET-INSTR-"
                                                                 + UUID.randomUUID().toString().substring(0, 8))
                                                 .originalInstructionId(originalInstructionId)
-                                                .returnReason(returnReason)
+                                                .returnReason(mapearErrorIso(returnReason))
                                                 .returnAmount(SwitchDevolucionRequest.ReturnAmount.builder()
                                                                 .currency("USD")
                                                                 .value(amount)
@@ -124,5 +122,32 @@ public class SwitchClientService {
                         log.error("Error al obtener motivos del Switch: {}", e.getMessage());
                         return java.util.Collections.emptyList();
                 }
+        }
+
+        private static String mapearErrorIso(String internalCode) {
+                if (internalCode == null)
+                        return "MS03";
+
+                // Normalización a mayúsculas
+                String code = internalCode.toUpperCase().trim();
+
+                // Mapeo Estático de Errores Internos -> ISO 20022
+                return switch (code) {
+                        case "TECH", "ERROR_TECNICO" -> "MS03"; // Technical Reason
+                        case "CUENTA_INVALIDA", "AC03" -> "AC03"; // Invalid Creditor Account Number
+                        case "SALDO_INSUFICIENTE", "AM04" -> "AM04"; // Insufficient Funds
+                        case "DUPLICADO", "DUPL", "MD01" -> "MD01"; // Duplicate Payment
+                        case "FRAUDE", "FRAD", "FR01" -> "FR01"; // Fraud
+                        case "CUST", "CLIENTE" -> "CUST"; // Requested by Customer
+                        default -> {
+                                // Si ya parece un código ISO (4 caracteres alfanuméricos), lo dejamos pasar
+                                if (code.matches("^[A-Z0-9]{4}$")) {
+                                        yield code;
+                                }
+                                // Si no sabemos qué es, asumimos error técnico
+                                log.warn("Código de devolución desconocido '{}', mapeando a MS03", code);
+                                yield "MS03";
+                        }
+                };
         }
 }
