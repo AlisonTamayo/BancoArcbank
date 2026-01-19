@@ -56,17 +56,20 @@ public class WebhookController {
                 }
         }
 
-        // Endpoint V3.0 Standard para devoluciones
+        // Endpoint V3.0 Standard para devoluciones (Confirmación Asíncrona)
         @PostMapping("/api/incoming/return")
         public ResponseEntity<?> recibirDevolucion(
                         @RequestBody com.arcbank.cbs.transaccion.dto.SwitchDevolucionRequest request) {
-                log.info("🔄 Webhook Devolución V3.0 recibido (pacs.004): {}",
+                log.info("🔄 Webhook Devolución V3.0 recibido (Confirmación Asíncrona): {}",
                                 request.getBody().getOriginalInstructionId());
                 try {
                         transaccionService.procesarDevolucionEntrante(request);
-                        return ResponseEntity.ok(Map.of("status", "ACK", "message", "Devolución procesada"));
+                        // Respondemos ACK siempre, ya sea procesada ahora o previamente (Idempotencia)
+                        return ResponseEntity.ok(Map.of("status", "ACK", "message", "Devolución confirmada"));
                 } catch (Exception e) {
-                        log.error("❌ Error procesando devolución: {}", e.getMessage());
+                        log.error("❌ Error procesando confirmación de devolución: {}", e.getMessage());
+                        // Aun si falla la lógica interna, si es un error de negocio (ej. no existe tx),
+                        // devolvemos NACK
                         return ResponseEntity.badRequest().body(Map.of("status", "NACK", "error", e.getMessage()));
                 }
         }

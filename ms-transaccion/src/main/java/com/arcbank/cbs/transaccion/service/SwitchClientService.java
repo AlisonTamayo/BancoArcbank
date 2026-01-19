@@ -106,12 +106,21 @@ public class SwitchClientService {
                                 .build();
 
                 try {
+                        // El Switch responde 200 OK si procesó el reverso exitosamente.
+                        // Si falla (Regla de Negocio o Técnico), Feign lanzará excepción (4xx/5xx).
                         String response = switchClient.enviarDevolucion(isoRequest);
-                        log.info("Respuesta de Devolución del Switch: {}", response);
+                        log.info("Respuesta de Devolución del Switch (200 OK): {}", response);
+
+                        // Retornamos la respuesta cruda, el Controller/Service confiará en que si
+                        // llegamos aquí, fue éxito.
                         return response;
+
                 } catch (Exception e) {
-                        log.error("Error al solicitar reverso: {}", e.getMessage());
-                        throw new RuntimeException("Error comunicando con Switch para reverso: " + e.getMessage());
+                        // Si entramos aquí, el Switch devolvió error (400, 409, 500, etc.)
+                        log.error("Error al solicitar reverso (Switch rechazó): {}", e.getMessage());
+
+                        // Re-lanzamos para que TransaccionService haga ROLLBACK del dinero
+                        throw new RuntimeException("Switch rechazó el reverso: " + e.getMessage());
                 }
         }
 

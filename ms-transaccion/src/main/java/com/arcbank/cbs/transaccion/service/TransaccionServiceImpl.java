@@ -319,7 +319,7 @@ public class TransaccionServiceImpl implements TransaccionService {
                 .monto(monto)
 
                 .saldoResultante(nuevoSaldo)
-                .idBancoExterno(bancoOrigen) // Registrar quién envió
+                .idBancoExterno(bancoOrigen)
                 .descripcion("Transferencia recibida desde " + bancoOrigen)
                 .canal("SWITCH")
                 .estado("COMPLETADA")
@@ -342,7 +342,6 @@ public class TransaccionServiceImpl implements TransaccionService {
         Transaccion trx = transaccionRepository.findById(idTransaccion)
                 .orElseThrow(() -> new BusinessException("Transacción no encontrada con ID: " + idTransaccion));
 
-        // 1. Validar 24 Horas
         if (trx.getFechaCreacion().isBefore(java.time.LocalDateTime.now().minusHours(24))) {
             throw new BusinessException("El tiempo límite de 24h para devoluciones ha expirado.");
         }
@@ -352,16 +351,13 @@ public class TransaccionServiceImpl implements TransaccionService {
             throw new BusinessException("Esta transacción ya fue reversada o devuelta.");
         }
 
-        // 3. Manejar lógica según Tipo de Operación
         if ("TRANSFERENCIA_SALIDA".equals(trx.getTipoOperacion())
                 || "TRANSFERENCIA_INTERBANCARIA".equals(trx.getTipoOperacion())) {
 
-            // CASO 1: Revertir Salida (Pedir reembolso)
             return procesarReversoSalida(trx, motivo);
 
         } else if ("TRANSFERENCIA_ENTRADA".equals(trx.getTipoOperacion())) {
 
-            // CASO 2: Iniciar Devolución de Entrada (Devolver dinero recibido)
             return procesarDevolucionIniciada(trx, motivo);
 
         } else {
@@ -372,7 +368,6 @@ public class TransaccionServiceImpl implements TransaccionService {
     }
 
     private TransaccionResponseDTO procesarReversoSalida(Transaccion trx, String motivo) {
-        // Obtener datos origen (Nosotros)
         String numeroCuentaOrigen = obtenerNumeroCuenta(trx.getIdCuentaOrigen());
         Map<String, Object> cuentaOrigenDetalles = obtenerDetallesCuenta(trx.getIdCuentaOrigen());
         String nombreOrigen = "Cliente Arcbank";
@@ -380,23 +375,21 @@ public class TransaccionServiceImpl implements TransaccionService {
             nombreOrigen = cuentaOrigenDetalles.get("nombreTitular").toString();
         }
 
-        // Llamar al Switch para pedir reverso
         try {
             switchClientService.enviarReverso(
                     trx.getReferencia(),
                     motivo,
                     trx.getMonto(),
-                    nombreOrigen, // Debtor (Nosotros, quien pide)
+                    nombreOrigen,
                     numeroCuentaOrigen,
                     "Beneficiario Externo",
-                    trx.getCuentaExterna(), // Creditor (Ellos, quien tiene la plata)
+                    trx.getCuentaExterna(),
                     trx.getIdBancoExterno());
         } catch (Exception e) {
             throw new BusinessException("El Switch rechazó la solicitud de reverso: " + e.getMessage());
         }
 
-        // Compensación Local (Devolver Dinero al Cliente)
-        procesarSaldo(trx.getIdCuentaOrigen(), trx.getMonto()); // Sumar
+        procesarSaldo(trx.getIdCuentaOrigen(), trx.getMonto());
 
         trx.setEstado("REVERSADA");
         Transaccion guardada = transaccionRepository.save(trx);
@@ -404,42 +397,47 @@ public class TransaccionServiceImpl implements TransaccionService {
     }
 
     private TransaccionResponseDTO procesarDevolucionIniciada(Transaccion trx, String motivo) {
-        // Nosotros recibimos dinero y queremos devolverlo (Initiate Return)
 
-        // 1. Debitar la cuenta del cliente (quitarle el dinero erroneo)
-        // Nota: saldoActual.add(monto.negate())
+        // 1. Debitar (congelar) los fondos de nuestra cuenta local antes de llamar al
+        // Switch
         try {
+            // El usuario recibió dinero erróneamente, se lo quitamos para devolverlo
             procesarSaldo(trx.getIdCuentaDestino(), trx.getMonto().negate());
         } catch (Exception e) {
             throw new BusinessException("No hay saldo suficiente para devolver la transacción.");
         }
 
-        // 2. Obtener datos para la ISO (Debtor = Quien DEVOLVIÓ, en este caso
-        // Nosotros/Beneficiario Original)
-        String numeroCuentaNuestra = obtenerNumeroCuenta(trx.getIdCuentaDestino()); // Cuenta que tenía la plata
+        String numeroCuentaNuestra = obtenerNumeroCuenta(trx.getIdCuentaDestino());
 
-        // 3. Enviar Devolución al Switch
+        // 2. Llamar al Switch Síncronamente
         try {
             switchClientService.enviarReverso(
-                    trx.getReferencia(), // InstructionId Original
-                    motivo,
+                    trx.getReferencia(), // UUID Original
+                    motivo, // ISO Code
                     trx.getMonto(),
-                    "Arcbank Initiate Return", // Debtor Name (Quien inicia el retorno)
-                    numeroCuentaNuestra, // Debtor Account (Cuenta origen del retorno)
-                    "Banco Origen Original", // Creditor Name (A quien se le devuelve)
-                    "UNKNOWN", // Creditor Account (No siempre la tenemos guardada en 'cuentaExterna' para
-                               // entradas? Si, 'cuentaExterna' tiene el dato)
-                    trx.getIdBancoExterno() // Target Bank
-            );
-        } catch (Exception e) {
-            // Rollback el débito si falla switch
-            procesarSaldo(trx.getIdCuentaDestino(), trx.getMonto());
-            throw new BusinessException("Falló la comunicación con el Switch para la devolución: " + e.getMessage());
-        }
+                    "Arcbank Initiate Return",
+                    numeroCuentaNuestra,
+                    "Banco Origen Original", // No crítico
+                    "UNKNOWN", // No crítico
+                    trx.getIdBancoExterno()); // Banco Destino (quien envió la plata originalmente)
 
-        trx.setEstado("DEVUELTA");
-        Transaccion guardada = transaccionRepository.save(trx);
-        return mapearADTO(guardada, null);
+            // 3. Éxito (Switch retornó 200 OK)
+            // Ya debitamos, solo actualizamos estado
+            trx.setEstado("DEVUELTA");
+            Transaccion guardada = transaccionRepository.save(trx);
+            log.info("Devolución aceptada por Switch y procesada localmente. TxID: {}", trx.getIdTransaccion());
+            return mapearADTO(guardada, null);
+
+        } catch (Exception e) {
+            // 4. Fallo (Switch retornó 4xx/5xx o Timeout)
+            log.error("Fallo al enviar devolución al Switch: {}. Haciendo Rollback.", e.getMessage());
+
+            // ROLLBACK: Devolvemos la plata a la cuenta (credito) porque el Switch no
+            // aceptó la devolución
+            procesarSaldo(trx.getIdCuentaDestino(), trx.getMonto());
+
+            throw new BusinessException("El Switch rechazó la devolución: " + e.getMessage());
+        }
     }
 
     @Override
@@ -451,7 +449,6 @@ public class TransaccionServiceImpl implements TransaccionService {
 
         log.info("🔄 Procesando devolución entrante (pacs.004) para InstructionId: {}", originalInstructionId);
 
-        // 1. Buscar transacción original (Saliente)
         Transaccion trx = transaccionRepository.findByReferencia(originalInstructionId)
                 .orElseThrow(
                         () -> new BusinessException("Transacción original no encontrada: " + originalInstructionId));
@@ -468,10 +465,8 @@ public class TransaccionServiceImpl implements TransaccionService {
             return;
         }
 
-        // 2. Acreditar dinero de vuelta al cliente
         procesarSaldo(trx.getIdCuentaOrigen(), amount);
 
-        // 3. Actualizar estado
         trx.setEstado("REVERSADA");
         trx.setDescripcion(trx.getDescripcion() + " [DEVUELTA: " + motivo + "]");
         transaccionRepository.save(trx);
