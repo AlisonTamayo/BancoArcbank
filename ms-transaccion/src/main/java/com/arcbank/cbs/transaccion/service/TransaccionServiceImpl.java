@@ -478,4 +478,20 @@ public class TransaccionServiceImpl implements TransaccionService {
     public List<Map<String, String>> obtenerMotivosDevolucion() {
         return switchClientService.obtenerMotivosDevolucion();
     }
+
+    @Override
+    public String consultarEstadoPorInstructionId(String instructionId) {
+        return transaccionRepository.findByReferencia(instructionId)
+                .map(t -> {
+                    String estado = t.getEstado();
+                    if ("COMPLETADA".equalsIgnoreCase(estado))
+                        return "COMPLETED";
+                    if ("PENDIENTE".equalsIgnoreCase(estado))
+                        return "PENDING";
+                    if ("REVERSADA".equalsIgnoreCase(estado))
+                        return "REVERSED";
+                    return estado;
+                })
+                .orElse("NOT_FOUND");
+    }
 }

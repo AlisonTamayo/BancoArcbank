@@ -22,4 +22,6 @@ public interface TransaccionService {
     void procesarDevolucionEntrante(com.arcbank.cbs.transaccion.dto.SwitchDevolucionRequest request);
 
     List<java.util.Map<String, String>> obtenerMotivosDevolucion();
+
+    String consultarEstadoPorInstructionId(String instructionId);
 }

@@ -113,4 +113,29 @@ public class WebhookController {
                         return ResponseEntity.status(422).body(Map.of("status", "NACK", "error", e.getMessage()));
                 }
         }
+
+        // Implementación RF-04: Consulta de Estado para evitar reversos
+        @org.springframework.web.bind.annotation.GetMapping("/api/core/transferencias/recepcion/status/{instructionId}")
+        public ResponseEntity<?> consultarEstado(
+                        @org.springframework.web.bind.annotation.PathVariable String instructionId) {
+                String estado = transaccionService.consultarEstadoPorInstructionId(instructionId);
+
+                Map<String, String> response = new java.util.HashMap<>();
+                response.put("estado", estado);
+
+                // Si no se encuentra, retornamos 404 para cumplir con la regla: "Si falla (404)
+                // -> Reverso"
+                // Aunque el código sugerido decía OK, la regla de negocio explícita del Switch
+                // suele ser estricta con códigos HTTP.
+                // Si retornamos 200 OK con "NOT_FOUND", el Switch podría interpretarlo como
+                // "Transacción existe y su estado es NOT_FOUND",
+                // pero "Si falla (404)" sugiere error HTTP.
+                // Dado la ambigüedad, retornaremos 404 si es NOT_FOUND para garantizar el
+                // reverso si no la tenemos.
+                if ("NOT_FOUND".equals(estado)) {
+                        return ResponseEntity.status(404).body(response);
+                }
+
+                return ResponseEntity.ok(response);
+        }
 }
