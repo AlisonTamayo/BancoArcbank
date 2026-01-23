@@ -75,8 +75,11 @@ export default function Movimientos() {
           amount: m.monto,
           balance: m.saldoResultante,
           isDebit,
-          isRefundable: isDebit && (new Date() - new Date(m.fechaCreacion) < 24 * 60 * 60 * 1000)
-            && (m.tipoOperacion === 'TRANSFERENCIA_SALIDA' || m.tipoOperacion === 'TRANSFERENCIA_INTERBANCARIA')
+          isRefundable: (new Date() - new Date(m.fechaCreacion) < 24 * 60 * 60 * 1000)
+            && (
+              (isDebit && ['TRANSFERENCIA_SALIDA', 'TRANSFERENCIA_INTERBANCARIA'].includes(m.tipoOperacion))
+              || (m.tipoOperacion === 'TRANSFERENCIA_ENTRADA')
+            )
         }
       }).sort((a, b) => b.date - a.date)
       setTxs(mapped)
@@ -178,7 +181,10 @@ export default function Movimientos() {
                       <button
                         className="btn btn-sm btn-outline-secondary"
                         style={{ fontSize: '0.7rem' }}
-                        onClick={() => setRefundModal({ show: true, tx })}
+                        onClick={() => {
+                          console.log('🔘 Click en botón devolución:', tx);
+                          setRefundModal({ show: true, tx })
+                        }}
                       >
                         ↩️ Solicitar Devolución
                       </button>
@@ -202,6 +208,7 @@ export default function Movimientos() {
         refundModal.show && (
           <div className="modal-backdrop-glass d-flex justify-content-center align-items-center"
             style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.7)', zIndex: 9999 }}>
+            {console.log('🖥️ Renderizando Modal:', refundModal)}
             <div className="glass-panel p-4" style={{ width: '400px', maxWidth: '90%' }}>
               <h5 className="text-white fw-bold mb-3">↩️ Solicitar Devolución</h5>
               <p className="text-muted small">
