@@ -27,10 +27,10 @@ public class SwitchDevolucionRequest {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class Body {
-        private String returnInstructionId; // ID de instrucción de devolución
-        private String originalInstructionId; // ID de la transacción original
-        private String returnReason; // Código motivo (DUPL, CUST, TECH...)
-        private ReturnAmount returnAmount; // Monto exacto a devolver
+        private String returnInstructionId;
+        private String originalInstructionId;
+        private String returnReason;
+        private ReturnAmount returnAmount;
     }
 
     @Data

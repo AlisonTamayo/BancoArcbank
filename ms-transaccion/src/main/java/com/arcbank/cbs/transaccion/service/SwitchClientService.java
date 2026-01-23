@@ -31,7 +31,7 @@ public class SwitchClientService {
                                                 .messageId("MSG-" + UUID.randomUUID().toString().substring(0, 8))
                                                 .creationDateTime(java.time.Instant.now()
                                                                 .truncatedTo(java.time.temporal.ChronoUnit.SECONDS)
-                                                                .toString()) // UTC no nanos
+                                                                .toString())
                                                 .originatingBankId(bancoCodigo)
                                                 .build())
                                 .body(SwitchTransferRequest.Body.builder()
@@ -53,7 +53,6 @@ public class SwitchClientService {
                                                                 .name(request.getCreditorName())
                                                                 .accountId(request.getCreditorAccount())
                                                                 .accountType("AHORROS")
-                                                                // EL CREDITOR REQUIERE targetBankId, NO bankId
                                                                 .targetBankId(request.getTargetBankId() != null
                                                                                 ? request.getTargetBankId()
                                                                                 : "BANTEC")
@@ -90,7 +89,7 @@ public class SwitchClientService {
                                                 .messageId("RET-" + UUID.randomUUID().toString().substring(0, 8))
                                                 .creationDateTime(java.time.Instant.now()
                                                                 .truncatedTo(java.time.temporal.ChronoUnit.SECONDS)
-                                                                .toString()) // UTC no nanos
+                                                                .toString())
                                                 .originatingBankId(bancoCodigo)
                                                 .build())
                                 .body(SwitchDevolucionRequest.Body.builder()
@@ -106,20 +105,14 @@ public class SwitchClientService {
                                 .build();
 
                 try {
-                        // El Switch responde 200 OK si procesó el reverso exitosamente.
-                        // Si falla (Regla de Negocio o Técnico), Feign lanzará excepción (4xx/5xx).
                         String response = switchClient.enviarDevolucion(isoRequest);
                         log.info("Respuesta de Devolución del Switch (200 OK): {}", response);
 
-                        // Retornamos la respuesta cruda, el Controller/Service confiará en que si
-                        // llegamos aquí, fue éxito.
                         return response;
 
                 } catch (Exception e) {
-                        // Si entramos aquí, el Switch devolvió error (400, 409, 500, etc.)
                         log.error("Error al solicitar reverso (Switch rechazó): {}", e.getMessage());
 
-                        // Re-lanzamos para que TransaccionService haga ROLLBACK del dinero
                         throw new RuntimeException("Switch rechazó el reverso: " + e.getMessage());
                 }
         }
@@ -137,23 +130,19 @@ public class SwitchClientService {
                 if (internalCode == null)
                         return "MS03";
 
-                // Normalización a mayúsculas
                 String code = internalCode.toUpperCase().trim();
 
-                // Mapeo Estático de Errores Internos -> ISO 20022
                 return switch (code) {
-                        case "TECH", "ERROR_TECNICO" -> "MS03"; // Technical Reason
-                        case "CUENTA_INVALIDA", "AC03" -> "AC03"; // Invalid Creditor Account Number
-                        case "SALDO_INSUFICIENTE", "AM04" -> "AM04"; // Insufficient Funds
-                        case "DUPLICADO", "DUPL", "MD01" -> "MD01"; // Duplicate Payment
-                        case "FRAUDE", "FRAD", "FR01" -> "FR01"; // Fraud
-                        case "CUST", "CLIENTE" -> "CUST"; // Requested by Customer
+                        case "TECH", "ERROR_TECNICO" -> "MS03";
+                        case "CUENTA_INVALIDA", "AC03" -> "AC03";
+                        case "SALDO_INSUFICIENTE", "AM04" -> "AM04";
+                        case "DUPLICADO", "DUPL", "MD01" -> "MD01";
+                        case "FRAUDE", "FRAD", "FR01" -> "FR01";
+                        case "CUST", "CLIENTE" -> "CUST";
                         default -> {
-                                // Si ya parece un código ISO (4 caracteres alfanuméricos), lo dejamos pasar
                                 if (code.matches("^[A-Z0-9]{4}$")) {
                                         yield code;
                                 }
-                                // Si no sabemos qué es, asumimos error técnico
                                 log.warn("Código de devolución desconocido '{}', mapeando a MS03", code);
                                 yield "MS03";
                         }

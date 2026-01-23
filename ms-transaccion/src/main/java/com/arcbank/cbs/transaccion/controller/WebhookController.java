@@ -22,27 +22,18 @@ public class WebhookController {
         private final TransaccionService transaccionService;
         private final com.fasterxml.jackson.databind.ObjectMapper objectMapper;
 
-        // ENDPOINT ÚNICO (UNIFICADO) PARA EL SWITCH
-        // Una sola URL que detecta si es Transferencia o Devolución
-        // ENDPOINT ÚNICO (UNIFICADO) PARA EL SWITCH - Usando la URL Legacy que ya
-        // funciona
-        // http://35.208.155.21:4080/api/core/transferencias/recepcion
         @PostMapping("/api/core/transferencias/recepcion")
         public ResponseEntity<?> recibirWebhookUnificado(@RequestBody Map<String, Object> payload) {
                 try {
                         Map<String, Object> body = (Map<String, Object>) payload.get("body");
 
-                        // Si tiene 'originalInstructionId' o 'returnReason', es una DEVOLUCIÓN
-                        // (pacs.004)
                         if (body != null && (body.containsKey("originalInstructionId")
                                         || body.containsKey("returnReason"))) {
                                 log.info("🔄 Webhook detectado como DEVOLUCIÓN (pacs.004)");
                                 com.arcbank.cbs.transaccion.dto.SwitchDevolucionRequest req = objectMapper.convertValue(
                                                 payload, com.arcbank.cbs.transaccion.dto.SwitchDevolucionRequest.class);
                                 return recibirDevolucion(req);
-                        }
-                        // Si no, asumimos que es una TRANSFERENCIA ENTRE CUENTAS - ABONO (pacs.008)
-                        else {
+                        } else {
                                 log.info("📥 Webhook detectado como TRANSFERENCIA (pacs.008)");
                                 SwitchTransferRequest req = objectMapper.convertValue(payload,
                                                 SwitchTransferRequest.class);
@@ -56,7 +47,6 @@ public class WebhookController {
                 }
         }
 
-        // Endpoint V3.0 Standard para devoluciones (Confirmación Asíncrona)
         @PostMapping("/api/incoming/return")
         public ResponseEntity<?> recibirDevolucion(
                         @RequestBody com.arcbank.cbs.transaccion.dto.SwitchDevolucionRequest request) {
@@ -64,17 +54,13 @@ public class WebhookController {
                                 request.getBody().getOriginalInstructionId());
                 try {
                         transaccionService.procesarDevolucionEntrante(request);
-                        // Respondemos ACK siempre, ya sea procesada ahora o previamente (Idempotencia)
                         return ResponseEntity.ok(Map.of("status", "ACK", "message", "Devolución confirmada"));
                 } catch (Exception e) {
                         log.error("❌ Error procesando confirmación de devolución: {}", e.getMessage());
-                        // Aun si falla la lógica interna, si es un error de negocio (ej. no existe tx),
-                        // devolvemos NACK
                         return ResponseEntity.badRequest().body(Map.of("status", "NACK", "error", e.getMessage()));
                 }
         }
 
-        // Método auxiliar para lógica de transferencia
         private ResponseEntity<?> procesarTransferencia(SwitchTransferRequest request) {
                 try {
                         if (request.getHeader() == null || request.getBody() == null) {
@@ -114,7 +100,6 @@ public class WebhookController {
                 }
         }
 
-        // Implementación RF-04: Consulta de Estado para evitar reversos
         @org.springframework.web.bind.annotation.GetMapping("/api/core/transferencias/recepcion/status/{instructionId}")
         public ResponseEntity<?> consultarEstado(
                         @org.springframework.web.bind.annotation.PathVariable String instructionId) {
@@ -123,15 +108,6 @@ public class WebhookController {
                 Map<String, String> response = new java.util.HashMap<>();
                 response.put("estado", estado);
 
-                // Si no se encuentra, retornamos 404 para cumplir con la regla: "Si falla (404)
-                // -> Reverso"
-                // Aunque el código sugerido decía OK, la regla de negocio explícita del Switch
-                // suele ser estricta con códigos HTTP.
-                // Si retornamos 200 OK con "NOT_FOUND", el Switch podría interpretarlo como
-                // "Transacción existe y su estado es NOT_FOUND",
-                // pero "Si falla (404)" sugiere error HTTP.
-                // Dado la ambigüedad, retornaremos 404 si es NOT_FOUND para garantizar el
-                // reverso si no la tenemos.
                 if ("NOT_FOUND".equals(estado)) {
                         return ResponseEntity.status(404).body(response);
                 }

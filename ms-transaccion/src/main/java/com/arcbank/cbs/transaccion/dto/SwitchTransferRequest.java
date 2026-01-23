@@ -52,7 +52,7 @@ public class SwitchTransferRequest {
         private String name;
         private String accountId;
         private String accountType;
-        private String bankId; // Para DEBTOR
-        private String targetBankId; // Para CREDITOR (Requisito estricto Switch V3)
+        private String bankId;
+        private String targetBankId;
     }
 }
