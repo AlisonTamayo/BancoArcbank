@@ -57,7 +57,7 @@ export default function Movimientos() {
       const resp = await getMovimientos(selectedAccId)
       const list = Array.isArray(resp) ? resp : []
       const mapped = list.map(m => {
-        const isDebit = ['RETIRO', 'TRANSFERENCIA_SALIDA', 'TRANSFERENCIA_INTERNA', 'TRANSFERENCIA_INTERBANCARIA'].includes(m.tipoOperacion)
+        const isDebit = ['RETIRO', 'TRANSFERENCIA_SALIDA', 'TRANSFERENCIA_INTERNA', 'TRANSFERENCIA_INTERBANCARIA', 'REVERSO'].includes(m.tipoOperacion)
           && String(m.idCuentaOrigen) === String(selectedAccId)
 
         let displayType = m.tipoOperacion
