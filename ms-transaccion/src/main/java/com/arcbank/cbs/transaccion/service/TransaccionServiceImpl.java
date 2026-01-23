@@ -228,7 +228,7 @@ public class TransaccionServiceImpl implements TransaccionService {
     }
 
     private TransaccionResponseDTO mapearADTO(Transaccion t, Integer idCuentaVisor) {
-        BigDecimal saldoAMostrar = t.getSaldoResultante();
+        BigDecimal saldoAMostrar = t.getSaldoResultante() != null ? t.getSaldoResultante() : BigDecimal.ZERO;
 
         log.info("Mapeando Tx: {}, Visor: {}, Dest: {}, SaldoDest: {}",
                 t.getIdTransaccion(), idCuentaVisor, t.getIdCuentaDestino(), t.getSaldoResultanteDestino());
@@ -475,7 +475,7 @@ public class TransaccionServiceImpl implements TransaccionService {
             return;
         }
 
-        procesarSaldo(idCuentaAfectada, montoImpacto);
+        BigDecimal nuevoSaldo = procesarSaldo(idCuentaAfectada, montoImpacto);
 
         Transaccion.TransaccionBuilder reversoBuilder = Transaccion.builder()
                 .referencia(returnInstructionId)
@@ -483,6 +483,7 @@ public class TransaccionServiceImpl implements TransaccionService {
                 .tipoOperacion("REVERSO")
                 .estado("COMPLETADA")
                 .monto(amount)
+                .saldoResultante(nuevoSaldo)
                 .idBancoExterno(originatingBank)
                 .cuentaExterna(trxOriginal.getCuentaExterna())
                 .descripcion("Reverso Switch: " + motivo)
