@@ -42,8 +42,14 @@ public class TransaccionServiceImpl implements TransaccionService {
 
         String tipoOp = request.getTipoOperacion().toUpperCase();
 
+        String referenciaUtil = request.getReferencia();
+        // Garantizar UUID válido (36 chars) para cumplir con estándar del Switch
+        if (referenciaUtil == null || referenciaUtil.length() != 36) {
+            referenciaUtil = UUID.randomUUID().toString();
+        }
+
         Transaccion trx = Transaccion.builder()
-                .referencia(request.getReferencia() != null ? request.getReferencia() : UUID.randomUUID().toString())
+                .referencia(referenciaUtil)
                 .tipoOperacion(tipoOp)
                 .monto(request.getMonto())
                 .descripcion(request.getDescripcion())
