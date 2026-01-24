@@ -95,7 +95,9 @@ public class SwitchClientService {
                                 .body(SwitchDevolucionRequest.Body.builder()
                                                 .returnInstructionId("RET-INSTR-"
                                                                 + UUID.randomUUID().toString().substring(0, 8))
-                                                .originalInstructionId(originalInstructionId)
+                                                .originalInstructionId(originalInstructionId != null
+                                                                ? originalInstructionId.trim()
+                                                                : null)
                                                 .returnReason(mapearErrorIso(returnReason))
                                                 .returnAmount(SwitchDevolucionRequest.ReturnAmount.builder()
                                                                 .currency("USD")

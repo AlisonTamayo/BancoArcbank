@@ -76,6 +76,7 @@ export default function Movimientos() {
           balance: m.saldoResultante,
           isDebit,
           isRefundable: (new Date() - new Date(m.fechaCreacion) < 24 * 60 * 60 * 1000)
+            && !['REVERSADA', 'DEVUELTA'].includes(m.estado)
             && (
               (isDebit && ['TRANSFERENCIA_SALIDA', 'TRANSFERENCIA_INTERBANCARIA'].includes(m.tipoOperacion))
               || (m.tipoOperacion === 'TRANSFERENCIA_ENTRADA')
