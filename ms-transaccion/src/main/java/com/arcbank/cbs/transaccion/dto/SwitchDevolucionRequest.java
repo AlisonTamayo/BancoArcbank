@@ -31,6 +31,7 @@ public class SwitchDevolucionRequest {
         private String originalInstructionId;
         private String returnReason;
         private ReturnAmount returnAmount;
+        private String targetBankId;
     }
 
     @Data

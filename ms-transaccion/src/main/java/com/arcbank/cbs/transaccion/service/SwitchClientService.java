@@ -103,6 +103,7 @@ public class SwitchClientService {
                                                                 .currency("USD")
                                                                 .value(amount)
                                                                 .build())
+                                                .targetBankId(targetBankId)
                                                 .build())
                                 .build();
 
