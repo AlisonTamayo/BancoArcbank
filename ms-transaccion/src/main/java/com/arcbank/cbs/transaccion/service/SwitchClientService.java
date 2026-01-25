@@ -86,14 +86,15 @@ public class SwitchClientService {
 
                 SwitchDevolucionRequest isoRequest = SwitchDevolucionRequest.builder()
                                 .header(SwitchDevolucionRequest.Header.builder()
-                                                .messageId("RET-" + UUID.randomUUID().toString())
+                                                .messageId(UUID.randomUUID().toString()) // UUID Puro sin prefijos
                                                 .creationDateTime(java.time.Instant.now()
                                                                 .truncatedTo(java.time.temporal.ChronoUnit.SECONDS)
                                                                 .toString())
                                                 .originatingBankId(bancoCodigo)
                                                 .build())
                                 .body(SwitchDevolucionRequest.Body.builder()
-                                                .returnInstructionId("RET-INSTR-" + UUID.randomUUID().toString())
+                                                .returnInstructionId(UUID.randomUUID().toString()) // UUID Puro sin
+                                                                                                   // prefijos
                                                 .originalInstructionId(originalInstructionId != null
                                                                 ? originalInstructionId.trim()
                                                                 : null)
