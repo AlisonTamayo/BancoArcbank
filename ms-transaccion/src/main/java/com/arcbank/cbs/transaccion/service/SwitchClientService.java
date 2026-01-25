@@ -73,9 +73,39 @@ public class SwitchClientService {
                         log.info("Respuesta del Switch recibida: {}", response);
                         return response;
 
+                } catch (feign.FeignException e) {
+                        log.error("Switch retornó error HTTP {}: {}", e.status(), e.contentUTF8());
+                        String errorMsg = e.contentUTF8();
+
+                        // Intentar mapear a un código ISO conocido para UX
+                        String isoCode = "MS03"; // Default: Error Técnico
+
+                        if (errorMsg != null) {
+                                // Busqueda simple de códigos en el string crudo (funciona para JSON array u
+                                // objeto)
+                                if (errorMsg.contains("AC01"))
+                                        isoCode = "AC01";
+                                else if (errorMsg.contains("AC04"))
+                                        isoCode = "AC04";
+                                else if (errorMsg.contains("AC06"))
+                                        isoCode = "AC06"; // Cuenta bloqueada
+                                else if (errorMsg.contains("AG01"))
+                                        isoCode = "AG01";
+                                else if (errorMsg.contains("AM04"))
+                                        isoCode = "AM04";
+                                else if (errorMsg.contains("AM05") || errorMsg.contains("DUPL"))
+                                        isoCode = "MD01";
+                                else if (errorMsg.contains("RC01"))
+                                        isoCode = "RC01";
+                        }
+
+                        // Lanzar excepción con el formato que entiende nuestro Frontend
+                        // (parserIsoError)
+                        throw new RuntimeException(isoCode + " - Rechazo del Switch: " + errorMsg);
+
                 } catch (Exception e) {
-                        log.error("Error en la comunicación con el Switch via Feign: {}", e.getMessage());
-                        throw new RuntimeException("Error en comunicación con el Switch: " + e.getMessage());
+                        log.error("Error técnico comunicación Switch: {}", e.getMessage());
+                        throw new RuntimeException("Error de comunicación: " + e.getMessage());
                 }
         }
 

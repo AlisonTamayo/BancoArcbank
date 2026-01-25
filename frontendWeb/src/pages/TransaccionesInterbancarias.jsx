@@ -122,48 +122,55 @@ export default function Interbank() {
                             </div>
                         )}
 
-                        {/* PANTALLA DE CARGA (PROCESANDO) */}
-                        {loading && (
-                            <div className="animate-slide-up text-center py-5">
-                                <div className="spinner-border text-warning mb-4" style={{ width: '3rem', height: '3rem' }} role="status"></div>
-                                <h4 className="fw-bold mb-2">PROCESANDO TRANSACCION</h4>
-                                <p className="text-muted blink-text">Conectando con {toInfo.bank || 'Banco Destino'} para validación...</p>
-                                <small className="text-secondary d-block mt-3">Por favor no cierre esta ventana</small>
-                            </div>
-                        )}
+                        {step === 2 && (
+                            loading ? (
+                                /* PANTALLA DE CARGA (PROCESANDO) - Prioridad Absoluta */
+                                <div className="animate-slide-up text-center py-5">
+                                    <div className="spinner-border text-warning mb-4" style={{ width: '3rem', height: '3rem' }} role="status"></div>
+                                    <h4 className="fw-bold mb-2">PROCESANDO TRANSACCION</h4>
+                                    <p className="text-muted blink-text">Conectando con {toInfo.bank || 'Banco Destino'} para validación...</p>
+                                    <small className="text-secondary d-block mt-3">Por favor no cierre esta ventana</small>
+                                </div>
+                            ) : (
+                                /* FORMULARIO DE CONFIRMACIÓN */
+                                <div className="animate-slide-up">
+                                    <div className="text-center mb-4">
+                                        <h4 className="fw-bold">CONFIRMACIÓN DE FONDOS</h4>
+                                    </div>
+                                    <div className="mb-4">
+                                        <label className="label-text">CUENTA DE ORIGEN (ARCBANK)</label>
+                                        <select className="form-control form-control-luxury" value={fromAccId} onChange={e => setFromAccId(e.target.value)}>
+                                            {accounts.map(a => <option key={a.id} value={a.id}>{a.number} — SALDO: ${a.balance.toFixed(2)}</option>)}
+                                        </select>
+                                    </div>
+                                    <div className="mb-4 text-center">
+                                        <label className="label-text text-warning">VALOR DEL ENVÍO</label>
+                                        <div className="display-4 fw-bold text-white mb-2">
+                                            <span className="text-warning">$</span>
+                                            <input type="number" step="0.01" className="bg-transparent border-0 text-white text-center w-75 fw-bold" value={amount} onChange={e => setAmount(e.target.value)} placeholder="0.00" style={{ outline: 'none' }} />
+                                        </div>
+                                        <small className="text-muted small">Costo por servicio: $0.00 (Tarifa Premium)</small>
+                                    </div>
 
-                        {!loading && step === 2 && (
-                            <div className="animate-slide-up">
-                                <div className="text-center mb-4">
-                                    <h4 className="fw-bold">CONFIRMACIÓN DE FONDOS</h4>
-                                </div>
-                                {/* ... existing form content ... */}
-                                <div className="mb-4">
-                                    <label className="label-text">CUENTA DE ORIGEN (ARCBANK)</label>
-                                    <select className="form-control form-control-luxury" value={fromAccId} onChange={e => setFromAccId(e.target.value)}>
-                                        {accounts.map(a => <option key={a.id} value={a.id}>{a.number} — SALDO: ${a.balance.toFixed(2)}</option>)}
-                                    </select>
-                                </div>
-                                <div className="mb-4 text-center">
-                                    <label className="label-text text-warning">VALOR DEL ENVÍO</label>
-                                    <div className="display-4 fw-bold text-white mb-2">
-                                        <span className="text-warning">$</span>
-                                        <input type="number" step="0.01" className="bg-transparent border-0 text-white text-center w-75 fw-bold" value={amount} onChange={e => setAmount(e.target.value)} placeholder="0.00" style={{ outline: 'none' }} />
-                                    </div>
-                                    <small className="text-muted small">Costo por servicio: $0.00 (Tarifa Premium)</small>
-                                </div>
-                                {error && <div className="alert alert-danger glass-panel border-danger text-danger py-2 mb-4 text-center small fw-bold">{error}</div>}
-                                <div className="row g-3">
-                                    <div className="col-4">
-                                        <button className="btn btn-outline-gold w-100 py-3" onClick={() => setStep(1)}><FiArrowLeft /></button>
-                                    </div>
-                                    <div className="col-8">
-                                        <button className="btn btn-primary w-100 py-3 fw-bold" onClick={handleConfirm} disabled={loading}>
-                                            EJECUTAR TRANSFERENCIA
-                                        </button>
+                                    {/* ALERTA DE ERROR DESTACADA */}
+                                    {error && (
+                                        <div className="alert alert-danger glass-panel border-danger text-danger py-3 mb-4 text-center fw-bold shadow-lg d-flex align-items-center justify-content-center gap-2">
+                                            ⚠️ {error}
+                                        </div>
+                                    )}
+
+                                    <div className="row g-3">
+                                        <div className="col-4">
+                                            <button className="btn btn-outline-gold w-100 py-3" onClick={() => setStep(1)}><FiArrowLeft /></button>
+                                        </div>
+                                        <div className="col-8">
+                                            <button className="btn btn-primary w-100 py-3 fw-bold" onClick={handleConfirm}>
+                                                EJECUTAR TRANSFERENCIA
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
+                            )
                         )}
 
                         {step === 3 && (
