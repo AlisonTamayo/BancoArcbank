@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
-import { realizarTransferenciaInterbancaria } from "../services/bancaApi";
+import { realizarTransferenciaInterbancaria, parseIsoError } from "../services/bancaApi";
 import { useNavigate } from "react-router-dom";
 import { FiArrowLeft, FiArrowRight, FiCheckCircle, FiGlobe } from "react-icons/fi";
 
@@ -58,7 +58,7 @@ export default function Interbank() {
             else await refreshAccounts();
             setStep(3);
         } catch (e) {
-            setError(e.message);
+            setError(parseIsoError(e.message));
         } finally {
             setLoading(false);
         }

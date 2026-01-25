@@ -30,6 +30,34 @@ async function request(path, options = {}) {
   return res.json();
 }
 
+// Mapeo Amigable de Errores Switch (ISO 20022)
+export function parseIsoError(msg) {
+  if (!msg) return "Error desconocido del sistema.";
+
+  // Buscar el código de 4 letras al principio (ej: "AM04 - Fondos...")
+  const codeMatch = msg.match(/([A-Z0-9]{4})/);
+  const code = codeMatch ? codeMatch[1] : null;
+
+  const map = {
+    'AC00': '✅ Transacción completada exitosamente.',
+    'AM04': '🚫 Saldo insuficiente para esta operación.',
+    'AC01': '❌ cuenta inválida. Verifica el número.',
+    'AC04': '🔒 Cuenta cerrada o inactiva en destino.',
+    'MS03': '⚠️ Error técnico en el otro banco. Intenta luego.',
+    'MD01': '⚠️ Operación duplicada. Ya se procesó.',
+    'AG01': '⛔ Operación no permitida por políticas.',
+    'BE01': '👮 Datos inconsistentes. Rechazada por seguridad.',
+    'RC01': '📝 Error en datos enviados. Contacte soporte.',
+    'AC03': '❌ Cuenta destino inválida.'
+  };
+
+  if (code && map[code]) {
+    return `${map[code]} (${code})`;
+  }
+
+  return msg; // Si no hay código conocido, devolver el original
+}
+
 // --- CLIENTES (Gateway -> micro-clientes) ---
 
 export async function getClientePorIdentificacion(identificacion) {

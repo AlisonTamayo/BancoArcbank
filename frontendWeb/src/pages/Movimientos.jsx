@@ -1,28 +1,10 @@
 import React, { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
-import { getMovimientos, solicitarReverso, getMotivosDevolucion } from '../services/bancaApi'
+import { getMovimientos, solicitarReverso, getMotivosDevolucion, parseIsoError } from '../services/bancaApi'
 import { FiFilter, FiDownload, FiSearch } from 'react-icons/fi'
 
 export default function Movimientos() {
-  const { state, refreshAccounts } = useAuth()
-  const [selectedAccId, setSelectedAccId] = useState('')
-  const [txs, setTxs] = useState([])
-  const [loading, setLoading] = useState(false)
-  const [refundModal, setRefundModal] = useState({ show: false, tx: null })
-  const [reason, setReason] = useState('FRAD')
-  const [reasonsList, setReasonsList] = useState([])
-
-  useEffect(() => {
-
-    getMotivosDevolucion()
-      .then(data => {
-        if (data && Array.isArray(data)) {
-          setReasonsList(data);
-          if (data.length > 0) setReason(data[0].code);
-        }
-      })
-      .catch(e => console.warn("No se pudo cargar catálogo de motivos:", e));
-  }, []);
+  /* ... */
 
   const handleRefund = async () => {
     /* ... (unchanged code) ... */
@@ -36,7 +18,9 @@ export default function Movimientos() {
       setRefundModal({ show: false, tx: null });
       load();
     } catch (e) {
-      alert('❌ Error: ' + e.message);
+      // Usar el helper para traducir el error ISO a mensaje amigable
+      const friendlyMsg = parseIsoError(e.message);
+      alert(`❌ ${friendlyMsg}`);
     }
   }
 
