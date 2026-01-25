@@ -78,10 +78,8 @@ export default function Movimientos() {
           isDebit,
           isRefundable: (new Date() - new Date(m.fechaCreacion) < 24 * 60 * 60 * 1000)
             && !['REVERSADA', 'DEVUELTA'].includes(m.estado)
-            && (
-              (isDebit && ['TRANSFERENCIA_SALIDA', 'TRANSFERENCIA_INTERBANCARIA'].includes(m.tipoOperacion))
-              || (m.tipoOperacion === 'TRANSFERENCIA_ENTRADA')
-            )
+            && isDebit
+            && ['TRANSFERENCIA_SALIDA', 'TRANSFERENCIA_INTERBANCARIA'].includes(m.tipoOperacion)
         }
       }).sort((a, b) => b.date - a.date)
       setTxs(mapped)
@@ -148,13 +146,15 @@ export default function Movimientos() {
           </div>
           <div className="table-responsive">
             <table className="table table-luxury m-0">
+              {/* Header Row */}
               <thead>
                 <tr>
                   <th className="ps-4">FECHA / HORA</th>
                   <th>CONCEPTO DE OPERACIÓN</th>
                   <th>TIPO</th>
                   <th className="text-end">MONTO</th>
-                  <th className="text-end pe-4">BALANCE RESULTANTE</th>
+                  <th className="text-end pe-4">BALANCE</th>
+                  <th className="text-end pe-4">ACCIONES</th>
                 </tr>
               </thead>
               <tbody>
@@ -178,19 +178,17 @@ export default function Movimientos() {
                     </td>
                     <td className="text-end pe-4 py-3 fw-bold text-white h5 mb-0" style={{ fontFamily: 'monospace' }}>
                       $ {tx.balance != null ? tx.balance.toLocaleString('en-US', { minimumFractionDigits: 2 }) : '----'}
-
                     </td>
                     <td className="text-end pe-4 py-3">
                       {tx.isRefundable && (
                         <button
-                          className="btn btn-sm btn-outline-secondary"
-                          style={{ fontSize: '0.7rem' }}
+                          className="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1"
+                          style={{ fontSize: '0.7rem', whiteSpace: 'nowrap' }}
                           onClick={() => {
-                            console.log('🔘 Click en botón devolución:', tx);
                             setRefundModal({ show: true, tx })
                           }}
                         >
-                          ↩️ Solicitar Devolución
+                          ↩️ Devolución
                         </button>
                       )}
                     </td>
