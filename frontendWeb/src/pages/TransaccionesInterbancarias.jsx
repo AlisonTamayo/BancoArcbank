@@ -19,6 +19,7 @@ export default function Interbank() {
 
     // IDEMPOTENCIA: Clave única por intención de pago
     const [idempotencyKey, setIdempotencyKey] = useState("");
+    const [loadingMsg, setLoadingMsg] = useState("Conectando con la red...");
 
     useEffect(() => {
         // Bancos registrados en el Switch (Quemados por requerimiento)
@@ -36,25 +37,40 @@ export default function Interbank() {
         setLoading(true);
         setError("");
 
-        // FORZAR RENDERIZADO VISUAL ANTES DE INICIAR POLLING
+        // MAQUINA DE ESTADOS VISUAL (Simulada mientras backend procesa)
+        const msgs = [
+            `Conectando con ${banks.find(b => b.codigo === toInfo.bank)?.nombre || 'Banco Destino'}...`,
+            "Verificando existencia de cuenta destino...",
+            "Validando disponibilidad de fondos...",
+            "Ejecutando transferencia en Switch ISO 20022...",
+            "Recibiendo confirmación final..."
+        ];
+        setLoadingMsg(msgs[0]);
+        let msgIdx = 0;
+        const intervalId = setInterval(() => {
+            msgIdx = (msgIdx + 1) % msgs.length;
+            setLoadingMsg(msgs[msgIdx]);
+        }, 2200); // Cambiar mensaje cada 2.2 seg
+
+        // FORZAR RENDERIZADO VISUAL
         await new Promise(resolve => setTimeout(resolve, 50));
 
         if (!amount || Number(amount) <= 0) {
             setError("El monto debe ser mayor a 0.");
             setLoading(false);
+            clearInterval(intervalId);
             return;
         }
+
         try {
             const selectedBank = banks.find(b => b.codigo === toInfo.bank);
-
-            // Reverted to Flat Structure as required by backend API Contract
             const req = {
                 tipoOperacion: "TRANSFERENCIA_INTERBANCARIA",
                 idCuentaOrigen: Number(fromAccId),
                 idCuentaDestino: null,
                 monto: Number(amount),
                 canal: "WEB_LUXURY",
-                referencia: idempotencyKey, // CLAVE DE IDEMPOTENCIA
+                referencia: idempotencyKey, // IDEMPOTENCIA
                 descripcion: `RED INT: ${selectedBank?.nombre || toInfo.bank} - REF: ${toInfo.name}`,
                 idSucursal: 1,
                 cuentaExterna: toInfo.account,
@@ -62,12 +78,22 @@ export default function Interbank() {
                 nombreDestinatario: toInfo.name
             };
             const res = await realizarTransferenciaInterbancaria(req);
+
+            clearInterval(intervalId); // Stop rotation
             if (res?.saldoResultante !== undefined) updateAccountBalance(fromAccId, res.saldoResultante);
             else await refreshAccounts();
             setStep(3);
         } catch (e) {
+            clearInterval(intervalId); // Stop rotation
             setError(parseIsoError(e.message));
         } finally {
+            // No hacemos setLoading(false) aquí si fue éxito (step 3), solo si hubo error o early return
+            // Pero como setStep(3) cambia la vista, si step=3 el loading ya no importa tanto, 
+            // PERO la lógica de renderizado usa "loading" para decidir qué mostrar.
+            // Si step=3, loading debería ser false para mostrar el Success screen? 
+            // Mi lógica JSX: {step === 3 && (...)}. El bloque loading/form está bajo {step === 2}.
+            // Así que si paso a step 3, el bloque loading desaparece.
+            // Para asegurar, setLoading(false) está bien.
             setLoading(false);
         }
     };
@@ -142,7 +168,7 @@ export default function Interbank() {
                                 <div className="animate-slide-up text-center py-5">
                                     <div className="spinner-border text-warning mb-4" style={{ width: '3rem', height: '3rem' }} role="status"></div>
                                     <h4 className="fw-bold mb-2">PROCESANDO TRANSACCION</h4>
-                                    <p className="text-muted blink-text">Conectando con {toInfo.bank || 'Banco Destino'} para validación...</p>
+                                    <p className="text-muted blink-text fs-5">{loadingMsg}</p>
                                     <small className="text-secondary d-block mt-3">Por favor no cierre esta ventana</small>
                                 </div>
                             ) : (
