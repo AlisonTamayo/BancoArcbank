@@ -96,6 +96,24 @@ public class WebhookController {
 
                 } catch (Exception e) {
                         log.error("❌ Error procesando abono: {}", e.getMessage());
+
+                        // Validación Síncrona de Cuenta (Guía ISO 20022)
+                        if (e.getMessage() != null && e.getMessage().contains("Cuenta destino no encontrada")) {
+                                return ResponseEntity.status(422).body(Map.of(
+                                                "code", "AC01",
+                                                "message",
+                                                "AC01 - Número de cuenta incorrecto o inexistente en Banco Destino",
+                                                "timestamp", java.time.Instant.now().toString()));
+                        }
+
+                        // Validación de Cuenta Cerrada / Inactiva (si se lanzara esa excepción)
+                        if (e.getMessage() != null && e.getMessage().contains("Cuenta cerrada")) { // Ejemplo hipotético
+                                return ResponseEntity.status(422).body(Map.of(
+                                                "code", "AC04",
+                                                "message", "AC04 - Cuenta cerrada",
+                                                "timestamp", java.time.Instant.now().toString()));
+                        }
+
                         return ResponseEntity.status(422).body(Map.of("status", "NACK", "error", e.getMessage()));
                 }
         }
