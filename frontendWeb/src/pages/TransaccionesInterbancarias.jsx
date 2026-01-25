@@ -122,11 +122,22 @@ export default function Interbank() {
                             </div>
                         )}
 
-                        {step === 2 && (
+                        {/* PANTALLA DE CARGA (PROCESANDO) */}
+                        {loading && (
+                            <div className="animate-slide-up text-center py-5">
+                                <div className="spinner-border text-warning mb-4" style={{ width: '3rem', height: '3rem' }} role="status"></div>
+                                <h4 className="fw-bold mb-2">PROCESANDO TRANSACCION</h4>
+                                <p className="text-muted blink-text">Conectando con {toInfo.bank || 'Banco Destino'} para validación...</p>
+                                <small className="text-secondary d-block mt-3">Por favor no cierre esta ventana</small>
+                            </div>
+                        )}
+
+                        {!loading && step === 2 && (
                             <div className="animate-slide-up">
                                 <div className="text-center mb-4">
                                     <h4 className="fw-bold">CONFIRMACIÓN DE FONDOS</h4>
                                 </div>
+                                {/* ... existing form content ... */}
                                 <div className="mb-4">
                                     <label className="label-text">CUENTA DE ORIGEN (ARCBANK)</label>
                                     <select className="form-control form-control-luxury" value={fromAccId} onChange={e => setFromAccId(e.target.value)}>
@@ -148,7 +159,7 @@ export default function Interbank() {
                                     </div>
                                     <div className="col-8">
                                         <button className="btn btn-primary w-100 py-3 fw-bold" onClick={handleConfirm} disabled={loading}>
-                                            {loading ? 'MODULANDO CAPITAL...' : 'EJECUTAR TRANSFERENCIA'}
+                                            EJECUTAR TRANSFERENCIA
                                         </button>
                                     </div>
                                 </div>
@@ -158,9 +169,13 @@ export default function Interbank() {
                         {step === 3 && (
                             <div className="text-center animate-slide-up py-4">
                                 <div className="display-1 text-warning mb-4"><FiCheckCircle /></div>
-                                <h2 className="fw-bold mb-3">ENVÍO REGISTRADO</h2>
-                                <p className="text-muted mb-5">La solicitud ha sido enviada a la cámara de compensación satisfactoriamente.</p>
-                                <button className="btn btn-primary px-5 py-3" onClick={() => navigate('/movimientos')}>VOLVER AL PANEL CENTRAL</button>
+                                <h2 className="fw-bold mb-3 success-text text-gradient">¡TRANSFERENCIA EXITOSA!</h2>
+                                <p className="text-muted mb-5">
+                                    Los fondos han sido <strong className="text-white">acreditados confirmados</strong> en la cuenta destino.
+                                    <br />
+                                    <span className="small text-secondary">ID Transacción: {new Date().getTime().toString().slice(-8)}</span>
+                                </p>
+                                <button className="btn btn-primary px-5 py-3" onClick={() => navigate('/movimientos')}>VER COMPROBANTE</button>
                             </div>
                         )}
                     </div>

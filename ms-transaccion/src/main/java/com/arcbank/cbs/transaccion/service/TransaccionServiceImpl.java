@@ -62,6 +62,8 @@ public class TransaccionServiceImpl implements TransaccionService {
                 .build();
 
         try {
+            String nuevoEstado = "COMPLETADA"; // Default para operaciones locales
+
             BigDecimal saldoImpactado = switch (tipoOp) {
                 case "DEPOSITO" -> {
                     if (request.getIdCuentaDestino() == null)
@@ -69,7 +71,6 @@ public class TransaccionServiceImpl implements TransaccionService {
 
                     trx.setIdCuentaDestino(request.getIdCuentaDestino());
                     trx.setIdCuentaOrigen(null);
-
                     yield procesarSaldo(trx.getIdCuentaDestino(), request.getMonto());
                 }
 
@@ -79,7 +80,6 @@ public class TransaccionServiceImpl implements TransaccionService {
 
                     trx.setIdCuentaOrigen(request.getIdCuentaOrigen());
                     trx.setIdCuentaDestino(null);
-
                     yield procesarSaldo(trx.getIdCuentaOrigen(), request.getMonto().negate());
                 }
 
@@ -97,17 +97,15 @@ public class TransaccionServiceImpl implements TransaccionService {
 
                     BigDecimal saldoOrigen = procesarSaldo(trx.getIdCuentaOrigen(), request.getMonto().negate());
                     BigDecimal saldoDestino = procesarSaldo(trx.getIdCuentaDestino(), request.getMonto());
-
                     trx.setSaldoResultanteDestino(saldoDestino);
-
                     yield saldoOrigen;
                 }
 
                 case "TRANSFERENCIA_SALIDA", "TRANSFERENCIA_INTERBANCARIA" -> {
                     if (request.getIdCuentaOrigen() == null)
-                        throw new BusinessException("Falta cuenta origen para transferencia externa.");
-                    if (request.getCuentaExterna() == null || request.getCuentaExterna().isBlank())
-                        throw new BusinessException("Falta cuenta destino externa para transferencia interbancaria.");
+                        throw new BusinessException("Falta cuenta origen.");
+                    if (request.getCuentaExterna() == null)
+                        throw new BusinessException("Falta cuenta destino externa.");
 
                     trx.setIdCuentaOrigen(request.getIdCuentaOrigen());
                     trx.setIdCuentaDestino(null);
@@ -128,9 +126,7 @@ public class TransaccionServiceImpl implements TransaccionService {
                     }
 
                     try {
-                        log.info("Enviando transferencia al switch via SwitchClientService: {} -> {}",
-                                numeroCuentaOrigen,
-                                request.getCuentaExterna());
+                        log.info("Enviando transferencia al switch: {}", request.getCuentaExterna());
 
                         com.arcbank.cbs.transaccion.dto.TxRequest txRequest = com.arcbank.cbs.transaccion.dto.TxRequest
                                 .builder()
@@ -138,7 +134,7 @@ public class TransaccionServiceImpl implements TransaccionService {
                                 .debtorName(nombreOrigen)
                                 .creditorAccount(request.getCuentaExterna())
                                 .creditorName(request.getNombreDestinatario() != null ? request.getNombreDestinatario()
-                                        : "Beneficiario Externo")
+                                        : "Beneficiario")
                                 .targetBankId(
                                         request.getIdBancoExterno() != null ? request.getIdBancoExterno() : "UNKNOWN")
                                 .amount(request.getMonto())
@@ -146,13 +142,45 @@ public class TransaccionServiceImpl implements TransaccionService {
                                 .referenceId(trx.getReferencia())
                                 .build();
 
-                        String respuestaSwitch = switchClientService.enviarTransferencia(txRequest);
-                        log.info("Respuesta cruda del Switch: {}", respuestaSwitch);
+                        switchClientService.enviarTransferencia(txRequest);
+
+                        // --- Implementación Polling Síncrono (UX Sync) ---
+                        nuevoEstado = "PENDIENTE"; // Asumimos pendiente hasta confirmar
+                        boolean confirmado = false;
+
+                        // Máx 10 intentos de 1.5s = 15s timeout
+                        for (int i = 0; i < 10; i++) {
+                            try {
+                                Thread.sleep(1500);
+                            } catch (InterruptedException ie) {
+                                Thread.currentThread().interrupt();
+                            }
+
+                            Map<String, Object> estadoTx = switchClientService.consultarEstado(trx.getReferencia());
+                            if (estadoTx != null) {
+                                String status = (String) estadoTx.get("status");
+                                if ("COMPLETED".equalsIgnoreCase(status)) {
+                                    nuevoEstado = "COMPLETADA";
+                                    confirmado = true;
+                                    break;
+                                }
+                                if ("FAILED".equalsIgnoreCase(status)) {
+                                    String errorMsg = (String) estadoTx.getOrDefault("error", "Rechazo del Switch");
+                                    throw new RuntimeException(errorMsg); // Rompe para rollback
+                                }
+                                // Si es PENDING o RECEIVED, seguimos esperando
+                            }
+                        }
+
+                        if (!confirmado) {
+                            log.warn("Transferencia {} en TIMEOUT tras polling.", trx.getReferencia());
+                            // Se queda en PENDIENTE
+                        }
 
                     } catch (Exception e) {
-                        log.error("Error comunicando con switch, revirtiendo débito: {}", e.getMessage());
-                        procesarSaldo(trx.getIdCuentaOrigen(), request.getMonto());
-                        throw new BusinessException("Error comunicando con switch interbancario: " + e.getMessage());
+                        log.error("Error/Rechazo Switch: {}. Revertiendo.", e.getMessage());
+                        procesarSaldo(trx.getIdCuentaOrigen(), request.getMonto()); // Rollback
+                        throw new BusinessException("Transferencia fallida: " + e.getMessage());
                     }
 
                     yield saldoOrigen;
@@ -160,19 +188,17 @@ public class TransaccionServiceImpl implements TransaccionService {
 
                 case "TRANSFERENCIA_ENTRADA" -> {
                     if (request.getIdCuentaDestino() == null)
-                        throw new BusinessException("Falta cuenta destino para recepción externa.");
-
+                        throw new BusinessException("Falta cuenta destino.");
                     trx.setIdCuentaDestino(request.getIdCuentaDestino());
                     trx.setIdCuentaOrigen(null);
-
                     yield procesarSaldo(trx.getIdCuentaDestino(), request.getMonto());
                 }
 
-                default -> throw new BusinessException("Tipo de operación no soportado: " + tipoOp);
+                default -> throw new BusinessException("Tipo no soportado: " + tipoOp);
             };
 
             trx.setSaldoResultante(saldoImpactado);
-            trx.setEstado("COMPLETADA");
+            trx.setEstado(nuevoEstado);
 
             Transaccion guardada = transaccionRepository.save(trx);
             log.info("Transacción guardada ID: {}", guardada.getIdTransaccion());

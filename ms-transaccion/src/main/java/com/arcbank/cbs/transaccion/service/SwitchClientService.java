@@ -150,4 +150,13 @@ public class SwitchClientService {
                         }
                 };
         }
+
+        public java.util.Map<String, Object> consultarEstado(String instructionId) {
+                try {
+                        return switchClient.consultarEstado(instructionId);
+                } catch (Exception e) {
+                        log.warn("Error consultando estado de Tx {}: {}", instructionId, e.getMessage());
+                        return null;
+                }
+        }
 }

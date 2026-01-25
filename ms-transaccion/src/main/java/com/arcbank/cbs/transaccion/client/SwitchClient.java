@@ -29,4 +29,7 @@ public interface SwitchClient {
 
         @GetMapping("/api/v1/reference/iso20022/errors")
         List<Map<String, String>> obtenerMotivosDevolucion();
+
+        @GetMapping("/api/v2/switch/transfers/{instructionId}")
+        Map<String, Object> consultarEstado(@PathVariable("instructionId") String instructionId);
 }
