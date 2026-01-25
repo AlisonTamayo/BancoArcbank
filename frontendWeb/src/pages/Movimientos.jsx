@@ -4,7 +4,24 @@ import { getMovimientos, solicitarReverso, getMotivosDevolucion, parseIsoError }
 import { FiFilter, FiDownload, FiSearch } from 'react-icons/fi'
 
 export default function Movimientos() {
-  /* ... */
+  const { state, refreshAccounts } = useAuth()
+  const [selectedAccId, setSelectedAccId] = useState('')
+  const [txs, setTxs] = useState([])
+  const [loading, setLoading] = useState(false)
+  const [refundModal, setRefundModal] = useState({ show: false, tx: null })
+  const [reason, setReason] = useState('FRAD')
+  const [reasonsList, setReasonsList] = useState([])
+
+  useEffect(() => {
+    getMotivosDevolucion()
+      .then(data => {
+        if (data && Array.isArray(data)) {
+          setReasonsList(data);
+          if (data.length > 0) setReason(data[0].code);
+        }
+      })
+      .catch(e => console.warn("No se pudo cargar catálogo de motivos:", e));
+  }, []);
 
   const handleRefund = async () => {
     /* ... (unchanged code) ... */
