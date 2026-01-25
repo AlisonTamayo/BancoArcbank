@@ -17,6 +17,9 @@ export default function Interbank() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
 
+    // IDEMPOTENCIA: Clave única por intención de pago
+    const [idempotencyKey, setIdempotencyKey] = useState("");
+
     useEffect(() => {
         // Bancos registrados en el Switch (Quemados por requerimiento)
         const hardcodedBanks = [
@@ -51,6 +54,7 @@ export default function Interbank() {
                 idCuentaDestino: null,
                 monto: Number(amount),
                 canal: "WEB_LUXURY",
+                referencia: idempotencyKey, // CLAVE DE IDEMPOTENCIA
                 descripcion: `RED INT: ${selectedBank?.nombre || toInfo.bank} - REF: ${toInfo.name}`,
                 idSucursal: 1,
                 cuentaExterna: toInfo.account,
@@ -120,7 +124,13 @@ export default function Interbank() {
                                     <label className="label-text">BENEFICIARIO (NOMBRES)</label>
                                     <input className="form-control form-control-luxury" value={toInfo.name} onChange={e => setToInfo({ ...toInfo, name: e.target.value })} placeholder="Ej: Bruce Wayne" />
                                 </div>
-                                <button className="btn btn-primary w-100 py-3 d-flex align-items-center justify-content-center gap-2" onClick={() => setStep(2)}>
+                                <button className="btn btn-primary w-100 py-3 d-flex align-items-center justify-content-center gap-2"
+                                    onClick={() => {
+                                        // Generar UUID único para esta intención de pago (Idempotencia)
+                                        const uuid = window.crypto?.randomUUID ? window.crypto.randomUUID() : Date.now().toString();
+                                        setIdempotencyKey(uuid);
+                                        setStep(2);
+                                    }}>
                                     SIGUIENTE PASO <FiArrowRight />
                                 </button>
                             </div>
