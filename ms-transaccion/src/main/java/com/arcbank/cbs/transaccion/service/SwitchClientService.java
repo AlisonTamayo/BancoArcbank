@@ -99,9 +99,9 @@ public class SwitchClientService {
                                         isoCode = "RC01";
                         }
 
-                        // Lanzar excepción con el formato que entiende nuestro Frontend
-                        // (parserIsoError)
-                        throw new RuntimeException(isoCode + " - Rechazo del Switch: " + errorMsg);
+                        // Lanzar excepción limpia
+                        String finalMsg = isoCode.equals("MS03") ? "Error técnico en Switch/Banco Destino" : errorMsg;
+                        throw new RuntimeException(isoCode + " - " + finalMsg);
 
                 } catch (Exception e) {
                         log.error("Error técnico comunicación Switch: {}", e.getMessage());

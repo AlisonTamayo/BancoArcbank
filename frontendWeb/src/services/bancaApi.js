@@ -40,15 +40,17 @@ export function parseIsoError(msg) {
 
   const map = {
     'AC00': '✅ Transacción completada exitosamente.',
-    'AM04': '🚫 Saldo insuficiente para esta operación.',
-    'AC01': '❌ cuenta inválida. Verifica el número.',
-    'AC04': '🔒 Cuenta cerrada o inactiva en destino.',
-    'MS03': '⚠️ Error técnico en el otro banco. Intenta luego.',
-    'MD01': '⚠️ Operación duplicada. Ya se procesó.',
-    'AG01': '⛔ Operación no permitida por políticas.',
-    'BE01': '👮 Datos inconsistentes. Rechazada por seguridad.',
-    'RC01': '📝 Error en datos enviados. Contacte soporte.',
-    'AC03': '❌ Cuenta destino inválida.'
+    'AM04': '🚫 Saldo insuficiente en su cuenta.',
+    'AC01': '❌ El número de cuenta destino no existe.',
+    'AC03': '💵 Moneda no permitida. Solo se aceptan Dólares.',
+    'AC04': '🔒 La cuenta destino está cerrada.',
+    'AG01': '⛔ Transacción no permitida / Cuenta bloqueada.',
+    'CH03': '📉 El monto excede el límite permitido ($10k).',
+    'DUPL': '⚠️ Esta transferencia ya fue procesada (Duplicada).',
+    'MD01': '⚠️ Esta transferencia ya fue procesada (Duplicada).', // Alias de DUPL
+    'MS03': '📡 Error en la red interbancaria. Intente más tarde.',
+    'RC01': '📝 Error interno de formato (Sintaxis).',
+    'BE01': '👮 Inconsistencia de Datos (Rechazo Seguridad).'
   };
 
   if (code && map[code]) {

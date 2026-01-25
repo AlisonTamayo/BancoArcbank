@@ -32,6 +32,10 @@ export default function Interbank() {
     const handleConfirm = async () => {
         setLoading(true);
         setError("");
+
+        // FORZAR RENDERIZADO VISUAL ANTES DE INICIAR POLLING
+        await new Promise(resolve => setTimeout(resolve, 50));
+
         if (!amount || Number(amount) <= 0) {
             setError("El monto debe ser mayor a 0.");
             setLoading(false);
