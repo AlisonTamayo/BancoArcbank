@@ -5,10 +5,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 
-/**
- * DTO simple para recibir el nuevo saldo desde microservicios externos.
- * Evita problemas de serialización JSON con BigDecimal directo.
- */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

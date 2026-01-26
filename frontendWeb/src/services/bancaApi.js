@@ -44,7 +44,7 @@ export function parseIsoError(msg) {
     'AC01': '❌ El número de cuenta destino no existe.',
     'AC03': '💵 Moneda no permitida. Solo se aceptan Dólares.',
     'AC04': '🔒 La cuenta destino está cerrada.',
-    'AG01': '⛔ Transacción no permitida / Cuenta bloqueada.',
+    'AG01': '⚠️ OPERACIÓN RESTRINGIDA: Su institución está en modo de cierre operativo (Solo Recepción).',
     'CH03': '📉 El monto excede el límite permitido ($10k).',
     'DUPL': '⚠️ Esta transferencia ya fue procesada (Duplicada).',
     'MD01': '⚠️ Esta transferencia ya fue procesada (Duplicada).', // Alias de DUPL
