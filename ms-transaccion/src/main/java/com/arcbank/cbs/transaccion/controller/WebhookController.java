@@ -99,17 +99,14 @@ public class WebhookController {
 
                         if (e.getMessage() != null && e.getMessage().contains("Cuenta destino no encontrada")) {
                                 return ResponseEntity.status(422).body(Map.of(
-                                                "code", "AC01",
-                                                "message",
-                                                "AC01 - Número de cuenta incorrecto o inexistente en Banco Destino",
-                                                "timestamp", java.time.Instant.now().toString()));
+                                                "codigo", "AC01",
+                                                "mensaje", "La cuenta destino no existe en nuestros registros"));
                         }
 
-                        if (e.getMessage() != null && e.getMessage().contains("Cuenta cerrada")) { // Ejemplo hipotético
+                        if (e.getMessage() != null && e.getMessage().contains("Cuenta cerrada")) {
                                 return ResponseEntity.status(422).body(Map.of(
-                                                "code", "AC04",
-                                                "message", "AC04 - Cuenta cerrada",
-                                                "timestamp", java.time.Instant.now().toString()));
+                                                "codigo", "AC04",
+                                                "mensaje", "Cuenta cerrada o inactiva"));
                         }
 
                         return ResponseEntity.status(422).body(Map.of("status", "NACK", "error", e.getMessage()));
