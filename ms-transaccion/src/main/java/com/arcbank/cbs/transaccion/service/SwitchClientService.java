@@ -93,6 +93,8 @@ public class SwitchClientService {
                                         isoCode = "AG01";
                                 else if (errorMsg.contains("AM04"))
                                         isoCode = "AM04";
+                                else if (errorMsg.contains("CH03"))
+                                        isoCode = "CH03"; // Límite Excedido
                                 else if (errorMsg.contains("AM05") || errorMsg.contains("DUPL"))
                                         isoCode = "MD01";
                                 else if (errorMsg.contains("RC01"))
