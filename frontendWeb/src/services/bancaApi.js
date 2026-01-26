@@ -48,7 +48,7 @@ export function parseIsoError(msg) {
     'CH03': '📉 El monto excede el límite permitido ($10k).',
     'DUPL': '⚠️ Esta transferencia ya fue procesada (Duplicada).',
     'MD01': '⚠️ Esta transferencia ya fue procesada (Duplicada).', // Alias de DUPL
-    'MS03': '📡 Error en la red interbancaria. Intente más tarde.',
+    'MS03': '📡 Hubo un problema de comunicación con la red interbancaria (Error Técnico).',
     'RC01': '📝 Error interno de formato (Sintaxis).',
     'BE01': '👮 Inconsistencia de Datos (Rechazo Seguridad).'
   };
