@@ -178,6 +178,13 @@ export async function getMotivosDevolucion() {
   return await request('/api/transacciones/motivos-devolucion');
 }
 
+export async function validarCuenta(targetBankId, targetAccountNumber) {
+  return await request('/api/transacciones/validar-cuenta', {
+    method: 'POST',
+    body: JSON.stringify({ targetBankId, targetAccountNumber })
+  });
+}
+
 const bancaApi = {
   getClientePorIdentificacion,
   getCuentaPorNumero,
@@ -188,7 +195,8 @@ const bancaApi = {
   getBancos,
   crearCuentaWeb,
   solicitarReverso,
-  getMotivosDevolucion
+  getMotivosDevolucion,
+  validarCuenta
 }
 
 export default bancaApi;

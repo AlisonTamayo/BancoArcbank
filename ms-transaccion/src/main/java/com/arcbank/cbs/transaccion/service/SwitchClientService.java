@@ -191,4 +191,21 @@ public class SwitchClientService {
                         return null;
                 }
         }
+
+        public java.util.Map<String, Object> validarCuenta(String targetBankId, String targetAccountNumber) {
+                java.util.Map<String, Object> header = java.util.Map.of("originatingBankId", bancoCodigo);
+                java.util.Map<String, Object> body = java.util.Map.of(
+                                "targetBankId", targetBankId,
+                                "targetAccountNumber", targetAccountNumber);
+
+                java.util.Map<String, Object> request = java.util.Map.of("header", header, "body", body);
+
+                try {
+                        return switchClient.validarCuentaExterna(request);
+                } catch (Exception e) {
+                        log.error("Error validando cuenta externa {} en {}: {}", targetAccountNumber, targetBankId,
+                                        e.getMessage());
+                        throw new RuntimeException("Error validando cuenta: " + e.getMessage());
+                }
+        }
 }

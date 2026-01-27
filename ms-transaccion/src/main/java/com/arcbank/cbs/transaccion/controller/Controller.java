@@ -46,4 +46,22 @@ public class Controller {
     public ResponseEntity<List<java.util.Map<String, String>>> obtenerMotivosDevolucion() {
         return ResponseEntity.ok(transaccionService.obtenerMotivosDevolucion());
     }
+
+    @PostMapping("/validar-cuenta")
+    @Operation(summary = "Validar cuenta externa en otro banco (Account Lookup)")
+    public ResponseEntity<?> validarCuentaExterna(@RequestBody java.util.Map<String, String> request) {
+        String targetBankId = request.get("targetBankId");
+        String targetAccountNumber = request.get("targetAccountNumber");
+
+        if (targetBankId == null || targetAccountNumber == null) {
+            return ResponseEntity.badRequest()
+                    .body(java.util.Map.of("error", "Faltan datos: targetBankId o targetAccountNumber"));
+        }
+
+        try {
+            return ResponseEntity.ok(transaccionService.validarCuentaExterna(targetBankId, targetAccountNumber));
+        } catch (Exception e) {
+            return ResponseEntity.status(400).body(java.util.Map.of("status", "ERROR", "message", e.getMessage()));
+        }
+    }
 }

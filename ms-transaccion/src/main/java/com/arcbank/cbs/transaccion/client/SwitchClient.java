@@ -32,4 +32,7 @@ public interface SwitchClient {
 
         @GetMapping("/api/v2/switch/transfers/{instructionId}")
         Map<String, Object> consultarEstado(@PathVariable("instructionId") String instructionId);
+
+        @PostMapping("/api/v2/switch/accounts/lookup")
+        Map<String, Object> validarCuentaExterna(@RequestBody Map<String, Object> request);
 }

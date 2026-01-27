@@ -23,10 +23,32 @@ public class WebhookController {
         private final com.fasterxml.jackson.databind.ObjectMapper objectMapper;
 
         @PostMapping("/api/core/transferencias/recepcion")
+        @SuppressWarnings("unchecked")
         public ResponseEntity<?> recibirWebhookUnificado(@RequestBody Map<String, Object> payload) {
                 try {
+                        Map<String, Object> header = (Map<String, Object>) payload.get("header");
                         Map<String, Object> body = (Map<String, Object>) payload.get("body");
 
+                        // 1. Detección de Account Verification (acmt.023)
+                        if (header != null && "acmt.023.001.02".equals(header.get("messageNamespace"))) {
+                                log.info("🔍 Webhook detectado como CONSULTA DE CUENTA (acmt.023)");
+                                String accountId = null;
+                                if (body != null && body.get("accountIdentification") != null) {
+                                        Map<String, Object> acctId = (Map<String, Object>) body
+                                                        .get("accountIdentification");
+                                        accountId = (String) acctId.get("accountId");
+                                }
+
+                                if (accountId == null) {
+                                        return ResponseEntity.badRequest()
+                                                        .body(Map.of("status", "NACK", "error", "Missing accountId"));
+                                }
+
+                                Map<String, Object> result = transaccionService.validarCuentaLocal(accountId);
+                                return ResponseEntity.ok(Map.of("status", "SUCCESS", "data", result));
+                        }
+
+                        // 2. Detección de Devoluciones (pacs.004)
                         if (body != null && (body.containsKey("originalInstructionId")
                                         || body.containsKey("returnReason"))) {
                                 log.info("🔄 Webhook detectado como DEVOLUCIÓN (pacs.004)");
@@ -34,6 +56,7 @@ public class WebhookController {
                                                 payload, com.arcbank.cbs.transaccion.dto.SwitchDevolucionRequest.class);
                                 return recibirDevolucion(req);
                         } else {
+                                // 3. Detección de Transferencia (pacs.008) por descarte
                                 log.info("📥 Webhook detectado como TRANSFERENCIA (pacs.008)");
                                 SwitchTransferRequest req = objectMapper.convertValue(payload,
                                                 SwitchTransferRequest.class);

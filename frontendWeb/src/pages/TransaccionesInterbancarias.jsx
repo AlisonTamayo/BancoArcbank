@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
-import { realizarTransferenciaInterbancaria, parseIsoError } from "../services/bancaApi";
+import { realizarTransferenciaInterbancaria, parseIsoError, validarCuenta } from "../services/bancaApi";
 import { useNavigate } from "react-router-dom";
-import { FiArrowLeft, FiArrowRight, FiCheckCircle, FiGlobe } from "react-icons/fi";
+import { FiArrowLeft, FiArrowRight, FiCheckCircle, FiGlobe, FiSearch, FiXCircle } from "react-icons/fi";
 
 export default function Interbank() {
     const { state, refreshAccounts, updateAccountBalance } = useAuth();
@@ -16,6 +16,9 @@ export default function Interbank() {
     const [banks, setBanks] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
+
+    // VALIDACIÓN DE CUENTA (Account Lookup)
+    const [validation, setValidation] = useState({ status: 'idle', msg: '' }); // idle, validating, valid, invalid
 
     // IDEMPOTENCIA: Clave única por intención de pago
     const [idempotencyKey, setIdempotencyKey] = useState("");
@@ -32,6 +35,32 @@ export default function Interbank() {
 
         if (accounts.length > 0 && !fromAccId) setFromAccId(accounts[0].id);
     }, [accounts.length, fromAccId]);
+
+    const handleValidateAccount = async () => {
+        if (!toInfo.bank || !toInfo.account) {
+            setValidation({ status: 'invalid', msg: 'Seleccione Banco y Cuenta primero.' });
+            return;
+        }
+
+        setValidation({ status: 'validating', msg: '' });
+        setToInfo(prev => ({ ...prev, name: '' })); // Limpiar nombre anterior
+
+        try {
+            const res = await validarCuenta(toInfo.bank, toInfo.account);
+
+            // La API devuelve: { status: "SUCCESS", data: { exists: true, ownerName: "...", ... } }
+            // O lanza error si 404/500
+            if (res && res.data && res.data.exists) {
+                setValidation({ status: 'valid', msg: `Cuenta verificada: ${res.data.ownerName}` });
+                setToInfo(prev => ({ ...prev, name: res.data.ownerName }));
+            } else {
+                setValidation({ status: 'invalid', msg: 'Cuenta no encontrada en Banco Destino.' });
+            }
+        } catch (e) {
+            console.error("Error validando:", e);
+            setValidation({ status: 'invalid', msg: 'No se pudo validar la cuenta (Error Técnico o No Existe).' });
+        }
+    };
 
     const handleConfirm = async () => {
         setLoading(true);
@@ -87,13 +116,6 @@ export default function Interbank() {
             clearInterval(intervalId); // Stop rotation
             setError(parseIsoError(e.message));
         } finally {
-            // No hacemos setLoading(false) aquí si fue éxito (step 3), solo si hubo error o early return
-            // Pero como setStep(3) cambia la vista, si step=3 el loading ya no importa tanto, 
-            // PERO la lógica de renderizado usa "loading" para decidir qué mostrar.
-            // Si step=3, loading debería ser false para mostrar el Success screen? 
-            // Mi lógica JSX: {step === 3 && (...)}. El bloque loading/form está bajo {step === 2}.
-            // Así que si paso a step 3, el bloque loading desaparece.
-            // Para asegurar, setLoading(false) está bien.
             setLoading(false);
         }
     };
@@ -133,7 +155,10 @@ export default function Interbank() {
                                 </div>
                                 <div className="mb-4">
                                     <label className="label-text">INSTITUCIÓN FINANCIERA</label>
-                                    <select className="form-control form-control-luxury" value={toInfo.bank} onChange={e => setToInfo({ ...toInfo, bank: e.target.value })}>
+                                    <select className="form-control form-control-luxury" value={toInfo.bank} onChange={e => {
+                                        setToInfo({ ...toInfo, bank: e.target.value });
+                                        setValidation({ status: 'idle', msg: '' }); // Resetear validación al cambiar banco
+                                    }}>
                                         <option value="">Seleccione banco receptor...</option>
                                         {banks.map(b => (
                                             <option key={b.codigo} value={b.codigo}>
@@ -144,11 +169,43 @@ export default function Interbank() {
                                 </div>
                                 <div className="mb-4">
                                     <label className="label-text">NÚMERO DE CUENTA</label>
-                                    <input className="form-control form-control-luxury" value={toInfo.account} onChange={e => setToInfo({ ...toInfo, account: e.target.value })} placeholder="X-XXXX-XXXXX" />
+                                    <div className="input-group">
+                                        <input className="form-control form-control-luxury" value={toInfo.account} onChange={e => {
+                                            setToInfo({ ...toInfo, account: e.target.value });
+                                            setValidation({ status: 'idle', msg: '' }); // Resetear validación al cambiar cuenta
+                                        }} placeholder="X-XXXX-XXXXX" />
+                                        <button
+                                            className="btn btn-outline-warning"
+                                            type="button"
+                                            onClick={handleValidateAccount}
+                                            disabled={validation.status === 'validating' || !toInfo.account || !toInfo.bank}
+                                        >
+                                            {validation.status === 'validating' ?
+                                                <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                                                : <div className="d-flex align-items-center gap-2"><FiSearch /> VALIDAR</div>
+                                            }
+                                        </button>
+                                    </div>
+                                    {/* MENSAJES DE VALIDACIÓN */}
+                                    {validation.status === 'valid' && (
+                                        <div className="mt-2 text-success small d-flex align-items-center gap-1 animate-slide-up">
+                                            <FiCheckCircle /> {validation.msg}
+                                        </div>
+                                    )}
+                                    {validation.status === 'invalid' && (
+                                        <div className="mt-2 text-danger small d-flex align-items-center gap-1 animate-slide-up">
+                                            <FiXCircle /> {validation.msg}
+                                        </div>
+                                    )}
                                 </div>
                                 <div className="mb-4">
                                     <label className="label-text">BENEFICIARIO (NOMBRES)</label>
-                                    <input className="form-control form-control-luxury" value={toInfo.name} onChange={e => setToInfo({ ...toInfo, name: e.target.value })} placeholder="Ej: Bruce Wayne" />
+                                    <input className="form-control form-control-luxury" value={toInfo.name}
+                                        onChange={e => setToInfo({ ...toInfo, name: e.target.value })}
+                                        placeholder="Ej: Bruce Wayne"
+                                        readOnly={validation.status === 'valid'} // Solo lectura si ya se validó
+                                    />
+                                    {validation.status === 'valid' && <small className="text-secondary">Autocargado desde Cuenta</small>}
                                 </div>
                                 <button className="btn btn-primary w-100 py-3 d-flex align-items-center justify-content-center gap-2"
                                     onClick={() => {
@@ -156,7 +213,9 @@ export default function Interbank() {
                                         const uuid = window.crypto?.randomUUID ? window.crypto.randomUUID() : Date.now().toString();
                                         setIdempotencyKey(uuid);
                                         setStep(2);
-                                    }}>
+                                    }}
+                                    disabled={validation.status !== 'valid'} // BLOQUEAR HASTA VALIDAR
+                                >
                                     SIGUIENTE PASO <FiArrowRight />
                                 </button>
                             </div>

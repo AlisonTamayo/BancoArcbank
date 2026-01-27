@@ -466,12 +466,33 @@ public class TransaccionServiceImpl implements TransaccionService {
     @Transactional
     public void procesarDevolucionEntrante(com.arcbank.cbs.transaccion.dto.SwitchDevolucionRequest request) {
         String originalInstructionId = request.getBody().getOriginalInstructionId();
-        String returnInstructionId = request.getBody().getReturnInstructionId() != null
-                ? request.getBody().getReturnInstructionId().trim()
-                : null;
+        // Mapeo: body.returnInstructionId -> Referencia (Unique Key Fix)
+        String returnInstructionId = request.getBody().getReturnInstructionId();
+        if (returnInstructionId == null || returnInstructionId.isBlank()) {
+            // Fallback si por alguna razón no viene (aunque es obligatorio)
+            log.warn("returnInstructionId viente vacío, generando uno nuevo para evitar colisión.");
+            returnInstructionId = java.util.UUID.randomUUID().toString();
+        }
+
         BigDecimal amount = request.getBody().getReturnAmount().getValue();
         String motivo = request.getBody().getReturnReason();
+        // Mapeo: header.originatingBankId -> IdBancoExterno
         String originatingBank = request.getHeader().getOriginatingBankId();
+
+        // Mapeo: header.creationDateTime -> FechaCreacion
+        java.time.LocalDateTime fechaCreacion;
+        try {
+            String dateStr = request.getHeader().getCreationDateTime();
+            if (dateStr != null) {
+                fechaCreacion = java.time.ZonedDateTime.parse(dateStr).toLocalDateTime();
+            } else {
+                fechaCreacion = java.time.LocalDateTime.now();
+            }
+        } catch (Exception e) {
+            log.warn("Error parseando fecha creación: {}. Usando fecha actual.",
+                    request.getHeader().getCreationDateTime());
+            fechaCreacion = java.time.LocalDateTime.now();
+        }
 
         log.info("🔄 Procesando devolución entrante (pacs.004). Original: {}, ReturnID: {}",
                 originalInstructionId, returnInstructionId);
@@ -510,17 +531,18 @@ public class TransaccionServiceImpl implements TransaccionService {
         BigDecimal nuevoSaldo = procesarSaldo(idCuentaAfectada, montoImpacto);
 
         Transaccion.TransaccionBuilder reversoBuilder = Transaccion.builder()
-                .referencia(returnInstructionId)
-                .idTransaccionReversa(trxOriginal.getIdTransaccion())
-                .tipoOperacion("REVERSO")
+                .referencia(returnInstructionId) // ✅ SOLUCION ERROR DUPLICATE KEY
+                .idTransaccionReversa(trxOriginal.getIdTransaccion()) // ✅ Link a original
+                .tipoOperacion("REVERSO") // ✅ Constante
                 .estado("COMPLETADA")
                 .monto(amount)
                 .saldoResultante(nuevoSaldo)
                 .idBancoExterno(originatingBank)
                 .cuentaExterna(trxOriginal.getCuentaExterna())
                 .descripcion("Reverso Switch: " + motivo)
-                .canal("SWITCH")
-                .fechaCreacion(java.time.LocalDateTime.now());
+                .canal("SWITCH") // ✅ Default
+                .idSucursal(0) // ✅ Default
+                .fechaCreacion(fechaCreacion); // ✅ Mapeo Fecha
 
         if (esReversoDeEntrada) {
             reversoBuilder.idCuentaOrigen(idCuentaAfectada);
@@ -559,5 +581,35 @@ public class TransaccionServiceImpl implements TransaccionService {
                     return estado;
                 })
                 .orElse("NOT_FOUND");
+    }
+
+    @Override
+    public Map<String, Object> validarCuentaExterna(String targetBankId, String targetAccountNumber) {
+        return switchClientService.validarCuenta(targetBankId, targetAccountNumber);
+    }
+
+    @Override
+    public Map<String, Object> validarCuentaLocal(String numeroCuenta) {
+        try {
+            Map<String, Object> cuenta = cuentaCliente.buscarPorNumero(numeroCuenta);
+            if (cuenta != null) {
+                String titular = cuenta.get("nombreTitular") != null ? cuenta.get("nombreTitular").toString()
+                        : "CLIENTE ARCBANK";
+                String estado = "ACTIVE"; // Default
+                // Si la cuenta tiene estado, usarlo
+                if (cuenta.get("estado") != null) {
+                    estado = cuenta.get("estado").toString();
+                }
+
+                return Map.of(
+                        "exists", true,
+                        "ownerName", titular,
+                        "currency", "USD", // Asumimos USD
+                        "status", estado);
+            }
+        } catch (Exception e) {
+            log.warn("Cuenta no encontrada para validación: {}", numeroCuenta);
+        }
+        return Map.of("exists", false);
     }
 }

@@ -24,4 +24,8 @@ public interface TransaccionService {
     List<java.util.Map<String, String>> obtenerMotivosDevolucion();
 
     String consultarEstadoPorInstructionId(String instructionId);
+
+    java.util.Map<String, Object> validarCuentaExterna(String targetBankId, String targetAccountNumber);
+
+    java.util.Map<String, Object> validarCuentaLocal(String numeroCuenta);
 }
