@@ -14,4 +14,10 @@ public class ClienteRequestDTO {
 
     @NotBlank(message = "Identificación es obligatoria")
     private String identificacion;
+
+    @NotBlank(message = "Clave es obligatoria")
+    private String clave;
+
+    @NotBlank(message = "Nombre completo es obligatorio")
+    private String nombreCompleto;
 }

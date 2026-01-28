@@ -22,6 +22,8 @@ public class ClienteServiceImpl implements ClienteService {
         cliente.setTipoCliente(request.getTipoCliente());
         cliente.setTipoIdentificacion(request.getTipoIdentificacion());
         cliente.setIdentificacion(request.getIdentificacion());
+        cliente.setClave(request.getClave());
+        cliente.setNombreCompleto(request.getNombreCompleto());
         cliente.setFechaRegistro(LocalDate.now());
         cliente.setEstado("ACTIVO");
 
