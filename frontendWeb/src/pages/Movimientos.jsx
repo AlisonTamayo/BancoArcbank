@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
-import { getMovimientos, solicitarReverso, getMotivosDevolucion, parseIsoError } from '../services/bancaApi'
+import { getMovimientos } from '../services/bancaApi'
 import { FiFilter, FiDownload, FiSearch } from 'react-icons/fi'
 
 export default function Movimientos() {
@@ -8,38 +8,6 @@ export default function Movimientos() {
   const [selectedAccId, setSelectedAccId] = useState('')
   const [txs, setTxs] = useState([])
   const [loading, setLoading] = useState(false)
-  const [refundModal, setRefundModal] = useState({ show: false, tx: null })
-  const [reason, setReason] = useState('FRAD')
-  const [reasonsList, setReasonsList] = useState([])
-
-  useEffect(() => {
-    getMotivosDevolucion()
-      .then(data => {
-        if (data && Array.isArray(data)) {
-          setReasonsList(data);
-          if (data.length > 0) setReason(data[0].code);
-        }
-      })
-      .catch(e => console.warn("No se pudo cargar catálogo de motivos:", e));
-  }, []);
-
-  const handleRefund = async () => {
-    /* ... (unchanged code) ... */
-
-    if (!refundModal.tx) return;
-    if (!window.confirm(`¿Estás seguro de solicitar el reverso de $${refundModal.tx.amount}?`)) return;
-
-    try {
-      await solicitarReverso(refundModal.tx.id, reason);
-      alert('✅ Solicitud de devolución enviada exitosamente.');
-      setRefundModal({ show: false, tx: null });
-      load();
-    } catch (e) {
-      // Usar el helper para traducir el error ISO a mensaje amigable
-      const friendlyMsg = parseIsoError(e.message);
-      alert(`❌ ${friendlyMsg}`);
-    }
-  }
 
   useEffect(() => {
     if (state.user.accounts?.length > 0 && !selectedAccId) {
@@ -154,7 +122,6 @@ export default function Movimientos() {
                   <th>TIPO</th>
                   <th className="text-end">MONTO</th>
                   <th className="text-end pe-4">BALANCE</th>
-                  <th className="text-end pe-4">ACCIONES</th>
                 </tr>
               </thead>
               <tbody>
@@ -179,19 +146,6 @@ export default function Movimientos() {
                     <td className="text-end pe-4 py-3 fw-bold text-white h5 mb-0" style={{ fontFamily: 'monospace' }}>
                       $ {tx.balance != null ? tx.balance.toLocaleString('en-US', { minimumFractionDigits: 2 }) : '----'}
                     </td>
-                    <td className="text-end pe-4 py-3">
-                      {tx.isRefundable && (
-                        <button
-                          className="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1"
-                          style={{ fontSize: '0.7rem', whiteSpace: 'nowrap' }}
-                          onClick={() => {
-                            setRefundModal({ show: true, tx })
-                          }}
-                        >
-                          ↩️ Devolución
-                        </button>
-                      )}
-                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -204,51 +158,6 @@ export default function Movimientos() {
           </div>
         </div>
       </div>
-
-      {/* Modal Devolución - Moved OUTSIDE animate-slide-up */}
-      {
-        refundModal.show && (
-          <div className="modal-backdrop-glass d-flex justify-content-center align-items-center"
-            style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.7)', zIndex: 9999 }}>
-            {console.log('🖥️ Renderizando Modal:', refundModal)}
-            <div className="glass-panel p-4" style={{ width: '400px', maxWidth: '90%' }}>
-              <h5 className="text-white fw-bold mb-3">↩️ Solicitar Devolución</h5>
-              <p className="text-muted small">
-                Estás a punto de revertir una transferencia de <strong className="text-white">${refundModal.tx.amount}</strong>.
-              </p>
-
-              <label className="label-text mb-2">MOTIVO DEL RECLAMO</label>
-              <select className="form-control form-control-luxury mb-4"
-                value={reason} onChange={e => setReason(e.target.value)}>
-                {reasonsList.length > 0 ? (
-                  reasonsList.map(r => (
-                    <option key={r.code} value={r.code}>
-                      {r.description} ({r.code})
-                    </option>
-                  ))
-                ) : (
-                  // Fallback por si falla la carga dinámica (Códigos ISO 20022)
-                  <>
-                    <option value="FR01">🚨 Fraude Confirmado (FR01)</option>
-                    <option value="MS03">🔁 Error Técnico / Procesamiento (MS03)</option>
-                    <option value="MD01">👯‍♀️ Pago Duplicado (MD01)</option>
-                    <option value="AC03">🚫 Cuenta Inválida / Cerrada (AC03)</option>
-                  </>
-                )}
-              </select>
-
-              <div className="d-flex gap-2 justify-content-end">
-                <button className="btn btn-outline-light" onClick={() => setRefundModal({ show: false, tx: null })}>
-                  Cancelar
-                </button>
-                <button className="btn btn-gold" onClick={handleRefund}>
-                  Confirmar y Enviar
-                </button>
-              </div>
-            </div>
-          </div>
-        )
-      }
     </>
   )
 }

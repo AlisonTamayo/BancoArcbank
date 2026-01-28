@@ -50,6 +50,16 @@ export default function SeleccionarTransaccion() {
             <h3 className="sel-option-title">Retiro</h3>
             <button className="sel-btn">Continuar</button>
           </div>
+
+          {/* OPCION DEVOLUCIONES */}
+          <div
+            className="sel-option-card"
+            onClick={() => navigate("/devoluciones/buscar")}
+          >
+            <i className="fa-solid fa-rotate-left sel-option-icon"></i>
+            <h3 className="sel-option-title">Devolución</h3>
+            <button className="sel-btn">Continuar</button>
+          </div>
         </div>
       </main>
     </div>

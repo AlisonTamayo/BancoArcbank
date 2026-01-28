@@ -94,4 +94,15 @@ export const transacciones = {
       method: "POST",
       body: JSON.stringify({ ...body, tipoOperacion: "DEPOSITO" }),
     }),
+
+  // NUEVOS METODOS PARA DEVOLUCIONES
+  getPorCuenta: (idCuenta) => request(`/api/transacciones/cuenta/${idCuenta}`),
+
+  solicitarReverso: (idTransaccion, motivo) =>
+    request(`/api/transacciones/${idTransaccion}/devolucion`, {
+      method: 'POST',
+      body: JSON.stringify({ motivo })
+    }),
+
+  getMotivosDevolucion: () => request('/api/transacciones/motivos-devolucion'),
 };

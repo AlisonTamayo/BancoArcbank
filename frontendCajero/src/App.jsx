@@ -6,6 +6,8 @@ import DatosCuenta from "./components/DatosCuenta/DatosCuenta.jsx";
 import ValoresTransaccion from "./components/ValoresTransaccion/ValoresTransaccion.jsx";
 import ValoresDeposito from "./components/ValoresDeposito/ValoresDeposito.jsx";
 import Comprobante from "./components/Comprobante/Comprobante.jsx";
+import BuscarCuentaDevolucion from "./components/Devoluciones/BuscarCuentaDevolucion.jsx";
+import ListaMovimientosDevolucion from "./components/Devoluciones/ListaMovimientosDevolucion.jsx";
 import './App.css';
 
 export default function App() {
@@ -19,6 +21,10 @@ export default function App() {
         <Route path="/valores" element={<ValoresTransaccion />} />
         <Route path="/deposito" element={<ValoresDeposito />} />
         <Route path="/comprobante/:id" element={<Comprobante />} />
+
+        {/* NUEVAS RUTAS DE DEVOLUCION */}
+        <Route path="/devoluciones/buscar" element={<BuscarCuentaDevolucion />} />
+        <Route path="/devoluciones/lista" element={<ListaMovimientosDevolucion />} />
       </Routes>
     </BrowserRouter>
   );

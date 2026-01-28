@@ -1,0 +1,39 @@
+.buscar-container {
+    background: white;
+    padding: 2rem;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    max-width: 600px;
+    margin: 2rem auto;
+    text-align: center;
+}
+
+.buscar-container h2 {
+    color: #1a1a1a;
+    margin-bottom: 1.5rem;
+}
+
+.buscar-form {
+    display: flex;
+    gap: 1rem;
+    flex-direction: column;
+}
+
+.buscar-input {
+    padding: 1rem;
+    border: 2px solid #e1e4e8;
+    border-radius: 8px;
+    font-size: 1.1rem;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.buscar-input:focus {
+    border-color: #d4af37; /* Gold */
+}
+
+.error-msg {
+    color: #dc3545;
+    margin-top: 1rem;
+    font-weight: 500;
+}

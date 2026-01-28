@@ -33,19 +33,31 @@ public class WebhookController {
                         if (header != null && "acmt.023.001.02".equals(header.get("messageNamespace"))) {
                                 log.info("🔍 Webhook detectado como CONSULTA DE CUENTA (acmt.023)");
                                 String accountId = null;
-                                if (body != null && body.get("accountIdentification") != null) {
-                                        Map<String, Object> acctId = (Map<String, Object>) body
-                                                        .get("accountIdentification");
-                                        accountId = (String) acctId.get("accountId");
+
+                                // Segun instruccion Switch: Usamos el campo 'creditor' por compatibilidad
+                                if (body != null && body.get("creditor") != null) {
+                                        Map<String, Object> creditor = (Map<String, Object>) body.get("creditor");
+                                        accountId = (String) creditor.get("accountId");
                                 }
 
                                 if (accountId == null) {
-                                        return ResponseEntity.badRequest()
-                                                        .body(Map.of("status", "NACK", "error", "Missing accountId"));
+                                        log.warn("Solicitud acmt.023 recibida sin 'creditor.accountId'.");
+                                        return ResponseEntity.ok(Map.of(
+                                                        "status", "FAILED",
+                                                        "data", Map.of("mensaje",
+                                                                        "Formato inválido: Falta creditor.accountId")));
                                 }
 
                                 Map<String, Object> result = transaccionService.validarCuentaLocal(accountId);
-                                return ResponseEntity.ok(Map.of("status", "SUCCESS", "data", result));
+
+                                if (Boolean.TRUE.equals(result.get("exists"))) {
+                                        return ResponseEntity.ok(Map.of("status", "SUCCESS", "data", result));
+                                } else {
+                                        return ResponseEntity.ok(Map.of(
+                                                        "status", "FAILED",
+                                                        "data",
+                                                        Map.of("exists", false, "mensaje", "Cuenta no encontrada")));
+                                }
                         }
 
                         // 2. Detección de Devoluciones (pacs.004)
