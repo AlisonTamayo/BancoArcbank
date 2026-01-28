@@ -46,26 +46,40 @@ export const cuentas = {
   getById: (id) => request(`/api/v1/cuentas/ahorros/${id}`),
 
   // Lógica híbrida del Front
+  // Lógica híbrida del Front
   getCuenta: async (identificador) => {
     console.log("🔧 getCuenta llamado con:", identificador);
 
     // ESTRATEGIA: Intentar primero buscar como CUENTA (prioridad).
-    // Si falla (404) y tiene formato de cédula (10 dígitos), intentar como CÉDULA.
-
     try {
       console.log("📋 Intentando buscar como número de cuenta en MS-Cuentas...");
       return await request(`/api/v1/cuentas/ahorros/buscar/${identificador}`);
     } catch (error) {
-      // Si es 404 (no encontrada) y parece cédula, intentamos buscar cliente
-      // Nota: request() lanza Error si status no es ok.
+      // Si falla (404), intentamos buscar como CLIENTE (por Cédula)
       const msg = error.message || "";
-
       if (msg.includes("404") || msg.includes("no encontrada")) {
         console.log("⚠️ No es cuenta, intentando como Cédula en MS-Clientes...");
-        return await request(`/api/v1/clientes/identificacion/${identificador}`);
-      }
 
-      // Si no es 404 o no parece cédula, relanzamos el error original
+        // 1. Buscamos el cliente
+        const cliente = await request(`/api/v1/clientes/identificacion/${identificador}`);
+
+        // 2. Si existe el cliente, buscamos sus cuentas manualmente (Simulacion Consolidada)
+        if (cliente && cliente.idCliente) {
+          console.log("✅ Cliente encontrado:", cliente.nombreCompleto, "ID:", cliente.idCliente);
+          const todasLasCuentas = await request('/api/v1/cuentas/ahorros');
+
+          // 3. Filtramos
+          const cuentaDelCliente = todasLasCuentas.find(c => c.idCliente === cliente.idCliente);
+
+          if (cuentaDelCliente) {
+            console.log("💰 Cuenta encontrada para el cliente:", cuentaDelCliente.numeroCuenta);
+            return cuentaDelCliente;
+          } else {
+            throw new Error(`El cliente ${cliente.nombreCompleto} no tiene cuentas activas.`);
+          }
+        }
+      }
+      // Si falla todo, lanzamos error
       throw error;
     }
   }
