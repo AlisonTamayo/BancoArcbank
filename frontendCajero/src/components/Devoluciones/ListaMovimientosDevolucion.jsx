@@ -18,13 +18,28 @@ export default function ListaMovimientosDevolucion() {
     const cajero = JSON.parse(localStorage.getItem('cajero'));
     const cuenta = JSON.parse(localStorage.getItem('cuentaDevolucion'));
 
+    // Catalogo ISO 20022 proporcionado por Reglas de Negocio
+    const ISO_REASONS = [
+        { code: 'AM04', description: '🚫 Saldo insuficiente en su cuenta.' },
+        { code: 'AC01', description: '❌ El número de cuenta destino no existe.' },
+        { code: 'AC03', description: '💵 Moneda no permitida. Solo se aceptan Dólares.' },
+        { code: 'AC04', description: '🔒 La cuenta destino está cerrada.' },
+        { code: 'AG01', description: '⚠️ OPERACIÓN RESTRINGIDA: Su institución está en modo de cierre operativo.' },
+        { code: 'CH03', description: '📉 El monto excede el límite permitido ($10k).' },
+        { code: 'DUPL', description: '⚠️ Esta transferencia ya fue procesada (Duplicada).' },
+        { code: 'MS03', description: '📡 Hubo un problema de comunicación (Error Técnico).' },
+        { code: 'RC01', description: '📝 Error interno de formato (Sintaxis).' },
+        { code: 'BE01', description: '👮 Inconsistencia de Datos (Rechazo Seguridad).' }
+    ];
+
     useEffect(() => {
         if (!cuenta) {
             navigate('/devoluciones/buscar');
             return;
         }
         cargarMovimientos();
-        cargarMotivos();
+        setMotivos(ISO_REASONS);
+        setMotivo(ISO_REASONS[0].code);
     }, []);
 
     const cargarMovimientos = async () => {
@@ -34,18 +49,17 @@ export default function ListaMovimientosDevolucion() {
             setLoading(true);
             const data = await transacciones.getPorCuenta(cuenta.id);
 
-            // FIltrar solo las reversibles: 
-            // 1. Entradas (Interbancarias o Internas)
-            // 2. Menos de 24 horas
-            // 3. No reversadas aun
+            // FIltrar solo las reversibles segun regla de negocio:
+            // SOLO SALIDAS (Interbancarias enviadas) para solicitar anulación/reverso.
+            // Entradas no se reversan desde aquí según requerimiento.
             const filtradas = data.filter(m => {
-                const esEntrada = ['TRANSFERENCIA_ENTRADA', 'DEPOSITO'].includes(m.tipoOperacion);
+                const esReversible = ['TRANSFERENCIA_SALIDA', 'TRANSFERENCIA_INTERBANCARIA'].includes(m.tipoOperacion);
                 const fechaOp = new Date(m.fechaCreacion);
                 const hoy = new Date();
                 const diffHoras = (hoy - fechaOp) / 36e5;
-                const estadoValido = !['REVERSADA', 'DEVUELTA'].includes(m.estado);
+                const estadoValido = !['REVERSADA', 'DEVUELTA', 'FALLIDA'].includes(m.estado);
 
-                return esEntrada && diffHoras < 24 && estadoValido;
+                return esReversible && diffHoras < 24 && estadoValido;
             });
 
             setMovimientos(filtradas.sort((a, b) => new Date(b.fechaCreacion) - new Date(a.fechaCreacion)));
@@ -57,12 +71,7 @@ export default function ListaMovimientosDevolucion() {
         }
     };
 
-    const cargarMotivos = async () => {
-        try {
-            const lista = await transacciones.getMotivosDevolucion();
-            setMotivos(lista.length ? lista : [{ code: 'FRAD', description: 'Fraude' }, { code: 'MD01', description: 'Duplicado' }]);
-        } catch (e) { console.warn(e); }
-    };
+
 
     const handleSolicitarReverso = async () => {
         if (!processConfirm()) return;
@@ -114,14 +123,21 @@ export default function ListaMovimientosDevolucion() {
                                         <tr key={m.idTransaccion}>
                                             <td>{new Date(m.fechaCreacion).toLocaleString()}</td>
                                             <td>{m.referencia?.substring(0, 8)}...</td>
-                                            <td>{m.descripcion}</td>
-                                            <td className="text-success fw-bold">+${m.monto}</td>
+                                            <td>
+                                                <span style={{ fontSize: '0.8rem', padding: '2px 6px', borderRadius: '4px', background: '#eee', marginRight: '5px' }}>
+                                                    {m.tipoOperacion.replace('TRANSFERENCIA_', '')}
+                                                </span>
+                                                {m.descripcion}
+                                            </td>
+                                            <td className={m.tipoOperacion.includes('ENTRADA') || m.tipoOperacion === 'DEPOSITO' ? 'text-success fw-bold' : 'text-danger fw-bold'}>
+                                                {m.tipoOperacion.includes('ENTRADA') || m.tipoOperacion === 'DEPOSITO' ? '+' : '-'}${m.monto}
+                                            </td>
                                             <td>
                                                 <button
                                                     className="btn-reversar"
                                                     onClick={() => setSelectedTx(m)}
                                                 >
-                                                    Solicitar Devolución
+                                                    Solicitar Anulación
                                                 </button>
                                             </td>
                                         </tr>
@@ -134,21 +150,21 @@ export default function ListaMovimientosDevolucion() {
                 {selectedTx && (
                     <div className="modal-overlay">
                         <div className="modal-content">
-                            <h3>Confirmar Devolución</h3>
-                            <p><strong>Monto a devolver:</strong> ${selectedTx.monto}</p>
-                            <p><strong>Origen:</strong> {selectedTx.descripcion}</p>
+                            <h3>Solicitar Anulación / Reverso</h3>
+                            <p><strong>Monto a reversar:</strong> ${selectedTx.monto}</p>
+                            <p><strong>Destino:</strong> {selectedTx.descripcion}</p>
 
-                            <label>Motivo:</label>
+                            <label className="fw-bold mt-3 d-block">Motivo de la anulación (Catálogo ISO):</label>
                             <select value={motivo} onChange={e => setMotivo(e.target.value)} className="select-motivo">
                                 {motivos.map(m => (
-                                    <option key={m.code} value={m.code}>{m.description} ({m.code})</option>
+                                    <option key={m.code} value={m.code}>{m.code} - {m.description}</option>
                                 ))}
                             </select>
 
                             <div className="modal-actions">
                                 <button className="btn-cancel" onClick={() => setSelectedTx(null)}>Cancelar</button>
                                 <button className="btn-confirm" onClick={handleSolicitarReverso} disabled={procesando}>
-                                    {procesando ? "Procesando..." : "Confirmar Reverso"}
+                                    {procesando ? "Procesando..." : "Confirmar Anulación"}
                                 </button>
                             </div>
                         </div>
