@@ -9,8 +9,13 @@ CERTS_DIR="ms-transaccion/src/main/resources/certs"
 # ============================================================
 # Verificar si los certificados ya existen
 # ============================================================
-if [ -f "$CERTS_DIR/arcbank-keystore.p12" ] && [ -f "$CERTS_DIR/arcbank-truststore.p12" ]; then
-  echo "✅ Certificados ya existen en $CERTS_DIR"
+# ============================================================
+# Verificar si los certificados ya existen
+# ============================================================
+if [ -f "$CERTS_DIR/arcbank-keystore.p12" ] && \
+   [ -f "$CERTS_DIR/arcbank-truststore.p12" ] && \
+   [ -f "$CERTS_DIR/arcbank-public-key.pem" ]; then
+  echo "✅ Todos los certificados y llaves (incluyendo JWS) ya existen en $CERTS_DIR"
   echo "   No es necesario regenerarlos."
   echo ""
   echo "🔍 Certificados encontrados:"
@@ -24,6 +29,7 @@ echo "🐳 Usando Docker para generar certificados (evita errores de librerías 
 # Montamos el directorio actual ($PWD) en /work dentro del contenedor
 # Nota: Usamos 'sudo' porque en la VM parece ser necesario para docker
 sudo docker run --rm -v "$(pwd):/work" -w /work eclipse-temurin:17-jdk-alpine sh -c '
+  set -e # Detener script si falla cualquier comando openssl
   # Instalar OpenSSL
   apk add --no-cache openssl > /dev/null
   
