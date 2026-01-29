@@ -62,9 +62,17 @@ jobs:
 
             if [ ! -f ~/BancoArcbank/ms-transaccion/src/main/resources/certs/arcbank-keystore.p12 ]; then
               echo "📝 Generando certificados mTLS y Llaves JWS..."
-              chmod +x ~/BancoArcbank/generate-mtls-certs.sh
-              # Ejecutar con sudo para asegurar permisos de escritura sobre carpetas root
-              sudo ~/BancoArcbank/generate-mtls-certs.sh
+              cd ~/BancoArcbank
+              chmod +x generate-mtls-certs.sh
+              # Ejecutar con sudo desde el directorio correcto
+              sudo bash generate-mtls-certs.sh
+              
+              # Verificar que se generaron correctamente
+              if [ -f ~/BancoArcbank/ms-transaccion/src/main/resources/certs/arcbank-public-key.pem ]; then
+                echo "✅ Llave pública JWS generada correctamente."
+              else
+                echo "❌ ERROR: La llave pública JWS no se generó. Revisa los logs anteriores."
+              fi
             fi
 
             echo " ========================================================"
