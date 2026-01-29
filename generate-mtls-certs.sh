@@ -83,7 +83,11 @@ sudo docker run --rm -v "$(pwd):/work" -w /work eclipse-temurin:17-jdk-alpine sh
 
 EOF
   cat arcbank.crt >> arcbank-public-cert.pem
-    
+  
+  # 5. Extraer Llave Pública RSA (para JWS)
+  echo "  -> Generando arcbank-public-key.pem (para JWS/RS256)..."
+  openssl rsa -in arcbank.key -pubout -out arcbank-public-key.pem
+
   # Ajustar permisos para que el usuario del host pueda leerlos
   chmod 644 *
   chmod 600 arcbank.key
@@ -96,6 +100,7 @@ echo "   - arcbank.key              (Clave privada - NO compartir)"
 echo "   - arcbank.crt              (Certificado público)"
 echo "   - arcbank-keystore.p12     (Para la aplicación Java)"
 echo "   - arcbank-truststore.p12   (Para verificar certificados)"
-echo "   - arcbank-public-cert.pem  (📤 ENTREGAR AL SWITCH)"
+echo "   - arcbank-public-cert.pem  (📤 ENTREGAR AL SWITCH - mTLS)"
+echo "   - arcbank-public-key.pem   (📤 ENTREGAR AL SWITCH - JWS)"
 echo ""
 echo "🔐 Contraseñas de los Keystores: arcbank123"

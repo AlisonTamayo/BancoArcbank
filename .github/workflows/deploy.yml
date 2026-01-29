@@ -54,11 +54,30 @@ jobs:
             echo "🔐 Verificando certificados..."
 
             # mTLS para comunicación microservices
+            # Forzamos regeneración si faltan la llave publica JWS (nueva feature)
+            if [ ! -f ~/BancoArcbank/ms-transaccion/src/main/resources/certs/arcbank-public-key.pem ]; then
+               rm -f ~/BancoArcbank/ms-transaccion/src/main/resources/certs/arcbank-keystore.p12
+            fi
+
             if [ ! -f ~/BancoArcbank/ms-transaccion/src/main/resources/certs/arcbank-keystore.p12 ]; then
-              echo "📝 Generando certificados mTLS por defecto..."
+              echo "📝 Generando certificados mTLS y Llaves JWS..."
               chmod +x ~/BancoArcbank/generate-mtls-certs.sh
               ~/BancoArcbank/generate-mtls-certs.sh
             fi
+
+            echo " ========================================================"
+            echo " 🔐 INFORMACIÓN DE SEGURIDAD PARA MIGRACIÓN AWS (SWITCH) "
+            echo " ========================================================"
+            echo "1. API KEY (Header: 'apikey'):"
+            echo "   Valor por defecto: ARCBANK_SECRET_KEY_2025_XYZ"
+            echo "   (Verificar si se usa override en secrets)"
+            echo ""
+            echo "2. CERTIFICADO PÚBLICO (mTLS v1.3):"
+            cat ~/BancoArcbank/ms-transaccion/src/main/resources/certs/arcbank-public-cert.pem
+            echo ""
+            echo "3. LLAVE PÚBLICA RSA (JWS / RS256):"
+            cat ~/BancoArcbank/ms-transaccion/src/main/resources/certs/arcbank-public-key.pem
+            echo " ========================================================"
 
             # Certificados SSL para Nginx (DuckDNS)
             echo "🌐 Verificando certificados SSL para arcbank-bank.duckdns.org..."
