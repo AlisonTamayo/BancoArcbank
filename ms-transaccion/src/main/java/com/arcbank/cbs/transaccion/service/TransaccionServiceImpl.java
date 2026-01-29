@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.arcbank.cbs.transaccion.client.CuentaCliente;
+import com.arcbank.cbs.transaccion.client.ClienteCliente;
 import com.arcbank.cbs.transaccion.client.SwitchClient;
 import com.arcbank.cbs.transaccion.dto.SaldoDTO;
 import com.arcbank.cbs.transaccion.dto.TransaccionRequestDTO;
@@ -29,6 +30,7 @@ public class TransaccionServiceImpl implements TransaccionService {
 
     private final TransaccionRepository transaccionRepository;
     private final CuentaCliente cuentaCliente;
+    private final ClienteCliente clienteCliente;
     private final SwitchClient switchClient;
     private final SwitchClientService switchClientService;
 
@@ -593,18 +595,31 @@ public class TransaccionServiceImpl implements TransaccionService {
         try {
             Map<String, Object> cuenta = cuentaCliente.buscarPorNumero(numeroCuenta);
             if (cuenta != null) {
-                String titular = cuenta.get("nombreTitular") != null ? cuenta.get("nombreTitular").toString()
-                        : "CLIENTE ARCBANK";
                 String estado = "ACTIVE"; // Default
-                // Si la cuenta tiene estado, usarlo
                 if (cuenta.get("estado") != null) {
                     estado = cuenta.get("estado").toString();
+                }
+
+                // Obtener el nombre del titular desde el microservicio de clientes
+                String titular = "CLIENTE ARCBANK"; // Fallback
+                if (cuenta.get("idCliente") != null) {
+                    try {
+                        Integer idCliente = Integer.valueOf(cuenta.get("idCliente").toString());
+                        Map<String, Object> cliente = clienteCliente.obtenerCliente(idCliente);
+                        if (cliente != null && cliente.get("nombreCompleto") != null) {
+                            titular = cliente.get("nombreCompleto").toString();
+                            log.info("🎯 Nombre del titular obtenido: {} para cuenta {}", titular, numeroCuenta);
+                        }
+                    } catch (Exception e) {
+                        log.warn("⚠️ No se pudo obtener nombre del cliente para cuenta {}: {}", numeroCuenta,
+                                e.getMessage());
+                    }
                 }
 
                 return Map.of(
                         "exists", true,
                         "ownerName", titular,
-                        "currency", "USD", // Asumimos USD
+                        "currency", "USD",
                         "status", estado);
             }
         } catch (Exception e) {

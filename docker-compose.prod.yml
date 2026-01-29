@@ -178,6 +178,7 @@ services:
       DB_PASS: admin
       SERVER_PORT: 8080
       CUENTAS_URL: http://micro-cuentas-arcbank:8081
+      CLIENTES_URL: http://micro-clientes-arcbank:8080
       APP_SWITCH_URL: ${SWITCH_URL:-http://34.16.106.7:8000/api/v2/switch/transfers}
       APP_SWITCH_NETWORK_URL: ${APP_SWITCH_NETWORK_URL:-http://34.16.106.7:8000}
       BANCO_CODIGO: ARCBANK

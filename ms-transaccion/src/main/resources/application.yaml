@@ -14,6 +14,7 @@ server:
 app:
   feign:
     cuentas-url: ${CUENTAS_URL:http://localhost:8081}
+    clientes-url: ${CLIENTES_URL:http://localhost:8080}
   switch:
     network-url: ${APP_SWITCH_NETWORK_URL:http://34.16.106.7:8000}
     apikey: ${APP_SWITCH_APIKEY:ARCBANK_SECRET_KEY_2025_XYZ}
