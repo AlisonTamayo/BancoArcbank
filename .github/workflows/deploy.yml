@@ -56,13 +56,15 @@ jobs:
             # mTLS para comunicación microservices
             # Forzamos regeneración si faltan la llave publica JWS (nueva feature)
             if [ ! -f ~/BancoArcbank/ms-transaccion/src/main/resources/certs/arcbank-public-key.pem ]; then
-               rm -f ~/BancoArcbank/ms-transaccion/src/main/resources/certs/arcbank-keystore.p12
+               echo "⚠️ Detectada falta de llave pública JWS. Eliminando keystore antiguo para forzar regeneración..."
+               sudo rm -f ~/BancoArcbank/ms-transaccion/src/main/resources/certs/arcbank-keystore.p12
             fi
 
             if [ ! -f ~/BancoArcbank/ms-transaccion/src/main/resources/certs/arcbank-keystore.p12 ]; then
               echo "📝 Generando certificados mTLS y Llaves JWS..."
               chmod +x ~/BancoArcbank/generate-mtls-certs.sh
-              ~/BancoArcbank/generate-mtls-certs.sh
+              # Ejecutar con sudo para asegurar permisos de escritura sobre carpetas root
+              sudo ~/BancoArcbank/generate-mtls-certs.sh
             fi
 
             echo " ========================================================"
