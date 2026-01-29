@@ -123,11 +123,21 @@ jobs:
             echo "🧹 Limpiando imágenes y contenedores antiguos..."
             sudo docker system prune -f
 
+            # Asegurar que estamos en el directorio correcto
+            cd ~/BancoArcbank
+            echo "📍 Directorio actual: $(pwd)"
+            echo "📄 Verificando docker-compose.prod.yml existe:"
+            ls -la docker-compose.prod.yml || echo "❌ ERROR: docker-compose.prod.yml no encontrado!"
+
             # Construir y levantar con docker-compose (producción)
-            echo "🚀 Reiniciando servicios y limpiando basura..."
-            sudo docker-compose -f docker-compose.prod.yml down --remove-orphans
-            sudo docker-compose -f docker-compose.prod.yml build --no-cache
-            sudo docker-compose -f docker-compose.prod.yml up -d --force-recreate
+            echo "🚀 Reiniciando servicios..."
+            sudo docker-compose -f docker-compose.prod.yml down --remove-orphans 2>&1 || echo "⚠️ Down falló (puede ser normal si no había contenedores)"
+            
+            echo "🔨 Construyendo imágenes (esto puede tardar varios minutos)..."
+            sudo docker-compose -f docker-compose.prod.yml build --no-cache 2>&1 || { echo "❌ ERROR: Build falló!"; exit 1; }
+            
+            echo "🚀 Levantando contenedores..."
+            sudo docker-compose -f docker-compose.prod.yml up -d --force-recreate 2>&1 || { echo "❌ ERROR: Up falló!"; exit 1; }
 
             # Reiniciar Nginx Proxy para aplicar certificados y configs
             echo "🔄 Reiniciando Proxy Nginx..."
