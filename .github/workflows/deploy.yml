@@ -136,6 +136,10 @@ jobs:
             echo "🔨 Construyendo imágenes (esto puede tardar varios minutos)..."
             sudo docker-compose -f docker-compose.prod.yml build --no-cache 2>&1 || { echo "❌ ERROR: Build falló!"; exit 1; }
             
+            # Crear red externa si no existe (requerida por el compose)
+            echo "🌐 Verificando/creando red switch-network..."
+            sudo docker network create switch-network 2>/dev/null || echo "   Red switch-network ya existe o fue creada."
+            
             echo "🚀 Levantando contenedores..."
             sudo docker-compose -f docker-compose.prod.yml up -d --force-recreate 2>&1 || { echo "❌ ERROR: Up falló!"; exit 1; }
 
