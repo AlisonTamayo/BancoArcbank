@@ -74,9 +74,34 @@ export default function BuscarCuentaDevolucion() {
 
     const formatFecha = (fecha) => {
         if (!fecha) return '-';
-        return new Date(fecha).toLocaleString('es-EC', {
-            dateStyle: 'medium',
-            timeStyle: 'short'
+
+        let dateObj;
+
+        // Si es un array [year, month, day, hour, minute, second, nano] (LocalDateTime de Java)
+        if (Array.isArray(fecha)) {
+            // Java meses son 1-12, JavaScript son 0-11
+            dateObj = new Date(fecha[0], fecha[1] - 1, fecha[2], fecha[3] || 0, fecha[4] || 0, fecha[5] || 0);
+        } else if (typeof fecha === 'string') {
+            // Si ya tiene T y no tiene Z, asumir que es hora local (no UTC)
+            if (fecha.includes('T') && !fecha.endsWith('Z')) {
+                // Reemplazar T por espacio para que JS lo interprete como hora local
+                dateObj = new Date(fecha.replace('T', ' '));
+            } else {
+                dateObj = new Date(fecha);
+            }
+        } else {
+            dateObj = new Date(fecha);
+        }
+
+        // Formatear con zona horaria de Ecuador
+        return dateObj.toLocaleString('es-EC', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: true,
+            timeZone: 'America/Guayaquil'
         });
     };
 

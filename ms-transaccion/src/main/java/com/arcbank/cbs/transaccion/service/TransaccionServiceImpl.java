@@ -715,18 +715,42 @@ public class TransaccionServiceImpl implements TransaccionService {
                 !tx.getEstado().equals("DEVUELTA") &&
                 !tx.getEstado().equals("FALLIDA");
 
-        // 5. Obtener nombre del ordenante (cuenta origen)
+        // 5. Obtener nombre del ordenante (cuenta origen -> cliente)
         String nombreOrdenante = "No disponible";
         String numeroCuentaOrigen = "";
         if (tx.getIdCuentaOrigen() != null) {
             try {
                 Map<String, Object> cuentaOrigenDetalles = obtenerDetallesCuenta(tx.getIdCuentaOrigen());
                 if (cuentaOrigenDetalles != null) {
-                    if (cuentaOrigenDetalles.get("nombreTitular") != null) {
-                        nombreOrdenante = cuentaOrigenDetalles.get("nombreTitular").toString();
-                    }
+                    // Obtener número de cuenta
                     if (cuentaOrigenDetalles.get("numeroCuenta") != null) {
                         numeroCuentaOrigen = cuentaOrigenDetalles.get("numeroCuenta").toString();
+                    }
+                    // Intentar obtener nombre directamente si existe en cuenta
+                    if (cuentaOrigenDetalles.get("nombreTitular") != null) {
+                        nombreOrdenante = cuentaOrigenDetalles.get("nombreTitular").toString();
+                    } else if (cuentaOrigenDetalles.get("idCliente") != null) {
+                        // Si no hay nombreTitular, consultar el microservicio de clientes
+                        Integer idCliente = Integer.parseInt(cuentaOrigenDetalles.get("idCliente").toString());
+                        try {
+                            Map<String, Object> clienteDetalles = clienteCliente.obtenerCliente(idCliente);
+                            if (clienteDetalles != null) {
+                                String nombre = clienteDetalles.get("nombres") != null
+                                        ? clienteDetalles.get("nombres").toString()
+                                        : "";
+                                String apellido = clienteDetalles.get("apellidos") != null
+                                        ? clienteDetalles.get("apellidos").toString()
+                                        : "";
+                                nombreOrdenante = (nombre + " " + apellido).trim();
+                                if (nombreOrdenante.isEmpty()) {
+                                    nombreOrdenante = clienteDetalles.get("nombreCompleto") != null
+                                            ? clienteDetalles.get("nombreCompleto").toString()
+                                            : "Cliente ID: " + idCliente;
+                                }
+                            }
+                        } catch (Exception ce) {
+                            log.warn("No se pudo obtener datos del cliente {}: {}", idCliente, ce.getMessage());
+                        }
                     }
                 }
             } catch (Exception e) {
@@ -734,10 +758,7 @@ public class TransaccionServiceImpl implements TransaccionService {
             }
         }
 
-        // 6. Obtener nombre del beneficiario (de la descripción o Switch)
-        // Para transferencias salientes, el nombre del beneficiario normalmente está en
-        // la descripción
-        // o se puede extraer del formato "Transferencia a [Nombre]"
+        // 6. Obtener nombre del beneficiario (de la descripción)
         String nombreBeneficiario = "No disponible";
         if (tx.getDescripcion() != null) {
             String desc = tx.getDescripcion();
