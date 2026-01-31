@@ -699,17 +699,50 @@ public class TransaccionServiceImpl implements TransaccionService {
         Transaccion tx = transaccionRepository.findById(id)
                 .orElseThrow(() -> new BusinessException("Transacción no encontrada con ID: " + id));
 
-        // 2. Validar que sea una transacción saliente interbancaria (reversible)
+        // 2. Si es una transacción interbancaria con estado PENDIENTE, consultar Switch
+        String estadoSwitch = null;
+        boolean estadoActualizado = false;
+        if (tx.getReferencia() != null && tx.getIdBancoExterno() != null) {
+            try {
+                Map<String, Object> resultadoSwitch = switchClientService.consultarEstado(tx.getReferencia());
+                if (resultadoSwitch != null && resultadoSwitch.get("status") != null) {
+                    estadoSwitch = resultadoSwitch.get("status").toString();
+                    log.info("Estado en Switch para Tx {}: {}", tx.getIdTransaccion(), estadoSwitch);
+
+                    // Si el Switch dice COMPLETED pero la BD dice PENDIENTE, actualizar
+                    if ("COMPLETED".equalsIgnoreCase(estadoSwitch) && "PENDIENTE".equals(tx.getEstado())) {
+                        tx.setEstado("COMPLETADA");
+                        transaccionRepository.save(tx);
+                        estadoActualizado = true;
+                        log.info("Estado actualizado a COMPLETADA para Tx {} basado en respuesta del Switch",
+                                tx.getIdTransaccion());
+                    }
+                    // Si el Switch dice FAILED pero la BD no lo refleja
+                    else if ("FAILED".equalsIgnoreCase(estadoSwitch) && !"FALLIDA".equals(tx.getEstado())) {
+                        tx.setEstado("FALLIDA");
+                        transaccionRepository.save(tx);
+                        estadoActualizado = true;
+                        log.info("Estado actualizado a FALLIDA para Tx {} basado en respuesta del Switch",
+                                tx.getIdTransaccion());
+                    }
+                }
+            } catch (Exception e) {
+                log.warn("No se pudo consultar estado en Switch para Tx {}: {}", tx.getIdTransaccion(), e.getMessage());
+                estadoSwitch = "NO_DISPONIBLE";
+            }
+        }
+
+        // 3. Validar que sea una transacción saliente interbancaria (reversible)
         boolean esReversible = tx.getTipoOperacion() != null &&
                 (tx.getTipoOperacion().contains("SALIDA") || tx.getTipoOperacion().contains("INTERBANCARIA"));
 
-        // 3. Validar que esté dentro del rango de 24 horas
+        // 4. Validar que esté dentro del rango de 24 horas
         java.time.LocalDateTime ahora = java.time.LocalDateTime.now();
         java.time.LocalDateTime fechaTx = tx.getFechaCreacion();
         long horasTranscurridas = java.time.Duration.between(fechaTx, ahora).toHours();
         boolean dentroDe24H = horasTranscurridas <= 24;
 
-        // 4. Validar estado (no reversada, no devuelta, no fallida)
+        // 5. Validar estado (no reversada, no devuelta, no fallida)
         boolean estadoValido = tx.getEstado() != null &&
                 !tx.getEstado().equals("REVERSADA") &&
                 !tx.getEstado().equals("DEVUELTA") &&
@@ -798,6 +831,10 @@ public class TransaccionServiceImpl implements TransaccionService {
         detalle.put("estadoValido", estadoValido);
         detalle.put("puedeReversarse", esReversible && dentroDe24H && estadoValido);
         detalle.put("horasTranscurridas", horasTranscurridas);
+
+        // Info del Switch
+        detalle.put("estadoSwitch", estadoSwitch);
+        detalle.put("estadoActualizadoDesdeSwitch", estadoActualizado);
 
         return detalle;
     }

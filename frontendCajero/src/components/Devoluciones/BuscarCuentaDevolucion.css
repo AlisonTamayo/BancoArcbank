@@ -180,6 +180,55 @@
     color: #721c24;
 }
 
+/* Estado del Switch */
+.estado-switch-box {
+    background: linear-gradient(135deg, #e8f4fd 0%, #d1e9ff 100%);
+    border: 2px solid #0d6efd;
+    padding: 1rem;
+}
+
+.detalle-value.estado-switch {
+    font-size: 1.2rem;
+    font-weight: 700;
+    padding: 4px 16px;
+    border-radius: 8px;
+}
+
+.detalle-value.estado-switch.COMPLETED {
+    background: #198754;
+    color: white;
+}
+
+.detalle-value.estado-switch.PENDING,
+.detalle-value.estado-switch.RECEIVED {
+    background: #ffc107;
+    color: #000;
+}
+
+.detalle-value.estado-switch.FAILED {
+    background: #dc3545;
+    color: white;
+}
+
+.detalle-value.estado-switch.NO_DISPONIBLE {
+    background: #6c757d;
+    color: white;
+}
+
+/* Notificación de actualización */
+.estado-actualizado-box {
+    margin-top: 1rem;
+    padding: 1rem;
+    background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+    border-radius: 10px;
+    border-left: 4px solid #28a745;
+}
+
+.estado-actualizado-box p {
+    margin: 0;
+    color: #155724;
+}
+
 /* Validaciones */
 .validaciones-box {
     margin-top: 1.5rem;

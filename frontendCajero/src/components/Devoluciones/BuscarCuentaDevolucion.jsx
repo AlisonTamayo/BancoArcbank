@@ -194,7 +194,23 @@ export default function BuscarCuentaDevolucion() {
                                     <span className="detalle-value referencia">{transaccion.referencia}</span>
                                 </div>
                             )}
+                            {transaccion.estadoSwitch && (
+                                <div className="detalle-item full-width estado-switch-box">
+                                    <span className="detalle-label">🔄 Estado en Switch (Tiempo Real):</span>
+                                    <span className={`detalle-value estado-switch ${transaccion.estadoSwitch}`}>
+                                        {transaccion.estadoSwitch}
+                                    </span>
+                                </div>
+                            )}
                         </div>
+
+                        {/* Notificación de estado actualizado */}
+                        {transaccion.estadoActualizadoDesdeSwitch && (
+                            <div className="estado-actualizado-box">
+                                <p>✅ <strong>Estado actualizado automáticamente:</strong> Se sincronizó el estado con el Switch.
+                                    La transacción fue confirmada como COMPLETADA.</p>
+                            </div>
+                        )}
 
                         {/* Validaciones para Devolución */}
                         <div className="validaciones-box">
