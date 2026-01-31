@@ -64,4 +64,26 @@ public class Controller {
             return ResponseEntity.status(400).body(java.util.Map.of("status", "ERROR", "message", e.getMessage()));
         }
     }
+
+    @GetMapping("/buscar/{referencia}")
+    @Operation(summary = "Buscar transacción por referencia/instructionId")
+    public ResponseEntity<?> buscarPorReferencia(@PathVariable String referencia) {
+        try {
+            return ResponseEntity.ok(transaccionService.buscarPorReferencia(referencia));
+        } catch (Exception e) {
+            return ResponseEntity.status(404)
+                    .body(java.util.Map.of("error", "Transacción no encontrada: " + e.getMessage()));
+        }
+    }
+
+    @GetMapping("/buscar/{referencia}/detalle-switch")
+    @Operation(summary = "Buscar transacción con detalle completo del Switch")
+    public ResponseEntity<?> buscarConDetalleSwitch(@PathVariable String referencia) {
+        try {
+            return ResponseEntity.ok(transaccionService.buscarConDetalleSwitch(referencia));
+        } catch (Exception e) {
+            return ResponseEntity.status(404)
+                    .body(java.util.Map.of("error", "No se pudo obtener detalle: " + e.getMessage()));
+        }
+    }
 }

@@ -627,4 +627,66 @@ public class TransaccionServiceImpl implements TransaccionService {
         }
         return Map.of("exists", false);
     }
+
+    @Override
+    public TransaccionResponseDTO buscarPorReferencia(String referencia) {
+        Transaccion tx = transaccionRepository.findByReferencia(referencia)
+                .orElseThrow(() -> new BusinessException("Transacción no encontrada con referencia: " + referencia));
+        return toDTO(tx);
+    }
+
+    @Override
+    public Map<String, Object> buscarConDetalleSwitch(String referencia) {
+        // 1. Buscar transacción local
+        Transaccion tx = transaccionRepository.findByReferencia(referencia)
+                .orElseThrow(() -> new BusinessException("Transacción no encontrada con referencia: " + referencia));
+
+        // 2. Validar que sea una transacción saliente interbancaria (reversible)
+        boolean esReversible = tx.getTipoOperacion() != null &&
+                (tx.getTipoOperacion().contains("SALIDA") || tx.getTipoOperacion().contains("INTERBANCARIA"));
+
+        // 3. Validar que esté dentro del rango de 24 horas
+        java.time.LocalDateTime ahora = java.time.LocalDateTime.now();
+        java.time.LocalDateTime fechaTx = tx.getFechaCreacion();
+        long horasTranscurridas = java.time.Duration.between(fechaTx, ahora).toHours();
+        boolean dentroDe24H = horasTranscurridas <= 24;
+
+        // 4. Validar estado (no reversada, no devuelta, no fallida)
+        boolean estadoValido = tx.getEstado() != null &&
+                !tx.getEstado().equals("REVERSADA") &&
+                !tx.getEstado().equals("DEVUELTA") &&
+                !tx.getEstado().equals("FALLIDA");
+
+        // 5. Construir respuesta con todos los datos
+        java.util.Map<String, Object> detalle = new java.util.HashMap<>();
+        detalle.put("idTransaccion", tx.getIdTransaccion());
+        detalle.put("referencia", tx.getReferencia());
+        detalle.put("tipoOperacion", tx.getTipoOperacion());
+        detalle.put("monto", tx.getMonto());
+        detalle.put("fechaCreacion", tx.getFechaCreacion());
+        detalle.put("descripcion", tx.getDescripcion());
+        detalle.put("estado", tx.getEstado());
+        detalle.put("cuentaExterna", tx.getCuentaExterna());
+        detalle.put("bancoDestino", tx.getIdBancoExterno());
+        detalle.put("canal", tx.getCanal());
+
+        // Info de validación
+        detalle.put("esReversible", esReversible);
+        detalle.put("dentroDe24Horas", dentroDe24H);
+        detalle.put("estadoValido", estadoValido);
+        detalle.put("puedeReversarse", esReversible && dentroDe24H && estadoValido);
+
+        // 6. Intentar consultar estado en Switch (si es interbancaria)
+        if (tx.getIdBancoExterno() != null && tx.getReferencia() != null) {
+            try {
+                String estadoSwitch = switchClientService.consultarEstadoTransaccion(tx.getReferencia());
+                detalle.put("estadoSwitch", estadoSwitch);
+            } catch (Exception e) {
+                log.warn("No se pudo consultar estado en Switch: {}", e.getMessage());
+                detalle.put("estadoSwitch", "NO_DISPONIBLE");
+            }
+        }
+
+        return detalle;
+    }
 }

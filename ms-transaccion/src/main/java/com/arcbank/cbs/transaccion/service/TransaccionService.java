@@ -28,4 +28,8 @@ public interface TransaccionService {
     java.util.Map<String, Object> validarCuentaExterna(String targetBankId, String targetAccountNumber);
 
     java.util.Map<String, Object> validarCuentaLocal(String numeroCuenta);
+
+    TransaccionResponseDTO buscarPorReferencia(String referencia);
+
+    java.util.Map<String, Object> buscarConDetalleSwitch(String referencia);
 }

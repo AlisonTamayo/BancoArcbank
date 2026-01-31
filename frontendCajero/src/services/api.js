@@ -119,4 +119,10 @@ export const transacciones = {
     }),
 
   getMotivosDevolucion: () => request('/api/transacciones/motivos-devolucion'),
+
+  // Nuevo: Buscar transacción por referencia/instructionId
+  buscarPorReferencia: (referencia) => request(`/api/transacciones/buscar/${referencia}`),
+
+  // Nuevo: Buscar con detalle completo del Switch
+  buscarConDetalleSwitch: (referencia) => request(`/api/transacciones/buscar/${referencia}/detalle-switch`),
 };
