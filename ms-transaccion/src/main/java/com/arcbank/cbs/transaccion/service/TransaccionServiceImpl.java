@@ -692,4 +692,51 @@ public class TransaccionServiceImpl implements TransaccionService {
 
         return detalle;
     }
+
+    @Override
+    public Map<String, Object> obtenerDetallePorId(Integer id) {
+        // 1. Buscar transacción por ID numérico
+        Transaccion tx = transaccionRepository.findById(id)
+                .orElseThrow(() -> new BusinessException("Transacción no encontrada con ID: " + id));
+
+        // 2. Validar que sea una transacción saliente interbancaria (reversible)
+        boolean esReversible = tx.getTipoOperacion() != null &&
+                (tx.getTipoOperacion().contains("SALIDA") || tx.getTipoOperacion().contains("INTERBANCARIA"));
+
+        // 3. Validar que esté dentro del rango de 24 horas
+        java.time.LocalDateTime ahora = java.time.LocalDateTime.now();
+        java.time.LocalDateTime fechaTx = tx.getFechaCreacion();
+        long horasTranscurridas = java.time.Duration.between(fechaTx, ahora).toHours();
+        boolean dentroDe24H = horasTranscurridas <= 24;
+
+        // 4. Validar estado (no reversada, no devuelta, no fallida)
+        boolean estadoValido = tx.getEstado() != null &&
+                !tx.getEstado().equals("REVERSADA") &&
+                !tx.getEstado().equals("DEVUELTA") &&
+                !tx.getEstado().equals("FALLIDA");
+
+        // 5. Construir respuesta con todos los datos
+        java.util.Map<String, Object> detalle = new java.util.HashMap<>();
+        detalle.put("idTransaccion", tx.getIdTransaccion());
+        detalle.put("referencia", tx.getReferencia());
+        detalle.put("tipoOperacion", tx.getTipoOperacion());
+        detalle.put("monto", tx.getMonto());
+        detalle.put("fechaCreacion", tx.getFechaCreacion());
+        detalle.put("descripcion", tx.getDescripcion());
+        detalle.put("estado", tx.getEstado());
+        detalle.put("cuentaExterna", tx.getCuentaExterna());
+        detalle.put("bancoDestino", tx.getIdBancoExterno());
+        detalle.put("canal", tx.getCanal());
+        detalle.put("idCuentaOrigen", tx.getIdCuentaOrigen());
+        detalle.put("idCuentaDestino", tx.getIdCuentaDestino());
+
+        // Info de validación
+        detalle.put("esReversible", esReversible);
+        detalle.put("dentroDe24Horas", dentroDe24H);
+        detalle.put("estadoValido", estadoValido);
+        detalle.put("puedeReversarse", esReversible && dentroDe24H && estadoValido);
+        detalle.put("horasTranscurridas", horasTranscurridas);
+
+        return detalle;
+    }
 }

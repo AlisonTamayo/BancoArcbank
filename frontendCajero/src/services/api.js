@@ -125,4 +125,7 @@ export const transacciones = {
 
   // Nuevo: Buscar con detalle completo del Switch
   buscarConDetalleSwitch: (referencia) => request(`/api/transacciones/buscar/${referencia}/detalle-switch`),
+
+  // Nuevo: Obtener detalle de transacción por ID numérico
+  obtenerDetallePorId: (id) => request(`/api/transacciones/${id}/detalle`),
 };

@@ -33,6 +33,28 @@ public class Controller {
         return ResponseEntity.ok(transaccionService.obtenerPorCuenta(idCuenta));
     }
 
+    @GetMapping("/{id}")
+    @Operation(summary = "Obtener transacción por ID numérico")
+    public ResponseEntity<?> obtenerPorId(@PathVariable Integer id) {
+        try {
+            return ResponseEntity.ok(transaccionService.obtenerPorId(id));
+        } catch (Exception e) {
+            return ResponseEntity.status(404)
+                    .body(java.util.Map.of("error", "Transacción no encontrada con ID: " + id));
+        }
+    }
+
+    @GetMapping("/{id}/detalle")
+    @Operation(summary = "Obtener transacción por ID con detalle completo para devolución")
+    public ResponseEntity<?> obtenerDetallePorId(@PathVariable Integer id) {
+        try {
+            return ResponseEntity.ok(transaccionService.obtenerDetallePorId(id));
+        } catch (Exception e) {
+            return ResponseEntity.status(404)
+                    .body(java.util.Map.of("error", "Transacción no encontrada: " + e.getMessage()));
+        }
+    }
+
     @PostMapping("/{id}/devolucion")
     @Operation(summary = "Solicitar devolución de transacción (Reverso)")
     public ResponseEntity<TransaccionResponseDTO> solicitarDevolucion(

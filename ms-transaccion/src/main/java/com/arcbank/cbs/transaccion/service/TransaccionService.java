@@ -32,4 +32,6 @@ public interface TransaccionService {
     TransaccionResponseDTO buscarPorReferencia(String referencia);
 
     java.util.Map<String, Object> buscarConDetalleSwitch(String referencia);
+
+    java.util.Map<String, Object> obtenerDetallePorId(Integer id);
 }

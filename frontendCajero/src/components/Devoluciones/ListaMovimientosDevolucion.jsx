@@ -4,7 +4,7 @@ import { transacciones } from '../../services/api';
 import './ListaMovimientosDevolucion.css';
 
 export default function ListaMovimientosDevolucion() {
-    const [referencia, setReferencia] = useState('');
+    const [idTransaccion, setIdTransaccion] = useState('');
     const [loading, setLoading] = useState(false);
     const [transaccion, setTransaccion] = useState(null);
     const [error, setError] = useState('');
@@ -30,8 +30,10 @@ export default function ListaMovimientosDevolucion() {
     ];
 
     const buscarTransaccion = async () => {
-        if (!referencia.trim()) {
-            setError('Por favor ingrese un ID de transacción');
+        const id = parseInt(idTransaccion.trim());
+
+        if (!id || isNaN(id)) {
+            setError('Por favor ingrese un ID de transacción válido (número)');
             return;
         }
 
@@ -40,7 +42,7 @@ export default function ListaMovimientosDevolucion() {
         setTransaccion(null);
 
         try {
-            const data = await transacciones.buscarConDetalleSwitch(referencia.trim());
+            const data = await transacciones.obtenerDetallePorId(id);
             setTransaccion(data);
         } catch (err) {
             setError(err.message || 'Transacción no encontrada');
@@ -61,7 +63,7 @@ export default function ListaMovimientosDevolucion() {
             await transacciones.solicitarReverso(transaccion.idTransaccion, motivo);
             alert('✅ Solicitud de devolución enviada exitosamente al Switch.');
             setTransaccion(null);
-            setReferencia('');
+            setIdTransaccion('');
         } catch (err) {
             alert('❌ Error: ' + (err.message || 'Fallo en el sistema'));
         } finally {
@@ -84,21 +86,21 @@ export default function ListaMovimientosDevolucion() {
                 <div className="sel-header-box">
                     <div className="sel-header-content">
                         <div className="sel-header-text">
-                            <h2 className="sel-user-name">🔄 Solicitar Devolución</h2>
-                            <p className="text-muted">Busque una transacción interbancaria para solicitar devolución</p>
+                            <h2 className="sel-user-name">🔄 Módulo de Devoluciones</h2>
+                            <p className="text-muted">Busque una transacción por su ID para solicitar devolución</p>
                         </div>
                     </div>
                 </div>
 
                 {/* Buscador */}
                 <div className="search-container">
-                    <label className="search-label">ID de Transacción (Referencia / InstructionId):</label>
+                    <label className="search-label">ID de Transacción:</label>
                     <div className="search-box">
                         <input
-                            type="text"
-                            value={referencia}
-                            onChange={(e) => setReferencia(e.target.value)}
-                            placeholder="Ej: 550e8400-e29b-41d4-a716-446655440000"
+                            type="number"
+                            value={idTransaccion}
+                            onChange={(e) => setIdTransaccion(e.target.value)}
+                            placeholder="Ej: 153"
                             className="search-input"
                             onKeyPress={(e) => e.key === 'Enter' && buscarTransaccion()}
                         />
@@ -107,7 +109,7 @@ export default function ListaMovimientosDevolucion() {
                             className="btn-buscar"
                             disabled={loading}
                         >
-                            {loading ? '🔍 Buscando...' : '🔍 Buscar'}
+                            {loading ? '🔍 Buscando...' : '🔍 Buscar Transacción'}
                         </button>
                     </div>
                     {error && <p className="error-message">{error}</p>}
@@ -116,12 +118,12 @@ export default function ListaMovimientosDevolucion() {
                 {/* Detalle de Transacción */}
                 {transaccion && (
                     <div className="detalle-container">
-                        <h3>📋 Detalle de la Transacción</h3>
+                        <h3>📋 Detalle de la Transacción #{transaccion.idTransaccion}</h3>
 
                         <div className="detalle-grid">
                             <div className="detalle-item">
-                                <span className="detalle-label">Referencia:</span>
-                                <span className="detalle-value">{transaccion.referencia}</span>
+                                <span className="detalle-label">ID:</span>
+                                <span className="detalle-value id-value">{transaccion.idTransaccion}</span>
                             </div>
                             <div className="detalle-item">
                                 <span className="detalle-label">Monto:</span>
@@ -137,24 +139,30 @@ export default function ListaMovimientosDevolucion() {
                             </div>
                             <div className="detalle-item">
                                 <span className="detalle-label">Banco Destino:</span>
-                                <span className="detalle-value">{transaccion.bancoDestino || 'N/A'}</span>
+                                <span className="detalle-value">{transaccion.bancoDestino || 'Local'}</span>
                             </div>
                             <div className="detalle-item">
                                 <span className="detalle-label">Cuenta Destino:</span>
                                 <span className="detalle-value">{transaccion.cuentaExterna || 'N/A'}</span>
                             </div>
                             <div className="detalle-item">
-                                <span className="detalle-label">Estado Local:</span>
+                                <span className="detalle-label">Estado:</span>
                                 <span className={`detalle-value estado ${transaccion.estado}`}>{transaccion.estado}</span>
                             </div>
                             <div className="detalle-item">
-                                <span className="detalle-label">Estado Switch:</span>
-                                <span className="detalle-value">{transaccion.estadoSwitch || 'N/A'}</span>
+                                <span className="detalle-label">Horas Transcurridas:</span>
+                                <span className="detalle-value">{transaccion.horasTranscurridas}h</span>
                             </div>
                             <div className="detalle-item full-width">
                                 <span className="detalle-label">Descripción:</span>
                                 <span className="detalle-value">{transaccion.descripcion || '-'}</span>
                             </div>
+                            {transaccion.referencia && (
+                                <div className="detalle-item full-width">
+                                    <span className="detalle-label">Referencia Switch:</span>
+                                    <span className="detalle-value referencia">{transaccion.referencia}</span>
+                                </div>
+                            )}
                         </div>
 
                         {/* Validaciones */}
@@ -165,10 +173,10 @@ export default function ListaMovimientosDevolucion() {
                                     {transaccion.esReversible ? '✅' : '❌'} Tipo de transacción reversible (Interbancaria/Salida)
                                 </li>
                                 <li className={transaccion.dentroDe24Horas ? 'valid' : 'invalid'}>
-                                    {transaccion.dentroDe24Horas ? '✅' : '❌'} Dentro del plazo de 24 horas
+                                    {transaccion.dentroDe24Horas ? '✅' : '❌'} Dentro del plazo de 24 horas ({transaccion.horasTranscurridas}h transcurridas)
                                 </li>
                                 <li className={transaccion.estadoValido ? 'valid' : 'invalid'}>
-                                    {transaccion.estadoValido ? '✅' : '❌'} Estado válido para devolución
+                                    {transaccion.estadoValido ? '✅' : '❌'} Estado válido para devolución (actual: {transaccion.estado})
                                 </li>
                             </ul>
                         </div>
