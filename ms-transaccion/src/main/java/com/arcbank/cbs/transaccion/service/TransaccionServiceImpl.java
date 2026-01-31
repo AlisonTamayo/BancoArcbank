@@ -632,7 +632,7 @@ public class TransaccionServiceImpl implements TransaccionService {
     public TransaccionResponseDTO buscarPorReferencia(String referencia) {
         Transaccion tx = transaccionRepository.findByReferencia(referencia)
                 .orElseThrow(() -> new BusinessException("Transacción no encontrada con referencia: " + referencia));
-        return toDTO(tx);
+        return mapearADTO(tx, null);
     }
 
     @Override
@@ -679,7 +679,10 @@ public class TransaccionServiceImpl implements TransaccionService {
         // 6. Intentar consultar estado en Switch (si es interbancaria)
         if (tx.getIdBancoExterno() != null && tx.getReferencia() != null) {
             try {
-                String estadoSwitch = switchClientService.consultarEstadoTransaccion(tx.getReferencia());
+                java.util.Map<String, Object> resultado = switchClientService.consultarEstado(tx.getReferencia());
+                String estadoSwitch = resultado != null && resultado.get("status") != null
+                        ? resultado.get("status").toString()
+                        : "UNKNOWN";
                 detalle.put("estadoSwitch", estadoSwitch);
             } catch (Exception e) {
                 log.warn("No se pudo consultar estado en Switch: {}", e.getMessage());
