@@ -715,7 +715,43 @@ public class TransaccionServiceImpl implements TransaccionService {
                 !tx.getEstado().equals("DEVUELTA") &&
                 !tx.getEstado().equals("FALLIDA");
 
-        // 5. Construir respuesta con todos los datos
+        // 5. Obtener nombre del ordenante (cuenta origen)
+        String nombreOrdenante = "No disponible";
+        String numeroCuentaOrigen = "";
+        if (tx.getIdCuentaOrigen() != null) {
+            try {
+                Map<String, Object> cuentaOrigenDetalles = obtenerDetallesCuenta(tx.getIdCuentaOrigen());
+                if (cuentaOrigenDetalles != null) {
+                    if (cuentaOrigenDetalles.get("nombreTitular") != null) {
+                        nombreOrdenante = cuentaOrigenDetalles.get("nombreTitular").toString();
+                    }
+                    if (cuentaOrigenDetalles.get("numeroCuenta") != null) {
+                        numeroCuentaOrigen = cuentaOrigenDetalles.get("numeroCuenta").toString();
+                    }
+                }
+            } catch (Exception e) {
+                log.warn("No se pudo obtener datos de cuenta origen: {}", e.getMessage());
+            }
+        }
+
+        // 6. Obtener nombre del beneficiario (de la descripción o Switch)
+        // Para transferencias salientes, el nombre del beneficiario normalmente está en
+        // la descripción
+        // o se puede extraer del formato "Transferencia a [Nombre]"
+        String nombreBeneficiario = "No disponible";
+        if (tx.getDescripcion() != null) {
+            String desc = tx.getDescripcion();
+            // Intentar extraer nombre de la descripción si tiene formato conocido
+            if (desc.contains(" a ")) {
+                nombreBeneficiario = desc.substring(desc.lastIndexOf(" a ") + 3).trim();
+            } else if (desc.contains("para ")) {
+                nombreBeneficiario = desc.substring(desc.lastIndexOf("para ") + 5).trim();
+            } else {
+                nombreBeneficiario = desc; // Usar descripción completa como fallback
+            }
+        }
+
+        // 7. Construir respuesta con todos los datos
         java.util.Map<String, Object> detalle = new java.util.HashMap<>();
         detalle.put("idTransaccion", tx.getIdTransaccion());
         detalle.put("referencia", tx.getReferencia());
@@ -729,6 +765,11 @@ public class TransaccionServiceImpl implements TransaccionService {
         detalle.put("canal", tx.getCanal());
         detalle.put("idCuentaOrigen", tx.getIdCuentaOrigen());
         detalle.put("idCuentaDestino", tx.getIdCuentaDestino());
+
+        // Nombres agregados
+        detalle.put("nombreOrdenante", nombreOrdenante);
+        detalle.put("numeroCuentaOrigen", numeroCuentaOrigen);
+        detalle.put("nombreBeneficiario", nombreBeneficiario);
 
         // Info de validación
         detalle.put("esReversible", esReversible);

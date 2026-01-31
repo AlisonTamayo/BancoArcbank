@@ -125,6 +125,24 @@ export default function BuscarCuentaDevolucion() {
                                 <span className="detalle-label">Monto:</span>
                                 <span className="detalle-value monto">${transaccion.monto}</span>
                             </div>
+
+                            {/* ORDENANTE - Quien solicita la devolución */}
+                            <div className="detalle-item full-width ordenante-box">
+                                <span className="detalle-label">👤 ORDENANTE (Solicita Devolución):</span>
+                                <span className="detalle-value nombre-ordenante">{transaccion.nombreOrdenante || 'No disponible'}</span>
+                                <span className="detalle-sublabel">Cuenta: {transaccion.numeroCuentaOrigen || transaccion.idCuentaOrigen}</span>
+                            </div>
+
+                            {/* BENEFICIARIO - Cuenta destino */}
+                            <div className="detalle-item full-width beneficiario-box">
+                                <span className="detalle-label">🏦 BENEFICIARIO (Cuenta Destino):</span>
+                                <span className="detalle-value nombre-beneficiario">{transaccion.nombreBeneficiario || 'No disponible'}</span>
+                                <span className="detalle-sublabel">
+                                    Cuenta: {transaccion.cuentaExterna || 'N/A'}
+                                    {transaccion.bancoDestino && ` | Banco: ${transaccion.bancoDestino}`}
+                                </span>
+                            </div>
+
                             <div className="detalle-item">
                                 <span className="detalle-label">Fecha:</span>
                                 <span className="detalle-value">{formatFecha(transaccion.fechaCreacion)}</span>
@@ -132,14 +150,6 @@ export default function BuscarCuentaDevolucion() {
                             <div className="detalle-item">
                                 <span className="detalle-label">Tipo Operación:</span>
                                 <span className="detalle-value">{transaccion.tipoOperacion}</span>
-                            </div>
-                            <div className="detalle-item">
-                                <span className="detalle-label">Banco Destino:</span>
-                                <span className="detalle-value banco-destino">{transaccion.bancoDestino || 'Local'}</span>
-                            </div>
-                            <div className="detalle-item">
-                                <span className="detalle-label">Cuenta Destino:</span>
-                                <span className="detalle-value">{transaccion.cuentaExterna || 'N/A'}</span>
                             </div>
                             <div className="detalle-item">
                                 <span className="detalle-label">Estado:</span>
