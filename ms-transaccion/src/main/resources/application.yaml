@@ -8,6 +8,16 @@ spring:
       ddl-auto: update
     show-sql: false
 
+  rabbitmq:
+    host: ${RABBITMQ_HOST:b-455e546c-be71-4fe2-ba0f-bd3112e6c220.mq.us-east-2.on.aws}
+    port: ${RABBITMQ_PORT:5671}
+    username: ${RABBITMQ_USER:arcbank}
+    password: ${RABBITMQ_PASSWORD:arcbank123}
+    virtual-host: /
+    ssl:
+      enabled: true
+      algorithm: TLSv1.2
+
 server:
   port: ${SERVER_PORT:8080}
 
