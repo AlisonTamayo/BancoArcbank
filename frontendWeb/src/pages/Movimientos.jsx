@@ -172,7 +172,16 @@ export default function Movimientos() {
                       <code className="x-small text-warning" style={{ fontSize: '10px' }}>ID: {tx.id}</code>
                     </td>
                     <td className="py-3">
-                      <span className={`badge ${tx.isDebit ? 'bg-danger-subtle text-danger' : 'bg-success-subtle text-success'} border px-3 py-2`} style={{ fontSize: '10px', letterSpacing: '1px' }}>
+                      <span
+                        className="badge px-3 py-2"
+                        style={{
+                          fontSize: '10px',
+                          letterSpacing: '1px',
+                          backgroundColor: tx.isDebit ? '#dc3545' : '#198754',
+                          color: 'white',
+                          fontWeight: 'bold'
+                        }}
+                      >
                         {tx.type}
                       </span>
                     </td>
