@@ -22,12 +22,37 @@ export default function Comprobante() {
   const costo = state.costo || 0.0;
   const saldoResultante = state.saldoResultante; // Nuevo campo del backend
 
-  // Formateo de fecha seguro
+  // Formateo de fecha seguro - maneja LocalDateTime de Java
   const formatFecha = (dateString) => {
-    if (!dateString) return new Date().toLocaleString();
+    if (!dateString) {
+      return new Date().toLocaleString('es-EC', { timeZone: 'America/Guayaquil' });
+    }
+
     try {
-      return new Date(dateString).toLocaleString("es-EC");
-    } catch (e) { return dateString; }
+      let dateObj;
+
+      // Si es un array (LocalDateTime de Java)
+      if (Array.isArray(dateString)) {
+        dateObj = new Date(dateString[0], dateString[1] - 1, dateString[2],
+          dateString[3] || 0, dateString[4] || 0, dateString[5] || 0);
+      } else if (typeof dateString === 'string' && dateString.includes('T') && !dateString.endsWith('Z')) {
+        dateObj = new Date(dateString.replace('T', ' '));
+      } else {
+        dateObj = new Date(dateString);
+      }
+
+      return dateObj.toLocaleString('es-EC', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true,
+        timeZone: 'America/Guayaquil'
+      });
+    } catch (e) {
+      return dateString;
+    }
   };
   const fecha = formatFecha(state.fecha);
   const sucursal = state.sucursal || "Matriz";

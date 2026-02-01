@@ -73,9 +73,26 @@ export default function ListaMovimientosDevolucion() {
 
     const formatFecha = (fecha) => {
         if (!fecha) return '-';
-        return new Date(fecha).toLocaleString('es-EC', {
-            dateStyle: 'medium',
-            timeStyle: 'short'
+
+        let dateObj;
+
+        // Si es un array (LocalDateTime de Java)
+        if (Array.isArray(fecha)) {
+            dateObj = new Date(fecha[0], fecha[1] - 1, fecha[2], fecha[3] || 0, fecha[4] || 0, fecha[5] || 0);
+        } else if (typeof fecha === 'string' && fecha.includes('T') && !fecha.endsWith('Z')) {
+            dateObj = new Date(fecha.replace('T', ' '));
+        } else {
+            dateObj = new Date(fecha);
+        }
+
+        return dateObj.toLocaleString('es-EC', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: true,
+            timeZone: 'America/Guayaquil'
         });
     };
 

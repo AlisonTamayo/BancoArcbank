@@ -3,6 +3,38 @@ import { useAuth } from '../context/AuthContext'
 import { getMovimientos } from '../services/bancaApi'
 import { FiFilter, FiDownload, FiSearch } from 'react-icons/fi'
 
+// Función para parsear fechas de Java LocalDateTime correctamente
+const parseJavaDate = (fecha) => {
+  if (!fecha) return new Date();
+
+  // Si es un array [year, month, day, hour, minute, second, nano] (LocalDateTime de Java)
+  if (Array.isArray(fecha)) {
+    return new Date(fecha[0], fecha[1] - 1, fecha[2], fecha[3] || 0, fecha[4] || 0, fecha[5] || 0);
+  }
+
+  // Si es string ISO sin Z, tratarlo como hora local (no UTC)
+  if (typeof fecha === 'string' && fecha.includes('T') && !fecha.endsWith('Z')) {
+    // Reemplazar T por espacio para que JS lo interprete como hora local
+    return new Date(fecha.replace('T', ' '));
+  }
+
+  return new Date(fecha);
+};
+
+// Formatear fecha para Ecuador
+const formatDateEC = (date) => {
+  return date.toLocaleDateString('es-EC', { timeZone: 'America/Guayaquil' });
+};
+
+const formatTimeEC = (date) => {
+  return date.toLocaleTimeString('es-EC', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true,
+    timeZone: 'America/Guayaquil'
+  });
+};
+
 export default function Movimientos() {
   const { state, refreshAccounts } = useAuth()
   const [selectedAccId, setSelectedAccId] = useState('')
@@ -36,15 +68,19 @@ export default function Movimientos() {
           displayType = 'INTERBANCARIA ENTRANTE'
         }
 
+        const parsedDate = parseJavaDate(m.fechaCreacion);
+
         return {
           id: m.idTransaccion,
-          date: new Date(m.fechaCreacion),
+          date: parsedDate,
+          dateStr: formatDateEC(parsedDate),
+          timeStr: formatTimeEC(parsedDate),
           desc: m.descripcion || 'Transacción Bancaria',
           type: displayType,
           amount: m.monto,
           balance: m.saldoResultante,
           isDebit,
-          isRefundable: (new Date() - new Date(m.fechaCreacion) < 24 * 60 * 60 * 1000)
+          isRefundable: (new Date() - parsedDate < 24 * 60 * 60 * 1000)
             && !['REVERSADA', 'DEVUELTA'].includes(m.estado)
             && isDebit
             && ['TRANSFERENCIA_SALIDA', 'TRANSFERENCIA_INTERBANCARIA'].includes(m.tipoOperacion)
@@ -128,8 +164,8 @@ export default function Movimientos() {
                 {txs.map(tx => (
                   <tr key={tx.id}>
                     <td className="ps-4 py-3">
-                      <div className="fw-bold text-white">{tx.date.toLocaleDateString()}</div>
-                      <div className="small text-muted">{tx.date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                      <div className="fw-bold text-white">{tx.dateStr}</div>
+                      <div className="small text-muted">{tx.timeStr}</div>
                     </td>
                     <td className="py-3">
                       <div className="fw-bold text-white">{tx.desc}</div>

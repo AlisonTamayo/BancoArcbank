@@ -4,6 +4,35 @@ import { clientes, cuentas, transacciones } from "../../services/api";
 import logo from "../../assets/Logo.png";
 import "../ValoresTransaccion/ValoresTransaccion.css";
 
+// Función para parsear fechas de Java LocalDateTime correctamente
+const parseJavaDate = (fecha) => {
+  if (!fecha) return new Date();
+
+  if (Array.isArray(fecha)) {
+    return new Date(fecha[0], fecha[1] - 1, fecha[2], fecha[3] || 0, fecha[4] || 0, fecha[5] || 0);
+  }
+
+  if (typeof fecha === 'string' && fecha.includes('T') && !fecha.endsWith('Z')) {
+    return new Date(fecha.replace('T', ' '));
+  }
+
+  return new Date(fecha);
+};
+
+// Formatear fecha y hora para Ecuador
+const formatDateTimeEC = (fecha) => {
+  const date = parseJavaDate(fecha);
+  return date.toLocaleString('es-EC', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true,
+    timeZone: 'America/Guayaquil'
+  });
+};
+
 export default function ValoresDeposito() {
   const nav = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -144,7 +173,7 @@ export default function ValoresDeposito() {
           monto: montoNumber,
           costo: response.costo || 0,
           saldoResultante: response.saldoResultante,
-          fecha: response.fechaCreacion || new Date().toLocaleDateString("es-EC"),
+          fecha: formatDateTimeEC(response.fechaCreacion),
           sucursal: response.sucursal || "La Napo",
           depositante: {
             nombre: `${depositante.nombres} ${depositante.apellidos}`.trim(),

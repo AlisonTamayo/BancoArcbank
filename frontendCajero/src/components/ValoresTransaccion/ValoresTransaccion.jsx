@@ -4,6 +4,37 @@ import { transacciones, cuentas, clientes } from "../../services/api";
 import logo from "../../assets/Logo.png";
 import "./ValoresTransaccion.css";
 
+// Función para parsear fechas de Java LocalDateTime correctamente
+const parseJavaDate = (fecha) => {
+  if (!fecha) return new Date();
+
+  // Si es un array [year, month, day, hour, minute, second, nano] (LocalDateTime de Java)
+  if (Array.isArray(fecha)) {
+    return new Date(fecha[0], fecha[1] - 1, fecha[2], fecha[3] || 0, fecha[4] || 0, fecha[5] || 0);
+  }
+
+  // Si es string ISO sin Z, tratarlo como hora local (no UTC)
+  if (typeof fecha === 'string' && fecha.includes('T') && !fecha.endsWith('Z')) {
+    return new Date(fecha.replace('T', ' '));
+  }
+
+  return new Date(fecha);
+};
+
+// Formatear fecha y hora para Ecuador
+const formatDateTimeEC = (fecha) => {
+  const date = parseJavaDate(fecha);
+  return date.toLocaleString('es-EC', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true,
+    timeZone: 'America/Guayaquil'
+  });
+};
+
 export default function ValoresTransaccion() {
   const nav = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -134,8 +165,8 @@ export default function ValoresTransaccion() {
           costo: response.costo || 0.00,
           saldoResultante: response.saldoResultante, // Dato nuevo útil
           fecha: response.fechaCreacion
-            ? new Date(response.fechaCreacion).toLocaleDateString("es-EC")
-            : new Date().toLocaleDateString("es-EC"),
+            ? formatDateTimeEC(response.fechaCreacion)
+            : formatDateTimeEC(new Date()),
           sucursal: "La Napo", // O response.idSucursal mapeado
           cuenta: {
             nombre: `${cliente.nombres} ${cliente.apellidos}`.trim(),
