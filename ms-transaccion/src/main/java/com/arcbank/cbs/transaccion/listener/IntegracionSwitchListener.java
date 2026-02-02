@@ -27,7 +27,7 @@ public class IntegracionSwitchListener {
     private final RestTemplate restTemplate;
 
     // Inyectar URL desde variable de entorno (Docker)
-    @Value("${SWITCH_API_URL:http://34.16.106.7:8000/api/v1/transacciones/callback}")
+    @Value("${SWITCH_API_URL:http://34.16.106.7:8000/api/v2/switch/transfers/callback}")
     private String switchCallbackUrl;
 
     private static final String MI_BANCO_ID = "ARCBANK";

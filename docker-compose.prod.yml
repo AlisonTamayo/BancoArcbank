@@ -195,7 +195,7 @@ services:
       # Cola
       BANK_QUEUE_NAME: q.bank.ARCBANK.in
       # URL Callback
-      SWITCH_API_URL: http://34.16.106.7:8000/api/v1/transacciones/callback
+      SWITCH_API_URL: http://34.16.106.7:8000/api/v2/switch/transfers/callback
     ports:
       - "4082:8080"
     networks:
