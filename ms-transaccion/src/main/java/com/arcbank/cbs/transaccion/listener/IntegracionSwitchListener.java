@@ -9,6 +9,9 @@ import java.util.UUID;
 import org.springframework.amqp.AmqpRejectAndDontRequeueException;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpEntity; // Import necesario
+import org.springframework.http.HttpHeaders; // Import necesario
+import org.springframework.http.MediaType; // Import necesario
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
@@ -29,6 +32,10 @@ public class IntegracionSwitchListener {
     // Inyectar URL desde variable de entorno (Docker)
     @Value("${SWITCH_API_URL:http://34.16.106.7:8000/api/v2/switch/transfers/callback}")
     private String switchCallbackUrl;
+
+    // 1. Inyectar API Key (CRÍTICO)
+    @Value("${app.switch.apikey:ARCBANK_SECRET_KEY_2025_XYZ}")
+    private String switchApiKey;
 
     private static final String MI_BANCO_ID = "ARCBANK";
 
@@ -85,13 +92,23 @@ public class IntegracionSwitchListener {
             // Segun orden tecnica: reasonCode string vacio si es null
             body.put("reasonCode", codigoError != null ? codigoError : "");
 
-            Map<String, Object> request = new HashMap<>();
-            request.put("header", Map.of(
+            Map<String, Object> requestBody = new HashMap<>();
+            requestBody.put("header", Map.of(
                     "messageId", UUID.randomUUID().toString(),
                     "respondingBankId", MI_BANCO_ID));
-            request.put("body", body);
+            requestBody.put("body", body);
 
-            restTemplate.postForObject(switchCallbackUrl, request, String.class);
+            // 2. [CRÍTICO] Construir Headers con API Key
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            headers.set("apikey", switchApiKey); // Header requerido por Kong
+
+            HttpEntity<Map<String, Object>> requestEntity = new HttpEntity<>(requestBody, headers);
+
+            // 3. Enviar POST con Headers
+            restTemplate.postForEntity(switchCallbackUrl, requestEntity, String.class);
+            log.info("📤 Callback enviado al Switch - Tx: {} Status: {}", msgOriginal.getBody().getInstructionId(),
+                    estado);
 
         } catch (Exception e) {
             log.error("⚠️ Error enviando callback al Switch: {}", e.getMessage());
