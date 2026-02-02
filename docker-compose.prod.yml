@@ -183,6 +183,19 @@ services:
       APP_SWITCH_NETWORK_URL: ${APP_SWITCH_NETWORK_URL:-http://34.16.106.7:8000}
       BANCO_CODIGO: ARCBANK
       APP_SWITCH_APIKEY: ${APP_SWITCH_APIKEY:-ARCBANK_SECRET_KEY_2025_XYZ}
+
+      # 🚨 CONFIGURACIÓN RABBITMQ (AWS AMAZON MQ) - OBLIGATORIO HOTFIX
+      SPRING_RABBITMQ_HOST: b-455e546c-be71-4fe2-ba0f-bd3112e6c220.mq.us-east-2.on.aws
+      SPRING_RABBITMQ_PORT: 5671
+      SPRING_RABBITMQ_SSL_ENABLED: "true"
+      SPRING_RABBITMQ_SSL_ALGORITHM: TLSv1.2
+      # Credenciales Switch (ARCBANK)
+      SPRING_RABBITMQ_USERNAME: arcbank
+      SPRING_RABBITMQ_PASSWORD: arcbankpass
+      # Cola
+      BANK_QUEUE_NAME: q.bank.ARCBANK.in
+      # URL Callback
+      SWITCH_API_URL: http://34.16.106.7:8000/api/v1/transacciones/callback
     ports:
       - "4082:8080"
     networks:

@@ -2,18 +2,17 @@ package com.arcbank.cbs.transaccion.listener;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 
 import org.springframework.amqp.AmqpRejectAndDontRequeueException;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import com.arcbank.cbs.transaccion.dto.rabbitmq.MensajeISO;
-import com.arcbank.cbs.transaccion.dto.rabbitmq.StatusReportDTO;
 import com.arcbank.cbs.transaccion.service.TransaccionService;
 
 import lombok.RequiredArgsConstructor;
@@ -27,97 +26,75 @@ public class IntegracionSwitchListener {
     private final TransaccionService transaccionService;
     private final RestTemplate restTemplate;
 
-    // COLA CONFIGURADA PARA ARCBANK
-    private static final String MI_COLA = "q.bank.ARCBANK.in";
+    // Inyectar URL desde variable de entorno (Docker)
+    @Value("${SWITCH_API_URL:http://34.16.106.7:8000/api/v1/transacciones/callback}")
+    private String switchCallbackUrl;
 
-    // URL DEL SWITCH PARA CALLBACKS
-    private static final String SW_CALLBACK_URL = "http://34.16.106.7:8000/api/v1/transacciones/callback";
     private static final String MI_BANCO_ID = "ARCBANK";
 
-    @RabbitListener(queues = MI_COLA)
+    @RabbitListener(queues = "${bank.queue.name}")
     public void procesarTransferencia(MensajeISO mensaje) {
         String txId = "UNKNOWN";
         try {
             if (mensaje.getBody() == null || mensaje.getBody().getInstructionId() == null) {
                 log.error("❌ Mensaje inválido recibido: {}", mensaje);
-                return; // No reintentar basura
+                return;
             }
 
             txId = mensaje.getBody().getInstructionId();
-            log.info("📥 [RMQ] Recibida Tx: {} por ${}", txId, mensaje.getBody().getAmount().getValue());
+            log.info("💰 Dinero recibido del Switch! ID: {}", txId);
 
-            // 1. VALIDAR Y ACREDITAR
+            // 1. ACREDITAR (LogicCore)
             String cuentaDestino = mensaje.getBody().getCreditor().getAccountId();
             BigDecimal monto = mensaje.getBody().getAmount().getValue();
-
-            // Obtener banco origen del header
             String bancoOrigen = (mensaje.getHeader() != null) ? mensaje.getHeader().getOriginatingBankId() : "UNK";
 
-            // Usando los 4 argumentos correctos (según firma del servicio)
-            transaccionService.procesarTransferenciaEntrante(
-                    txId,
-                    cuentaDestino,
-                    monto,
-                    bancoOrigen // Antes pasaba descripcion + bancoOrigen, ahora solo bancoOrigen
-            );
+            transaccionService.procesarTransferenciaEntrante(txId, cuentaDestino, monto, bancoOrigen);
 
-            // 2. ÉXITO: Confirmar al Switch
-            log.info("✅ Depósito procesado exitosamente: {}", txId);
-            enviarCallbackAlSwitch(txId, "COMPLETED", null, null);
+            // 2. CONFIRMAR ÉXITO
+            enviarCallback(mensaje, "COMPLETED", null);
+            log.info("✅ Transacción procesada y confirmada al Switch.");
 
         } catch (Exception e) {
-            log.error("❌ Error procesando Tx {}: {}", txId, e.getMessage());
+            log.error("❌ Fallo al acreditar: {}", e.getMessage());
 
             String msg = e.getMessage() != null ? e.getMessage().toLowerCase() : "";
-
-            // Lógica para determinar si es error de negocio (NO REINTENTAR)
+            // Determinar si es error de negocio
             if (msg.contains("cuenta") || msg.contains("no existe") || msg.contains("bloqueada")) {
-                String codigoError = "AC03"; // Por defecto cuenta no existe
+                String codigoError = "AC03";
                 if (msg.contains("bloqueada"))
                     codigoError = "AG01";
 
-                // Enviar callback de RECHAZO
-                enviarCallbackAlSwitch(txId, "REJECTED", codigoError, e.getMessage());
+                enviarCallback(mensaje, "REJECTED", codigoError);
 
-                // Lanzar excepción especial para no reencolar en RabbitMQ
+                // No reintentar errores de negocio
                 throw new AmqpRejectAndDontRequeueException(codigoError + " - " + e.getMessage());
             }
 
-            // Si es otro error (Base de datos, timeout), dejamos que Spring reintente
-            // o si queremos rechazar tras reintentos (manejado por DLQ policy)
+            // Reintentar errores técnicos
             throw new RuntimeException("Error técnico procesando transferencia", e);
         }
     }
 
-    private void enviarCallbackAlSwitch(String txId, String status, String reasonCode, String reasonDescription) {
+    private void enviarCallback(MensajeISO msgOriginal, String estado, String codigoError) {
         try {
-            StatusReportDTO reporte = StatusReportDTO.builder()
-                    .header(StatusReportDTO.Header.builder()
-                            .messageId("RESP-" + UUID.randomUUID().toString())
-                            .respondingBankId(MI_BANCO_ID)
-                            .creationDateTime(LocalDateTime.now().toString())
-                            .build())
-                    .body(StatusReportDTO.Body.builder()
-                            .originalInstructionId(UUID.fromString(txId))
-                            .status(status)
-                            .reasonCode(reasonCode)
-                            .reasonDescription(reasonDescription)
-                            .processedDateTime(LocalDateTime.now().toString())
-                            .build())
-                    .build();
+            Map<String, Object> body = new HashMap<>();
+            body.put("originalInstructionId", msgOriginal.getBody().getInstructionId());
+            body.put("status", estado);
+            body.put("processedDateTime", LocalDateTime.now().toString());
+            // Segun orden tecnica: reasonCode string vacio si es null
+            body.put("reasonCode", codigoError != null ? codigoError : "");
 
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_JSON);
-            HttpEntity<StatusReportDTO> request = new HttpEntity<>(reporte, headers);
+            Map<String, Object> request = new HashMap<>();
+            request.put("header", Map.of(
+                    "messageId", UUID.randomUUID().toString(),
+                    "respondingBankId", MI_BANCO_ID));
+            request.put("body", body);
 
-            restTemplate.postForLocation(SW_CALLBACK_URL, request);
-            log.info("📤 Callback enviado al Switch - Tx: {} Status: {}", txId, status);
+            restTemplate.postForObject(switchCallbackUrl, request, String.class);
 
         } catch (Exception e) {
-            log.error("⚠️ Falló callback al Switch para Tx {}. Error: {}", txId, e.getMessage());
-            // No lanzamos excepción aquí para no rollbackear la transacción local si el
-            // callback falla
-            // El Switch eventualmente preguntará o el banco reintentará el callback via job
+            log.error("⚠️ Error enviando callback al Switch: {}", e.getMessage());
         }
     }
 }
