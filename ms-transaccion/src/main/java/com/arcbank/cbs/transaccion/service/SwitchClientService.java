@@ -176,11 +176,15 @@ public class SwitchClientService {
                 String code = internalCode.toUpperCase().trim();
 
                 return switch (code) {
-                        case "TECH", "ERROR_TECNICO" -> "MS03";
+
+                        case "TECH", "ERROR_TECNICO", "MS03" -> "MS03";
                         case "CUENTA_INVALIDA", "AC03" -> "AC03";
                         case "SALDO_INSUFICIENTE", "AM04" -> "AM04";
-                        case "DUPLICADO", "DUPL", "MD01" -> "MD01";
-                        case "FRAUDE", "FRAD", "FR01" -> "FR01";
+                        case "CUENTA_CERRADA", "AC04" -> "AC04";
+                        case "CUENTA_BLOQUEADA", "AC06" -> "AC06";
+                        case "OPERACION_PROHIBIDA", "AG01" -> "AG01";
+                        case "DUPLICADO", "DUPL", "AM05", "MD01" -> "AM05";
+                        case "FRAUDE", "FRAD", "FR01" -> "FRAD";
                         case "CUST", "CLIENTE" -> "CUST";
                         default -> {
                                 if (code.matches("^[A-Z0-9]{4}$")) {
