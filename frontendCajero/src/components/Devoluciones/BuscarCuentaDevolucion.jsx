@@ -4,7 +4,7 @@ import { transacciones } from '../../services/api';
 import './BuscarCuentaDevolucion.css';
 
 export default function BuscarCuentaDevolucion() {
-    const [idTransaccion, setIdTransaccion] = useState('');
+    const [codigoReferencia, setCodigoReferencia] = useState('');
     const [loading, setLoading] = useState(false);
     const [transaccion, setTransaccion] = useState(null);
     const [error, setError] = useState('');
@@ -31,10 +31,10 @@ export default function BuscarCuentaDevolucion() {
 
     const buscarTransaccion = async (e) => {
         e?.preventDefault();
-        const id = parseInt(idTransaccion.trim());
+        const codigo = codigoReferencia.trim();
 
-        if (!id || isNaN(id)) {
-            setError('Por favor ingrese un ID de transacción válido (número)');
+        if (!codigo || codigo.length < 6 || isNaN(codigo)) {
+            setError('Por favor ingrese un Código de Referencia válido (6 dígitos numéricos)');
             return;
         }
 
@@ -43,7 +43,7 @@ export default function BuscarCuentaDevolucion() {
         setTransaccion(null);
 
         try {
-            const data = await transacciones.obtenerDetallePorId(id);
+            const data = await transacciones.buscarPorCodigoReferencia(codigo);
             setTransaccion(data);
         } catch (err) {
             setError(err.message || 'Transacción no encontrada');
@@ -64,7 +64,7 @@ export default function BuscarCuentaDevolucion() {
             await transacciones.solicitarReverso(transaccion.idTransaccion, motivo);
             alert('✅ Solicitud de devolución enviada exitosamente al Switch.');
             setTransaccion(null);
-            setIdTransaccion('');
+            setCodigoReferencia('');
         } catch (err) {
             alert('❌ Error: ' + (err.message || 'Fallo en el sistema'));
         } finally {
@@ -123,11 +123,17 @@ export default function BuscarCuentaDevolucion() {
                     <h2>Buscar Transacción para Devolución</h2>
                     <form onSubmit={buscarTransaccion} className="buscar-form">
                         <input
-                            type="number"
-                            placeholder="Ingrese ID de transacción (ej: 153)"
+                            type="text"
+                            placeholder="Ingrese Código de Referencia (ej: 123456)"
                             className="buscar-input"
-                            value={idTransaccion}
-                            onChange={e => setIdTransaccion(e.target.value)}
+                            value={codigoReferencia}
+                            onChange={e => {
+                                // Solo permitir números
+                                const val = e.target.value;
+                                if (/^\d*$/.test(val) && val.length <= 6) {
+                                    setCodigoReferencia(val);
+                                }
+                            }}
                         />
                         <button type="submit" className="sel-btn" disabled={loading}>
                             {loading ? '🔍 Buscando...' : '🔍 Buscar Transacción'}
@@ -143,8 +149,8 @@ export default function BuscarCuentaDevolucion() {
 
                         <div className="detalle-grid">
                             <div className="detalle-item highlight">
-                                <span className="detalle-label">ID Transacción:</span>
-                                <span className="detalle-value id-value">{transaccion.idTransaccion}</span>
+                                <span className="detalle-label">Código Referencia:</span>
+                                <span className="detalle-value id-value">{transaccion.codigoReferencia || transaccion.idTransaccion}</span>
                             </div>
                             <div className="detalle-item highlight">
                                 <span className="detalle-label">Monto:</span>

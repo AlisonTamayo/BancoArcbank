@@ -4,7 +4,7 @@ import { transacciones } from '../../services/api';
 import './ListaMovimientosDevolucion.css';
 
 export default function ListaMovimientosDevolucion() {
-    const [idTransaccion, setIdTransaccion] = useState('');
+    const [codigoReferencia, setCodigoReferencia] = useState('');
     const [loading, setLoading] = useState(false);
     const [transaccion, setTransaccion] = useState(null);
     const [error, setError] = useState('');
@@ -30,10 +30,10 @@ export default function ListaMovimientosDevolucion() {
     ];
 
     const buscarTransaccion = async () => {
-        const id = parseInt(idTransaccion.trim());
+        const codigo = codigoReferencia.trim();
 
-        if (!id || isNaN(id)) {
-            setError('Por favor ingrese un ID de transacción válido (número)');
+        if (!codigo || codigo.length < 6 || isNaN(codigo)) {
+            setError('Por favor ingrese un Código de Referencia válido (6 dígitos numéricos)');
             return;
         }
 
@@ -42,7 +42,7 @@ export default function ListaMovimientosDevolucion() {
         setTransaccion(null);
 
         try {
-            const data = await transacciones.obtenerDetallePorId(id);
+            const data = await transacciones.buscarPorCodigoReferencia(codigo);
             setTransaccion(data);
         } catch (err) {
             setError(err.message || 'Transacción no encontrada');
@@ -63,7 +63,7 @@ export default function ListaMovimientosDevolucion() {
             await transacciones.solicitarReverso(transaccion.idTransaccion, motivo);
             alert('✅ Solicitud de devolución enviada exitosamente al Switch.');
             setTransaccion(null);
-            setIdTransaccion('');
+            setCodigoReferencia('');
         } catch (err) {
             alert('❌ Error: ' + (err.message || 'Fallo en el sistema'));
         } finally {
@@ -111,13 +111,19 @@ export default function ListaMovimientosDevolucion() {
 
                 {/* Buscador */}
                 <div className="search-container">
-                    <label className="search-label">ID de Transacción:</label>
+                    <label className="search-label">Código de Referencia:</label>
                     <div className="search-box">
                         <input
-                            type="number"
-                            value={idTransaccion}
-                            onChange={(e) => setIdTransaccion(e.target.value)}
-                            placeholder="Ej: 153"
+                            type="text"
+                            value={codigoReferencia}
+                            onChange={(e) => {
+                                // Solo permitir números
+                                const val = e.target.value;
+                                if (/^\d*$/.test(val) && val.length <= 6) {
+                                    setCodigoReferencia(val);
+                                }
+                            }}
+                            placeholder="Ej: 123456"
                             className="search-input"
                             onKeyPress={(e) => e.key === 'Enter' && buscarTransaccion()}
                         />
@@ -139,8 +145,8 @@ export default function ListaMovimientosDevolucion() {
 
                         <div className="detalle-grid">
                             <div className="detalle-item">
-                                <span className="detalle-label">ID:</span>
-                                <span className="detalle-value id-value">{transaccion.idTransaccion}</span>
+                                <span className="detalle-label">Cód. Referencia:</span>
+                                <span className="detalle-value id-value">{transaccion.codigoReferencia || transaccion.idTransaccion}</span>
                             </div>
                             <div className="detalle-item">
                                 <span className="detalle-label">Monto:</span>

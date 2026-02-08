@@ -128,4 +128,7 @@ export const transacciones = {
 
   // Nuevo: Obtener detalle de transacción por ID numérico
   obtenerDetallePorId: (id) => request(`/api/transacciones/${id}/detalle`),
+
+  // Nuevo: Buscar por Código de Referencia (6 dígitos)
+  buscarPorCodigoReferencia: (codigo) => request(`/api/transacciones/buscar-codigo/${codigo}`),
 };
