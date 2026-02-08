@@ -15,18 +15,15 @@ export default function BuscarCuentaDevolucion() {
 
     // Catálogo ISO 20022 proporcionado por Reglas de Negocio
     const ISO_REASONS = [
-        { code: 'AM04', description: '🚫 Saldo insuficiente en cuenta origen.' },
-        { code: 'AC01', description: '❌ El número de cuenta destino no existe.' },
-        { code: 'AC03', description: '💵 Moneda no permitida. Solo USD.' },
-        { code: 'AC04', description: '🔒 La cuenta destino está cerrada.' },
-        { code: 'AG01', description: '⚠️ Operación restringida: Cierre operativo.' },
-        { code: 'CH03', description: '📉 El monto excede el límite permitido.' },
-        { code: 'DUPL', description: '⚠️ Transferencia duplicada.' },
-        { code: 'MS03', description: '📡 Error de comunicación técnico.' },
-        { code: 'RC01', description: '📝 Error interno de formato.' },
-        { code: 'BE01', description: '👮 Inconsistencia de datos (Seguridad).' },
-        { code: 'CUST', description: '👤 Solicitud del cliente.' },
-        { code: 'FRAD', description: '⚠️ Sospecha de fraude.' }
+        { code: 'AC03', description: '❌ Cuenta Inexistente (Invalid Creditor Account)' },
+        { code: 'AC06', description: '🔒 Cuenta Bloqueada (Blocked Account)' },
+        { code: 'AC04', description: '🚫 Cuenta Cerrada (Closed Account)' },
+        { code: 'AM04', description: '📉 Saldo Insuficiente (Limits)' },
+        { code: 'AM05', description: '⚠️ Duplicidad (Duplication)' },
+        { code: 'FRAD', description: '🚨 Fraude (Fraudulent Origin)' },
+        { code: 'AG01', description: '⛔ Operación Prohibida (Transaction Forbidden)' },
+        { code: 'CUST', description: '👤 Solicitada por Cliente (Requested By Customer)' },
+        { code: 'MS03', description: '📡 Error Técnico Interno (Technical Error)' }
     ];
 
     const buscarTransaccion = async (e) => {
