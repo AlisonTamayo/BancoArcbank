@@ -144,7 +144,18 @@ public class TransaccionServiceImpl implements TransaccionService {
                                 .referenceId(trx.getReferencia())
                                 .build();
 
-                        switchClientService.enviarTransferencia(txRequest);
+                        Map<String, Object> respSwitch = switchClientService.enviarTransferencia(txRequest);
+
+                        if (respSwitch != null) {
+                            String refCode = (String) respSwitch.get("codigoReferencia");
+                            // Fallback check inside data
+                            if (refCode == null && respSwitch.get("data") instanceof Map) {
+                                refCode = (String) ((Map<?, ?>) respSwitch.get("data")).get("codigoReferencia");
+                            }
+                            if (refCode != null) {
+                                trx.setCodigoReferencia(refCode);
+                            }
+                        }
 
                         // --- Implementación Polling Síncrono (UX Sync) ---
                         nuevoEstado = "PENDIENTE"; // Asumimos pendiente hasta confirmar
@@ -289,6 +300,7 @@ public class TransaccionServiceImpl implements TransaccionService {
                 .descripcion(t.getDescripcion())
                 .canal(t.getCanal())
                 .estado(t.getEstado())
+                .codigoReferencia(t.getCodigoReferencia())
                 .build();
     }
 

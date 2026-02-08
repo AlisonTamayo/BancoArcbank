@@ -22,7 +22,7 @@ public class SwitchClientService {
         @Value("${app.banco.codigo:ARCBANK}")
         private String bancoCodigo;
 
-        public String enviarTransferencia(TxRequest request) {
+        public Map<String, Object> enviarTransferencia(TxRequest request) {
                 log.info("Iniciando envío de transferencia interbancaria via Feign: {} -> {}",
                                 request.getDebtorAccount(), request.getCreditorAccount());
 
@@ -64,14 +64,22 @@ public class SwitchClientService {
                 try {
                         log.info("JSON enviado al Switch: {}", new com.fasterxml.jackson.databind.ObjectMapper()
                                         .writeValueAsString(isoRequest));
-                        String response = switchClient.enviarTransferencia(isoRequest);
+                        String responseStr = switchClient.enviarTransferencia(isoRequest);
 
-                        if (response == null || response.isBlank()) {
-                                response = "{\"status\": \"SUCCESS\", \"message\": \"Transferencia enviada correctamente\"}";
+                        if (responseStr == null || responseStr.isBlank()) {
+                                responseStr = "{\"status\": \"SUCCESS\", \"message\": \"Transferencia enviada correctamente\", \"codigoReferencia\": \"000000\"}";
                         }
 
-                        log.info("Respuesta del Switch recibida: {}", response);
-                        return response;
+                        log.info("Respuesta del Switch recibida: {}", responseStr);
+
+                        try {
+                                return new com.fasterxml.jackson.databind.ObjectMapper().readValue(responseStr,
+                                                Map.class);
+                        } catch (Exception e) {
+                                log.warn("No se pudo parsear respuesta JSON del switch, retornando map vacío:String. {}",
+                                                e.getMessage());
+                                return java.util.Collections.emptyMap();
+                        }
 
                 } catch (feign.FeignException e) {
                         log.error("Switch retornó error HTTP {}: {}", e.status(), e.contentUTF8());

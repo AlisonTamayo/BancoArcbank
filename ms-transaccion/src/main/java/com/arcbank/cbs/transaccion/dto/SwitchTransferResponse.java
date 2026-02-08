@@ -27,6 +27,7 @@ public class SwitchTransferResponse {
         private BigDecimal monto;
         private LocalDateTime timestamp;
         private LocalDateTime fechaCreacion;
+        private String codigoReferencia;
     }
 
     @Data

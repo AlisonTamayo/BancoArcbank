@@ -17,6 +17,8 @@ export default function Interbank() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
 
+    const [successCode, setSuccessCode] = useState("");
+
     // VALIDACIÓN DE CUENTA (Account Lookup)
     const [validation, setValidation] = useState({ status: 'idle', msg: '' }); // idle, validating, valid, invalid
 
@@ -111,6 +113,14 @@ export default function Interbank() {
             clearInterval(intervalId); // Stop rotation
             if (res?.saldoResultante !== undefined) updateAccountBalance(fromAccId, res.saldoResultante);
             else await refreshAccounts();
+
+            if (res?.codigoReferencia) {
+                setSuccessCode(res.codigoReferencia);
+            } else {
+                // Fallback si no hay codigo
+                setSuccessCode(res?.idTransaccion || "Pendiente");
+            }
+
             setStep(3);
         } catch (e) {
             clearInterval(intervalId); // Stop rotation
@@ -279,7 +289,7 @@ export default function Interbank() {
                                 <p className="text-muted mb-5">
                                     Los fondos han sido <strong className="text-white">acreditados confirmados</strong> en la cuenta destino.
                                     <br />
-                                    <span className="small text-secondary">ID Transacción: {new Date().getTime().toString().slice(-8)}</span>
+                                    <span className="small text-secondary">Código de Referencia: {successCode}</span>
                                 </p>
                                 <button className="btn btn-primary px-5 py-3" onClick={() => navigate('/movimientos')}>VER COMPROBANTE</button>
                             </div>

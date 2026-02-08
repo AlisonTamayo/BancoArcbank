@@ -73,6 +73,9 @@ public class Transaccion {
     @Column(name = "\"Estado\"", nullable = false, length = 20)
     private String estado;
 
+    @Column(name = "codigo_referencia", length = 6)
+    private String codigoReferencia;
+
     @PrePersist
     public void prePersist() {
         if (this.estado == null)
