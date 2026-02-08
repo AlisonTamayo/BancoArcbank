@@ -29,11 +29,9 @@ public class IntegracionSwitchListener {
     private final TransaccionService transaccionService;
     private final RestTemplate restTemplate;
 
-    // Inyectar URL desde variable de entorno (Docker)
     @Value("${SWITCH_API_URL:http://34.16.106.7:8000/api/v2/switch/transfers/callback}")
     private String switchCallbackUrl;
 
-    // 1. Inyectar API Key (CRÍTICO)
     @Value("${app.switch.apikey:ARCBANK_SECRET_KEY_2025_XYZ}")
     private String switchApiKey;
 
@@ -51,14 +49,12 @@ public class IntegracionSwitchListener {
             txId = mensaje.getBody().getInstructionId();
             log.info("💰 Dinero recibido del Switch! ID: {}", txId);
 
-            // 1. ACREDITAR (LogicCore)
             String cuentaDestino = mensaje.getBody().getCreditor().getAccountId();
             BigDecimal monto = mensaje.getBody().getAmount().getValue();
             String bancoOrigen = (mensaje.getHeader() != null) ? mensaje.getHeader().getOriginatingBankId() : "UNK";
 
             transaccionService.procesarTransferenciaEntrante(txId, cuentaDestino, monto, bancoOrigen);
 
-            // 2. CONFIRMAR ÉXITO
             enviarCallback(mensaje, "COMPLETED", null);
             log.info("✅ Transacción procesada y confirmada al Switch.");
 
@@ -66,7 +62,6 @@ public class IntegracionSwitchListener {
             log.error("❌ Fallo al acreditar: {}", e.getMessage());
 
             String msg = e.getMessage() != null ? e.getMessage().toLowerCase() : "";
-            // Determinar si es error de negocio
             if (msg.contains("cuenta") || msg.contains("no existe") || msg.contains("bloqueada")) {
                 String codigoError = "AC03";
                 if (msg.contains("bloqueada"))
@@ -74,11 +69,9 @@ public class IntegracionSwitchListener {
 
                 enviarCallback(mensaje, "REJECTED", codigoError);
 
-                // No reintentar errores de negocio
                 throw new AmqpRejectAndDontRequeueException(codigoError + " - " + e.getMessage());
             }
 
-            // Reintentar errores técnicos
             throw new RuntimeException("Error técnico procesando transferencia", e);
         }
     }
@@ -89,7 +82,6 @@ public class IntegracionSwitchListener {
             body.put("originalInstructionId", msgOriginal.getBody().getInstructionId());
             body.put("status", estado);
             body.put("processedDateTime", LocalDateTime.now().toString());
-            // Segun orden tecnica: reasonCode string vacio si es null
             body.put("reasonCode", codigoError != null ? codigoError : "");
 
             Map<String, Object> requestBody = new HashMap<>();
@@ -98,14 +90,12 @@ public class IntegracionSwitchListener {
                     "respondingBankId", MI_BANCO_ID));
             requestBody.put("body", body);
 
-            // 2. [CRÍTICO] Construir Headers con API Key
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
-            headers.set("apikey", switchApiKey); // Header requerido por Kong
+            headers.set("apikey", switchApiKey);
 
             HttpEntity<Map<String, Object>> requestEntity = new HttpEntity<>(requestBody, headers);
 
-            // 3. Enviar POST con Headers
             restTemplate.postForEntity(switchCallbackUrl, requestEntity, String.class);
             log.info("📤 Callback enviado al Switch - Tx: {} Status: {}", msgOriginal.getBody().getInstructionId(),
                     estado);
