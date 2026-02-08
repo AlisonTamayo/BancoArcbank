@@ -176,7 +176,7 @@ public class SwitchClientService {
                 String code = internalCode.toUpperCase().trim();
 
                 return switch (code) {
-                return switch (code) {
+
                         case "TECH", "ERROR_TECNICO", "MS03" -> "MS03";
                         case "CUENTA_INVALIDA", "AC03" -> "AC03";
                         case "SALDO_INSUFICIENTE", "AM04" -> "AM04";
