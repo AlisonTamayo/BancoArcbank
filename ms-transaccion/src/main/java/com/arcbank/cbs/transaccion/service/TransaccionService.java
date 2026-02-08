@@ -33,5 +33,7 @@ public interface TransaccionService {
 
         java.util.Map<String, Object> buscarConDetalleSwitch(String referencia);
 
+        java.util.Map<String, Object> buscarPorCodigoReferencia(String codigoReferencia);
+
         java.util.Map<String, Object> obtenerDetallePorId(Integer id);
 }

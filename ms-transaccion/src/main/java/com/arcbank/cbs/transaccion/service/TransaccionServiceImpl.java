@@ -648,6 +648,17 @@ public class TransaccionServiceImpl implements TransaccionService {
     }
 
     @Override
+    public Map<String, Object> buscarPorCodigoReferencia(String codigoReferencia) {
+        log.info("Buscando transacción por código de referencia: {}", codigoReferencia);
+        Transaccion tx = transaccionRepository.findByCodigoReferencia(codigoReferencia)
+                .orElseThrow(() -> new BusinessException(
+                        "Transacción no encontrada con código de referencia: " + codigoReferencia));
+        
+        // Reutilizamos la lógica completa de detalle (validaciones, switch, cliente)
+        return obtenerDetallePorId(tx.getIdTransaccion());
+    }
+
+    @Override
     public Map<String, Object> buscarConDetalleSwitch(String referencia) {
         // 1. Buscar transacción local
         Transaccion tx = transaccionRepository.findByReferencia(referencia)
@@ -681,6 +692,7 @@ public class TransaccionServiceImpl implements TransaccionService {
         detalle.put("cuentaExterna", tx.getCuentaExterna());
         detalle.put("bancoDestino", tx.getIdBancoExterno());
         detalle.put("canal", tx.getCanal());
+        detalle.put("codigoReferencia", tx.getCodigoReferencia()); // Add reference code to response
 
         // Info de validación
         detalle.put("esReversible", esReversible);

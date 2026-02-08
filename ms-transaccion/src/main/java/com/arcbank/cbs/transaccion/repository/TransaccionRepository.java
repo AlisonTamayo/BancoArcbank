@@ -15,4 +15,6 @@ public interface TransaccionRepository extends JpaRepository<Transaccion, Intege
     List<Transaccion> findPorCuenta(@Param("idCuenta") Integer idCuenta);
 
     Optional<Transaccion> findByReferencia(String referencia);
+
+    Optional<Transaccion> findByCodigoReferencia(String codigoReferencia);
 }

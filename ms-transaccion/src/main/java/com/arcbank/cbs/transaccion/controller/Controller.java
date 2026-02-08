@@ -108,4 +108,15 @@ public class Controller {
                     .body(java.util.Map.of("error", "No se pudo obtener detalle: " + e.getMessage()));
         }
     }
+
+    @GetMapping("/buscar-codigo/{codigoReferencia}")
+    @Operation(summary = "Buscar transacción por Código de Referencia (6 dígitos) con detalle completo")
+    public ResponseEntity<?> buscarPorCodigoReferencia(@PathVariable String codigoReferencia) {
+        try {
+            return ResponseEntity.ok(transaccionService.buscarPorCodigoReferencia(codigoReferencia));
+        } catch (Exception e) {
+            return ResponseEntity.status(404)
+                    .body(java.util.Map.of("error", "No se pudo obtener detalle: " + e.getMessage()));
+        }
+    }
 }
