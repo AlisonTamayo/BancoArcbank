@@ -1,25 +1,19 @@
-name: "Deploy Transacciones to EKS"
+name: "Deploy Clientes to EKS"
 
 on:
   push:
     branches: [main]
-    paths:
-      - 'ms-transaccion/**'
 
 env:
   AWS_REGION: us-east-2
   EKS_CLUSTER: eks-banca-ecosistema
   NAMESPACE: arcbank
-  ECR_REPO: arcbank-service-transacciones
-  SERVICE_NAME: service-transacciones
-  WORKING_DIRECTORY: ./ms-transaccion
+  ECR_REPO: arcbank-service-clientes
+  SERVICE_NAME: service-clientes
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ${{ env.WORKING_DIRECTORY }}
     steps:
       - uses: actions/checkout@v4
       

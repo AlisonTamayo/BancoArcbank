@@ -1,25 +1,19 @@
-name: "Deploy Gateway to EKS"
+name: "Deploy Sucursales to EKS"
 
 on:
   push:
     branches: [main]
-    paths:
-      - 'api-gateway/**'
 
 env:
   AWS_REGION: us-east-2
   EKS_CLUSTER: eks-banca-ecosistema
   NAMESPACE: arcbank
-  ECR_REPO: arcbank-gateway-server
-  SERVICE_NAME: gateway-server
-  WORKING_DIRECTORY: ./api-gateway
+  ECR_REPO: arcbank-service-sucursales
+  SERVICE_NAME: service-sucursales
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ${{ env.WORKING_DIRECTORY }}
     steps:
       - uses: actions/checkout@v4
       
