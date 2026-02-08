@@ -28,6 +28,13 @@ app:
   switch:
     network-url: ${APP_SWITCH_NETWORK_URL:http://34.16.106.7:8000}
     apikey: ${APP_SWITCH_APIKEY:ARCBANK_SECRET_KEY_2025_XYZ}
+  apim:
+    endpoint: ${APIM_ENDPOINT:https://api-gateway.us-east-2.amazonaws.com/default}
+    cognito:
+      domain: ${COGNITO_DOMAIN:https://banca-ecosistema.auth.us-east-2.amazoncognito.com}
+      client-id: ${COGNITO_CLIENT_ID:change-me}
+      client-secret: ${COGNITO_CLIENT_SECRET:change-me}
+      scope: ${COGNITO_SCOPE:https://switch-api.com/transfers.write}
   banco:
     codigo: ${BANCO_CODIGO:ARCBANK}
 
