@@ -1,6 +1,5 @@
-// API Gateway via nginx proxy (rutas relativas)
-// nginx hace proxy de /api/* hacia api-gateway:8080
-const BASE_URL = "";
+// API Gateway URL desde variables de entorno (preferible para S3/Vercel)
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || "";
 
 async function request(path, options = {}) {
   const url = `${BASE_URL}${path}`;

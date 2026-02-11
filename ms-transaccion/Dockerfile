@@ -34,4 +34,9 @@ COPY --from=build /app/target/*.jar app.jar
 EXPOSE 8080
 
 # Comando de arranque
-ENTRYPOINT ["java", "-jar", "app.jar"]
+# Healthcheck para integración con K8s
+HEALTHCHECK --interval=30s --timeout=10s --retries=5 \
+    CMD curl -f http://localhost:8080/actuator/health || exit 1
+
+# Comando de arranque con optimizaciones para contenedores
+ENTRYPOINT ["java", "-XX:+UseContainerSupport", "-XX:MaxRAMPercentage=75.0", "-Djava.security.egd=file:/dev/./urandom", "-jar", "app.jar"]

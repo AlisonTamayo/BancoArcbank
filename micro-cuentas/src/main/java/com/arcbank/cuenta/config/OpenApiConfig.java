@@ -22,10 +22,12 @@ public class OpenApiConfig {
                         .description("API para la gestión de cuentas de ahorro, tipos de cuenta y tasas de interés"));
     }
 
-    @Bean
-    public ObjectMapper objectMapper() {
-        return new ObjectMapper()
-                .registerModule(new JavaTimeModule())
-                .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
-    }
+    /*
+     * @Bean
+     * public ObjectMapper objectMapper() {
+     * return new ObjectMapper()
+     * .registerModule(new JavaTimeModule())
+     * .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+     * }
+     */
 }

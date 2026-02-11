@@ -21,10 +21,12 @@ public class OpenApiConfig {
                         .description("API para la gestión de clientes, personas, empresas y representantes legales"));
     }
 
-    @Bean
-    public ObjectMapper objectMapper() {
-        return new ObjectMapper()
-                .registerModule(new JavaTimeModule())
-                .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
-    }
+    /*
+     * @Bean
+     * public ObjectMapper objectMapper() {
+     * return new ObjectMapper()
+     * .registerModule(new JavaTimeModule())
+     * .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+     * }
+     */
 }

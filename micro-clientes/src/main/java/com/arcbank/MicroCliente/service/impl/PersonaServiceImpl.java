@@ -24,7 +24,7 @@ public class PersonaServiceImpl implements PersonaService {
     private final ClienteRepository clienteRepository;
 
     public PersonaServiceImpl(PersonaRepository personaRepository,
-                              ClienteRepository clienteRepository) {
+            ClienteRepository clienteRepository) {
         this.personaRepository = personaRepository;
         this.clienteRepository = clienteRepository;
     }
@@ -33,7 +33,8 @@ public class PersonaServiceImpl implements PersonaService {
     public PersonaResponseDTO crearPersona(PersonaRequestDTO request) {
 
         if (clienteRepository.existsByIdentificacion(request.getCliente().getIdentificacion())) {
-            throw new RuntimeException("Error: Ya existe un cliente con la identificación " + request.getCliente().getIdentificacion());
+            throw new RuntimeException(
+                    "Error: Ya existe un cliente con la identificación " + request.getCliente().getIdentificacion());
         }
 
         ClienteRequestDTO c = request.getCliente();
@@ -43,7 +44,6 @@ public class PersonaServiceImpl implements PersonaService {
         cliente.setIdentificacion(c.getIdentificacion());
         cliente.setFechaRegistro(LocalDate.now());
         cliente.setEstado("ACTIVO");
-
 
         cliente = clienteRepository.save(cliente);
 

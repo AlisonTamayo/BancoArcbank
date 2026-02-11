@@ -39,101 +39,110 @@ spring:
             allowedHeaders:
               - "*"
             allowCredentials: true
+      
+      # FILTRO GLOBAL PARA PATH-BASED ROUTING
+      # Esto permite que /arcbank/api/... se convierta en /api/... antes de ir al microservicio
+      default-filters:
+        - RewritePath=/arcbank/(?<segment>.*), /$\{segment}
+
       routes:
         # RUTA 1: CLIENTES
         - id: clientes-service
           uri: http://micro-clientes-arcbank:8080
           predicates:
-            - Path=/api/v1/clientes/**
+            - Path=/arcbank/api/v1/clientes/**, /api/v1/clientes/**
 
         # RUTA 2: PERSONAS
         - id: personas-service
           uri: http://micro-clientes-arcbank:8080
           predicates:
-            - Path=/api/v1/personas/**
+            - Path=/arcbank/api/v1/personas/**, /api/v1/personas/**
 
         # RUTA 3: EMPRESAS
         - id: empresas-service
           uri: http://micro-clientes-arcbank:8080
           predicates:
-            - Path=/api/v1/empresas/**
+            - Path=/arcbank/api/v1/empresas/**, /api/v1/empresas/**
 
         # RUTA 4: CUENTAS AHORROS
         - id: cuentas-ahorros-service
           uri: http://micro-cuentas-arcbank:8081
           predicates:
-            - Path=/api/v1/cuentas/ahorros/**
+            - Path=/arcbank/api/v1/cuentas/ahorros/**, /api/v1/cuentas/ahorros/**
 
         # RUTA 5: TASAS DE INTERÉS
         - id: tasas-service
           uri: http://micro-cuentas-arcbank:8081
           predicates:
-            - Path=/api/v1/cuentas/tasas/**
+            - Path=/arcbank/api/v1/cuentas/tasas/**, /api/v1/cuentas/tasas/**
 
         # RUTA 6: TIPOS DE CUENTA
         - id: tipos-cuenta-service
           uri: http://micro-cuentas-arcbank:8081
           predicates:
-            - Path=/api/v1/cuentas/tipos-cuenta/**
+            - Path=/arcbank/api/v1/cuentas/tipos-cuenta/**, /api/v1/cuentas/tipos-cuenta/**
 
         # RUTA 7: TRANSACCIONES
         - id: transacciones-service
           uri: http://ms-transaccion-arcbank:8080
           predicates:
-            - Path=/api/transacciones/**
+            - Path=/arcbank/api/transacciones/**, /api/transacciones/**
 
-        # RUTA 8: BANCOS (Lista de bancos del switch interbancario)
+        # RUTA 8: BANCOS
         - id: bancos-service
           uri: http://ms-transaccion-arcbank:8080
           predicates:
-            - Path=/api/bancos/**
+            - Path=/arcbank/api/bancos/**, /api/bancos/**
 
         # RUTA 9: SUCURSALES
         - id: sucursales-service
           uri: http://sucursales-arcbank:8080
           predicates:
-            - Path=/api/v1/sucursales/**
+            - Path=/arcbank/api/v1/sucursales/**, /api/v1/sucursales/**
 
-
-        # RUTA 10: CORE (Transacciones / Webhooks Legados)
+        # RUTA 10: CORE
         - id: core-service
           uri: http://ms-transaccion-arcbank:8080
           predicates:
-            - Path=/api/core/**
+            - Path=/arcbank/api/core/**, /api/core/**
         
-        # RUTA 11: WEBHOOKS V3.0 (Switch Standard)
+        # RUTA 11: WEBHOOKS
         - id: webhook-incoming
           uri: http://ms-transaccion-arcbank:8080
           predicates:
-            - Path=/api/incoming/**
+            - Path=/arcbank/api/incoming/**, /api/incoming/**
 
-        # RUTAS DE DOCUMENTACIÓN (Discovery for API Manager)
+        # RUTAS DE DOCUMENTACIÓN
         - id: clientes-docs
           uri: http://micro-clientes-arcbank:8080
           predicates:
-            - Path=/v3/api-docs/clientes/**
+            - Path=/arcbank/v3/api-docs/clientes/**, /v3/api-docs/clientes/**
           filters:
+            - RewritePath=/arcbank/v3/api-docs/clientes/(?<segment>.*), /v3/api-docs/$\{segment}
             - RewritePath=/v3/api-docs/clientes/(?<segment>.*), /v3/api-docs/$\{segment}
 
         - id: cuentas-docs
           uri: http://micro-cuentas-arcbank:8081
           predicates:
-            - Path=/v3/api-docs/cuentas/**
+            - Path=/arcbank/v3/api-docs/cuentas/**, /v3/api-docs/cuentas/**
           filters:
+            - RewritePath=/arcbank/v3/api-docs/cuentas/(?<segment>.*), /v3/api-docs/$\{segment}
             - RewritePath=/v3/api-docs/cuentas/(?<segment>.*), /v3/api-docs/$\{segment}
 
         - id: transacciones-docs
           uri: http://ms-transaccion-arcbank:8080
           predicates:
-            - Path=/v3/api-docs/transacciones/**
+            - Path=/arcbank/v3/api-docs/transacciones/**, /v3/api-docs/transacciones/**
           filters:
+            - RewritePath=/arcbank/v3/api-docs/transacciones/(?<segment>.*), /v3/api-docs/$\{segment}
             - RewritePath=/v3/api-docs/transacciones/(?<segment>.*), /v3/api-docs/$\{segment}
 
         - id: sucursales-docs
           uri: http://sucursales-arcbank:8080
           predicates:
-            - Path=/v3/api-docs/sucursales/**
+            - Path=/arcbank/v3/api-docs/sucursales/**, /v3/api-docs/sucursales/**
           filters:
+            - RewritePath=/arcbank/v3/api-docs/sucursales/(?<segment>.*), /v3/api-docs/$\{segment}
             - RewritePath=/v3/api-docs/sucursales/(?<segment>.*), /v3/api-docs/$\{segment}
 
 # Swagger UI Centralizado
@@ -153,8 +162,16 @@ springdoc:
       - name: 4. Micro Sucursales
         url: /v3/api-docs/sucursales
 
-# Configuración para ver los logs de ruteo (útil para debug)
 logging:
   level:
     org.springframework.cloud.gateway: DEBUG
     reactor.netty: INFO
+
+# Configuración de Integración APIM / Switch
+cognito:
+  token-url: ${COGNITO_TOKEN_URL:https://auth-banca-digiconecu-dev-lhd4go.auth.us-east-2.amazoncognito.com/oauth2/token}
+  client-id: ${COGNITO_CLIENT_ID:3jprfuk1phejsm0sjr8p50n91e}
+  client-secret: ${COGNITO_CLIENT_SECRET:change-me}
+
+apim:
+  base-url: ${APIM_BASE_URL:https://gf0js7uezg.execute-api.us-east-2.amazonaws.com/dev}

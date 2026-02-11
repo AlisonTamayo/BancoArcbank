@@ -1,12 +1,39 @@
 spring:
   datasource:
+    # Se prefiere la inyección directa via SPRING_DATASOURCE_URL en K8s.
+    # Esta configuración es un fallback local.
     url: jdbc:postgresql://${DB_URL:localhost:5432/db_transacciones}
     username: ${DB_USER:postgres}
     password: ${DB_PASS:admin}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      connection-timeout: 5000
+      maximum-pool-size: 5
   jpa:
     hibernate:
       ddl-auto: update
     show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+
+# Actuator Configuration for K8s Probes
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    health:
+      show-details: always
+      probes:
+        enabled: true
+  health:
+    livenessstate:
+      enabled: true
+    readinessstate:
+      enabled: true
 
   rabbitmq:
     host: ${SPRING_RABBITMQ_HOST:b-455e546c-be71-4fe2-ba0f-bd3112e6c220.mq.us-east-2.on.aws}
@@ -29,10 +56,11 @@ app:
     network-url: ${APP_SWITCH_NETWORK_URL:http://34.16.106.7:8000}
     apikey: ${APP_SWITCH_APIKEY:ARCBANK_SECRET_KEY_2025_XYZ}
   apim:
-    endpoint: ${APIM_ENDPOINT:https://api-gateway.us-east-2.amazonaws.com/default}
+    endpoint: ${APIM_ENDPOINT:https://gf0js7uezg.execute-api.us-east-2.amazonaws.com/dev}
+    origin-secret: ${APIM_ORIGIN_SECRET:change-me}
     cognito:
-      domain: ${COGNITO_DOMAIN:https://banca-ecosistema.auth.us-east-2.amazoncognito.com}
-      client-id: ${COGNITO_CLIENT_ID:change-me}
+      domain: ${COGNITO_DOMAIN:https://auth-banca-digiconecu-dev-lhd4go.auth.us-east-2.amazoncognito.com}
+      client-id: ${COGNITO_CLIENT_ID:3jprfuk1phejsm0sjr8p50n91e}
       client-secret: ${COGNITO_CLIENT_SECRET:change-me}
       scope: ${COGNITO_SCOPE:https://switch-api.com/transfers.write}
   banco:

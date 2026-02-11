@@ -1,8 +1,7 @@
 import { apiFetch } from '../context/AuthContext'
 
-// APUNTAMOS AL GATEWAY via nginx proxy (rutas relativas)
-// nginx hace proxy de /api/* hacia api-gateway:8080
-const GATEWAY_URL = "";
+// URL del Gateway desde variables de entorno (para S3/AWS)
+const GATEWAY_URL = process.env.REACT_APP_API_BASE_URL || "";
 
 /**
  * Función genérica para peticiones al Gateway

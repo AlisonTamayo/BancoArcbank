@@ -8,17 +8,12 @@ import com.arcbank.sucursales.model.Sucursal;
 import com.arcbank.sucursales.repository.SucursalRepository;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.Cacheable;
-import org.springframework.scheduling.annotation.Async;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.client.RestClient;
 
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 @Service
 @AllArgsConstructor
@@ -27,10 +22,7 @@ public class SucursalService {
 
     private final SucursalRepository sucursalRepository;
     private final GeoLevelMapper geoLevelMapper;
-    private final RestClient restClient;
 
-    @Transactional
-    @CacheEvict(value = {"sucursalesById", "sucursalesByCodigo"}, allEntries = true)
     public SucursalDTO create(SucursalRequest request) {
         log.info("Creando sucursal con código {}", request.getCodigoUnico());
 
@@ -42,13 +34,9 @@ public class SucursalService {
         Sucursal sucursal = geoLevelMapper.toEntity(request);
         Sucursal saved = sucursalRepository.save(sucursal);
 
-        notificarSucursalCreadaAsync(saved.getCodigoUnico());
-
         return geoLevelMapper.toDTO(saved);
     }
 
-    @Transactional
-    @CacheEvict(value = {"sucursalesById", "sucursalesByCodigo"}, allEntries = true)
     public SucursalDTO update(String id, SucursalRequest request) {
         log.info("Actualizando sucursal {}", id);
 
@@ -65,8 +53,6 @@ public class SucursalService {
         return geoLevelMapper.toDTO(saved);
     }
 
-    @Transactional
-    @CacheEvict(value = {"sucursalesById", "sucursalesByCodigo"}, allEntries = true)
     public void delete(String id) {
         log.info("Eliminando sucursal {}", id);
         Sucursal sucursal = sucursalRepository.findById(id)
@@ -74,7 +60,6 @@ public class SucursalService {
         sucursalRepository.delete(sucursal);
     }
 
-    @Cacheable(value = "sucursalesById", key = "#id")
     public SucursalDTO findById(String id) {
         log.info("Buscando sucursal por id {}", id);
         Sucursal sucursal = sucursalRepository.findById(id)
@@ -82,7 +67,6 @@ public class SucursalService {
         return geoLevelMapper.toDTO(sucursal);
     }
 
-    @Cacheable(value = "sucursalesByCodigo", key = "#codigoUnico")
     public SucursalDTO findByCodigoUnico(String codigoUnico) {
         log.info("Buscando sucursal por código {}", codigoUnico);
         Sucursal sucursal = sucursalRepository.findByCodigoUnico(codigoUnico)
@@ -92,16 +76,14 @@ public class SucursalService {
 
     public List<SucursalDTO> findAll() {
         log.info("Listando todas las sucursales");
-        return sucursalRepository.findAll()
-                .stream()
+        return StreamSupport.stream(sucursalRepository.findAll().spliterator(), false)
                 .map(geoLevelMapper::toDTO)
                 .collect(Collectors.toList());
     }
 
-
     public List<SucursalDTO> findByProvincia(String provincia) {
         log.info("Buscando sucursales por provincia {}", provincia);
-        return sucursalRepository.findByUbicacion_Provincia_Nombre(provincia)
+        return sucursalRepository.findByUbicacionProvinciaNombre(provincia)
                 .stream()
                 .map(geoLevelMapper::toDTO)
                 .collect(Collectors.toList());
@@ -109,7 +91,7 @@ public class SucursalService {
 
     public List<SucursalDTO> findByCanton(String canton) {
         log.info("Buscando sucursales por cantón {}", canton);
-        return sucursalRepository.findByUbicacion_Canton_Nombre(canton)
+        return sucursalRepository.findByUbicacionCantonNombre(canton)
                 .stream()
                 .map(geoLevelMapper::toDTO)
                 .collect(Collectors.toList());
@@ -117,7 +99,7 @@ public class SucursalService {
 
     public List<SucursalDTO> findByParroquia(String parroquia) {
         log.info("Buscando sucursales por parroquia {}", parroquia);
-        return sucursalRepository.findByUbicacion_Parroquia_Nombre(parroquia)
+        return sucursalRepository.findByUbicacionParroquiaNombre(parroquia)
                 .stream()
                 .map(geoLevelMapper::toDTO)
                 .collect(Collectors.toList());
@@ -135,26 +117,5 @@ public class SucursalService {
             return List.of();
         }
         return dto.getUbicacion().getFeriados();
-    }
-
-
-    @Async
-    public void notificarSucursalCreadaAsync(String codigoUnico) {
-        log.info("Enviando notificación async de creación de sucursal {}", codigoUnico);
-
-        restClient.post()
-                .uri("/api/auditoria/v1/eventos")
-                .body(Map.of(
-                        "tipo", "SUCURSAL_CREADA",
-                        "codigoUnico", codigoUnico
-                ))
-                .retrieve()
-                .toBodilessEntity();
-    }
-
-    @Scheduled(cron = "0 0 3 * * *")
-    public void tareaRecalculoIndicadores() {
-        long total = sucursalRepository.count();
-        log.info("Tarea programada: total de sucursales registradas = {}", total);
     }
 }
