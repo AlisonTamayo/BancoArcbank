@@ -1,49 +1,65 @@
 package com.arcbank.sucursales.model;
 
-import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.mapping.Document;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBAttribute;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 import lombok.Getter;
 import lombok.Setter;
 
 import java.time.LocalDate;
 import java.util.Objects;
 
-@Document(collection = "sucursales")
+@DynamoDBTable(tableName = "switch-sucursales")
 @Getter
 @Setter
 public class Sucursal {
 
     @Id
+    @DynamoDBHashKey
     private String idSucursal;
 
+    @DynamoDBAttribute
     private String codigoUnico;
+    @DynamoDBAttribute
     private String nombre;
+    @DynamoDBAttribute
     private String direccion;
+    @DynamoDBAttribute
     private String telefono;
 
+    @DynamoDBAttribute
     private Double latitud;
+    @DynamoDBAttribute
     private Double longitud;
 
+    @DynamoDBAttribute
     private String estado;
+
+    // spring-data-dynamodb usually handles LocalDate with a converter,
+    // but for simplicity we assume it works or we might need a converter.
+    // boostchicken supports Java 8 types.
+    @DynamoDBAttribute
     private LocalDate fechaApertura;
 
-
+    @DynamoDBAttribute
     private EntidadBancaria entidadBancaria;
+
+    @DynamoDBAttribute
     private Ubicacion ubicacion;
 
-
-    public Sucursal() { }
-
+    public Sucursal() {
+    }
 
     public Sucursal(String idSucursal) {
         this.idSucursal = idSucursal;
     }
 
-
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
         Sucursal sucursal = (Sucursal) o;
         return Objects.equals(idSucursal, sucursal.idSucursal);
     }

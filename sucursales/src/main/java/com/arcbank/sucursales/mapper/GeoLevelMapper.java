@@ -4,6 +4,9 @@ import com.arcbank.sucursales.dto.request.SucursalRequest;
 import com.arcbank.sucursales.dto.response.SucursalDTO;
 import com.arcbank.sucursales.model.Sucursal;
 
+import org.mapstruct.Mapper;
+
+@Mapper(componentModel = "spring")
 public interface GeoLevelMapper {
 
     Sucursal toEntity(SucursalRequest request);

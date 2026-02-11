@@ -20,7 +20,7 @@ public class ApimConfig {
     private final CognitoTokenService tokenService;
 
     @Bean
-    public RequestInterceptor requestInterceptor() {
+    public RequestInterceptor apimRequestInterceptor() {
         return new RequestInterceptor() {
             @Override
             public void apply(RequestTemplate template) {

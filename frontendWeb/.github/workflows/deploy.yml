@@ -27,6 +27,7 @@ jobs:
         run: npm run build
         env:
           REACT_APP_API_URL: ${{ vars.API_URL }}
+          CI: false
       
       - name: Configurar AWS
         uses: aws-actions/configure-aws-credentials@v4

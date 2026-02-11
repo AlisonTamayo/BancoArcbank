@@ -1,10 +1,9 @@
 # ============================================================================
-# WORKFLOW DE DEPLOY - arcbank-gateway-server (Spring Cloud Gateway)
-# Copia este archivo a: .github/workflows/deploy-eks-gateway.yml
-# en el repositorio de arcbank-gateway-server
-# NOTA: Este gateway se conectará al APIM de AWS en el futuro
+# WORKFLOW DE DEPLOY - arcbank-service-clientes (PostgreSQL)
+# Copia este archivo a: .github/workflows/deploy-eks-clientes.yml
+# en el repositorio de arcbank-service-clientes
 # ============================================================================
-name: "Deploy arcbank-gateway-server to EKS"
+name: "Deploy arcbank-service-clientes to EKS"
 
 on:
   push:
@@ -14,9 +13,13 @@ env:
   AWS_REGION: us-east-2
   EKS_CLUSTER: eks-banca-ecosistema
   NAMESPACE: arcbank
-  ECR_REPO: arcbank-gateway-server
-  SERVICE_NAME: gateway-server
+  ECR_REPO: arcbank-service-clientes
+  SERVICE_NAME: service-clientes
   CONTAINER_PORT: "8080"
+  SECRET_NAME: "arcbank-db-credentials"
+  SECRET_KEY_URL: "clientes-url"
+  SECRET_KEY_USER: "username"
+  SECRET_KEY_PASS: "password"
 
 jobs:
   build-and-deploy:
@@ -103,6 +106,23 @@ jobs:
                     env:
                       - name: SPRING_PROFILES_ACTIVE
                         value: "prod"
+                      - name: DB_URL
+                        valueFrom:
+                          secretKeyRef:
+                            name: ${{ env.SECRET_NAME }}
+                            key: ${{ env.SECRET_KEY_URL }}
+                      - name: DB_USER
+                        valueFrom:
+                          secretKeyRef:
+                            name: ${{ env.SECRET_NAME }}
+                            key: ${{ env.SECRET_KEY_USER }}
+                      - name: DB_PASS
+                        valueFrom:
+                          secretKeyRef:
+                            name: ${{ env.SECRET_NAME }}
+                            key: ${{ env.SECRET_KEY_PASS }}
+                      - name: SPRING_JPA_HIBERNATE_DDL_AUTO
+                        value: "update"
                     livenessProbe:
                       httpGet:
                         path: /actuator/health/liveness
