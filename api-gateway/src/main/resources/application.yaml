@@ -28,6 +28,8 @@ spring:
               - "http://frontend-cajero-arcbank:80"
               - "https://arcbank-bank.duckdns.org"
               - "https://arcbank-bank.duckdns.org:8443"
+              - "http://arcbank-bucket.s3-website.us-east-2.amazonaws.com"
+              - "http://bantec-bucket.s3-website.us-east-2.amazonaws.com"
             allowedMethods:
               - GET
               - POST
